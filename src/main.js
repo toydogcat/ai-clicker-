@@ -146,7 +146,7 @@ function saveGame(silent = false) {
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
     
-    if (silent) return;
+    if (silent === true) return; // explicitly check for true boolean
     
     const exportFile = confirm("💾 已存檔至瀏覽器快取！\n\n是否要額外「匯出為 JSON 存檔檔案」備份到電腦？");
     if (exportFile) {
@@ -168,7 +168,8 @@ function saveGame(silent = false) {
 
 function loadGame(directRaw = null) {
   try {
-    let raw = directRaw;
+    // If directly invoked by event handler, directRaw might be a PointerEvent object. Force null unless string.
+    let raw = (typeof directRaw === 'string') ? directRaw : null;
     if (!raw) {
       const localOnly = confirm("【讀取存檔選項】\n\n「確定」：讀取瀏覽器快取存檔\n「取消」：匯入外部 .json 檔案");
       if (localOnly) {
@@ -253,9 +254,9 @@ function resetGame() {
 }
 
 // Bind save/load/reset buttons
-document.getElementById("btn-save").addEventListener("click", saveGame);
-document.getElementById("btn-load").addEventListener("click", loadGame);
-document.getElementById("btn-reset").addEventListener("click", resetGame);
+document.getElementById("btn-save").addEventListener("click", () => saveGame());
+document.getElementById("btn-load").addEventListener("click", () => loadGame());
+document.getElementById("btn-reset").addEventListener("click", () => resetGame());
 
 // Auto-save every 30 seconds
 setInterval(() => {
