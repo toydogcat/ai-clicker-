@@ -630,11 +630,17 @@ function gameTick() {
     if (typeof ts === 'number' && ts > 0 && (Date.now() - ts) > 7 * 24 * 3600 * 1000) {
       // 1/3600 chance per tick (~once per hour of playtime)
       if (Math.random() < (1 / 3600)) {
+        const buildingNames = {
+          cabins: '木屋', farms: '農田', smelter: '熔爐',
+          powerPlant: '發電廠', warehouse: '倉庫', battery: '蓄電池組',
+          bank: '銀行', school: '學院'
+        };
         const bKeys = Object.keys(state.buildings).filter(k => state.buildings[k] > 0);
         if (bKeys.length > 0) {
           let target = bKeys[Math.floor(Math.random() * bKeys.length)];
           state.buildings[target]--;
-          showToast(`🚨 巨獸摧毀了一棟 ${target}！`, "error");
+          const displayName = buildingNames[target] || target;
+          showToast(`🚨 巨獸摧毀了一棟【${displayName}】！快去討伐它！`, "error");
         }
       }
     }
@@ -833,7 +839,11 @@ window.promoteResident = function(id) {
   const p = state.population.find(r => r.id === id);
   if (p) {
     p.jobClass = select.value;
-    showToast(`🎉 ${p.name} 成功轉職為 ${gameConfig.heroes[p.jobClass].name}！`, "success");
+    // Reset to level 5 as per design (class starts fresh at lv5)
+    p.level = 5;
+    p.exp = 0;
+    p.assignment = 'idle'; // Heroes can no longer labor
+    showToast(`🎉 ${p.name} 成功轉職為 ${gameConfig.heroes[p.jobClass].name}！從 Lv.5 重新出發！`, "success");
     updateUI();
   }
 };
@@ -1022,27 +1032,18 @@ document.querySelectorAll(".buy-eq-btn").forEach(btn => {
   });
 });
 
-// Recruit Heroes
+// hireHero is replaced by the population system (招募居民 → 轉職)
+// This stub is kept for backward compatibility but does nothing dangerous
 window.hireHero = function(heroKey) {
-  const hero = state.heroes[heroKey];
-  const cost = gameConfig.heroes[heroKey].hireCost;
-  if (state.money < cost) {
-    showToast("💰 聘僱費用不足！", "error");
-    return;
-  }
-  if (state.party.length >= 4) {
-    showToast("队伍已滿 (上限4人)！", "error");
-    return;
-  }
-  state.money -= cost;
-  hero.unlocked = true;
-  state.party.push(heroKey);
-  showToast(`🎉 已招募 ${gameConfig.heroes[heroKey].name}！`, "success");
-  updateUI();
+  showToast("請透過人力資源面板招募居民，並轉職成英雄！", "info");
 };
 
 function getHeroIcon(k) {
-  const icons = { warrior:'⚔️', barbarian:'🪓', shieldWarrior:'🛡️', rogue:'🗡️', archer:'🏹', gunner:'🔫', fighter:'🥊', mage:'🔮', wizard:'📜', priest:'✨', taoist:'☯️', monk:'📿' };
+  const icons = {
+    novice: '👷', warrior:'⚔️', barbarian:'🪓', shieldWarrior:'🛡️',
+    rogue:'🗡️', archer:'🏹', gunner:'🔫', fighter:'🥊',
+    mage:'🔮', wizard:'📜', priest:'✨', paladin:'🌟', taoist:'☯️', monk:'📿'
+  };
   return icons[k] || '👤';
 }
 
@@ -1084,25 +1085,7 @@ window.renderInventory = function() {
     
     // Handle Equip selection
     el.addEventListener("click", () => {
-      const unlockedHeroes = Object.keys(state.heroes).filter(k => state.heroes[k].unlocked);
-      if (unlockedHeroes.length === 0) {
-        showToast("尚未招募任何英雄！", "error");
-        return;
-      }
-      let targetHero = null;
-      if (unlockedHeroes.length === 1) {
-        targetHero = unlockedHeroes[0];
-      } else {
-        const promptStr = unlockedHeroes.map((k, i) => `${i+1}: ${gameConfig.heroes[k].name}`).join(", ");
-        const choice = prompt(`裝備給誰？\n${promptStr}`);
-        const idx = parseInt(choice) - 1;
-        if (!isNaN(idx) && unlockedHeroes[idx]) {
-          targetHero = unlockedHeroes[idx];
-        }
-      }
-      if (targetHero) {
-        equipItem(index, targetHero);
-      }
+      window.openEquipModal(index);
     });
 
     // Handle sell
@@ -1120,13 +1103,74 @@ window.renderInventory = function() {
   });
 };
 
-window.equipItem = function(invIndex, heroKey) {
+// Custom Modal for choosing who to equip item to
+window.openEquipModal = function(invIndex) {
   const item = state.inventory[invIndex];
-  const hero = state.heroes[heroKey];
-  const oldItem = hero.eq[item.slot];
+  if (!item) return;
+  
+  const heroParty = state.population.filter(p => p.jobClass !== 'novice');
+  if (heroParty.length === 0) {
+    showToast("尚未有任何已轉職的英雄可以裝備！", "error");
+    return;
+  }
+  
+  if (heroParty.length === 1) {
+    equipItem(invIndex, heroParty[0].id);
+    return;
+  }
+  
+  const modal = document.getElementById("equipModal");
+  const itemNameEl = document.getElementById("equipItemName");
+  const listEl = document.getElementById("equipChoicesList");
+  
+  if (!modal || !itemNameEl || !listEl) return;
+  
+  itemNameEl.textContent = `裝備：${item.name} (${gameConfig.eqSpecs.rarities[item.rarity].name})`;
+  listEl.innerHTML = "";
+  
+  heroParty.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "build-btn";
+    btn.style.display = "flex";
+    btn.style.justifyContent = "space-between";
+    btn.style.alignItems = "center";
+    btn.style.padding = "0.75rem 1rem";
+    btn.style.width = "100%";
+    
+    const icon = getHeroIcon(p.jobClass);
+    btn.innerHTML = `
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-size:1.5rem;">${icon}</span>
+        <div style="text-align:left;">
+          <div style="font-weight:bold; color:#f8fafc;">${p.name}</div>
+          <div style="font-size:0.75rem; color:#94a3b8;">${gameConfig.heroes[p.jobClass].name} (Lv.${p.level})</div>
+        </div>
+      </div>
+      <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); padding:0.2rem 0.5rem; border-radius:6px; color:#e2e8f0;">選擇</span>
+    `;
+    
+    btn.onclick = () => {
+      equipItem(invIndex, p.id);
+      modal.style.display = "none";
+    };
+    listEl.appendChild(btn);
+  });
+  
+  modal.style.display = "flex";
+};
+
+// equipItem now takes personId (UUID from state.population) not heroKey
+window.equipItem = function(invIndex, personId) {
+  const item = state.inventory[invIndex];
+  const person = state.population.find(p => p.id === personId);
+  if (!person) {
+    showToast("❌ 找不到目標英雄！", "error");
+    return;
+  }
+  const oldItem = person.eq[item.slot];
   
   // Equip
-  hero.eq[item.slot] = item;
+  person.eq[item.slot] = item;
   state.inventory.splice(invIndex, 1); // remove from inv
   
   // Return old to inv
@@ -1134,7 +1178,8 @@ window.equipItem = function(invIndex, heroKey) {
     state.inventory.push(oldItem);
   }
   
-  showToast(`🛡️ ${gameConfig.heroes[heroKey].name} 裝備了 [${item.name}]`, "success");
+  const className = gameConfig.heroes[person.jobClass]?.name || person.jobClass;
+  showToast(`🛡️ ${person.name} (${className}) 裝備了 [${item.name}]`, "success");
   renderInventory();
   updateUI();
 };
@@ -1649,27 +1694,29 @@ function updateCombatBars() {
     if(atbBar) atbBar.style.width = `${enemy.atb}%`;
   });
   
-  // Heroes
-  combatState.party.forEach(pk => {
-    const hero = state.heroes[pk];
-    const eff = calcEffStats(pk);
+  // Heroes — use state.population lookup by id (state.heroes no longer exists)
+  combatState.party.forEach(pid => {
+    const hero = state.population.find(p => p.id === pid);
+    if (!hero) return;
+    const eff = calcEffStats(hero);
+    if (!eff) return;
     
     const hpPct = Math.max(0, (hero.hp / eff.maxHp) * 100);
     const mpPct = Math.max(0, (hero.mp / eff.maxMp) * 100);
     const atbPct = hero.atb || 0;
     
-    const lvEl = document.getElementById(`b-${pk}-lv`);
-    const hpBarEl = document.getElementById(`b-${pk}-hp-bar`);
-    const hpValEl = document.getElementById(`b-${pk}-hp-val`);
-    const mpBarEl = document.getElementById(`b-${pk}-mp-bar`);
-    const mpValEl = document.getElementById(`b-${pk}-mp-val`);
-    const atbBarEl = document.getElementById(`b-${pk}-atb-bar`);
+    const lvEl = document.getElementById(`b-${pid}-lv`);
+    const hpBarEl = document.getElementById(`b-${pid}-hp-bar`);
+    const hpValEl = document.getElementById(`b-${pid}-hp-val`);
+    const mpBarEl = document.getElementById(`b-${pid}-mp-bar`);
+    const mpValEl = document.getElementById(`b-${pid}-mp-val`);
+    const atbBarEl = document.getElementById(`b-${pid}-atb-bar`);
     
     if(lvEl) lvEl.textContent = hero.level;
     if(hpBarEl) hpBarEl.style.width = `${hpPct}%`;
-    if(hpValEl) hpValEl.textContent = `${hero.hp}/${eff.maxHp}`;
+    if(hpValEl) hpValEl.textContent = `${Math.floor(hero.hp)}/${eff.maxHp}`;
     if(mpBarEl) mpBarEl.style.width = `${mpPct}%`;
-    if(mpValEl) mpValEl.textContent = `${hero.mp}/${eff.maxMp}`;
+    if(mpValEl) mpValEl.textContent = `${Math.floor(hero.mp)}/${eff.maxMp}`;
     if(atbBarEl) atbBarEl.style.width = `${atbPct}%`;
   });
 }
