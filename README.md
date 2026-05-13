@@ -1,2 +1,2 @@
 # ai-clicker-
-The click game.
+The [click game](https://toydogcat.github.io/ai-clicker-/).

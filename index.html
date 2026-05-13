@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Clicker: Settlement Pioneer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- Ambient Glowing Background Effects -->
+  <div class="ambient-glow ambient-1"></div>
+  <div class="ambient-glow ambient-2"></div>
+
+  <header class="app-header">
+    <div class="logo-container">
+      <span class="logo-icon">⚡</span>
+      <h1>AI Clicker <span class="accent-text">Pioneer</span></h1>
+    </div>
+    <div class="system-status">
+      <div class="status-badge" id="cameraStatusBadge">
+        <span class="pulse-dot" id="statusDot"></span>
+        <span id="statusText">AI 離線</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="game-container">
+    <!-- Left Column: Resources & Population -->
+    <aside class="panel-column side-panel" aria-label="資源與統計">
+      <div class="glass-card resource-card">
+        <div class="card-header">
+          <h2>📊 資源存量</h2>
+        </div>
+        <div class="resource-grid">
+          <div class="resource-item" id="res-wood">
+            <span class="res-icon">🪵</span>
+            <div class="res-details">
+              <label>木頭 (Wood)</label>
+              <span class="res-value" id="woodCount">0</span>
+            </div>
+          </div>
+          <div class="resource-item" id="res-stone">
+            <span class="res-icon">🪨</span>
+            <div class="res-details">
+              <label>石頭 (Stone)</label>
+              <span class="res-value" id="stoneCount">0</span>
+            </div>
+          </div>
+          <div class="resource-item" id="res-food">
+            <span class="res-icon">🍞</span>
+            <div class="res-details">
+              <label>食物 (Food)</label>
+              <span class="res-value" id="foodCount">10</span>
+            </div>
+            <div class="res-rate alert-text" id="foodDrainRate">-0/s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card population-card">
+        <div class="card-header">
+          <h2>👷 人口與工人</h2>
+        </div>
+        <div class="pop-stats">
+          <div class="pop-stat-item">
+            <span class="pop-label">當前工人口</span>
+            <span class="pop-value"><span id="workerCount">0</span> / <span id="workerLimit">5</span></span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="popLimitBar" style="width: 0%"></div>
+          </div>
+          <p class="survival-hint">⚠️ 警告：食物歸零時，工人將會開始流失。</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Column: Main Interaction Zone -->
+    <section class="panel-column center-panel" aria-label="操作區">
+      <div class="action-hub">
+        <div class="interactive-zone" id="clickTarget" role="button" tabindex="0" aria-label="採集資源">
+          <div class="ring-effect ring-1"></div>
+          <div class="ring-effect ring-2"></div>
+          <div class="core-node">
+            <span class="node-symbol">🌳⛏️</span>
+            <span class="node-label">點擊採集資源</span>
+            <span class="sub-hint">支援滑鼠、觸控與手勢</span>
+          </div>
+        </div>
+        
+        <!-- Floating click text container -->
+        <div id="clickEffectsLayer"></div>
+      </div>
+    </section>
+
+    <!-- Right Column: Camera & Detection Panel -->
+    <aside class="panel-column side-panel" aria-label="AI 操控">
+      <div class="glass-card tracking-card">
+        <div class="card-header">
+          <h2>📷 AI 手勢偵測</h2>
+        </div>
+        <p class="card-desc">揮動您的<b>食指 (Index Finger)</b> 即可觸發點擊，速度越快，採集速度越快！</p>
+        
+        <div class="vision-viewport-wrapper">
+          <div class="vision-viewport">
+            <div class="loading-overlay" id="modelLoader">
+              <div class="loading-spinner"></div>
+              <span>載入 MediaPipe 模型中...</span>
+            </div>
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="outputCanvas"></canvas>
+          </div>
+          
+          <div class="velocity-meter">
+            <div class="meter-label">食指運動強度</div>
+            <div class="meter-track">
+              <div class="meter-fill" id="velocityBar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-actions">
+          <button id="webcamToggleBtn" class="primary-btn action-btn" disabled>
+            <span class="btn-icon">🎥</span> 開啟視訊鏡頭
+          </button>
+        </div>
+      </div>
+      
+      <div class="glass-card info-card">
+        <div class="card-header">
+          <h2>ℹ️ 玩法說明</h2>
+        </div>
+        <ul class="rules-list">
+          <li>🖱️ **滑鼠**：單擊中央能量球。</li>
+          <li>📱 **手機**：點擊中央能量球。</li>
+          <li>🖐️ **AI 鏡頭**：對著鏡頭不斷揮動食指，系統將自動偵測位移並轉化為極速連點！</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="app-footer">
+    <p>AI Clicker Prototype © 2026 | Built with MediaPipe Tasks-Vision</p>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
