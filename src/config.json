@@ -150,6 +150,22 @@
       "heroLicense": {
         "reqKnowledge": 100,
         "reqMoney": 50
+      },
+      "huntLv4": {
+        "reqKnowledge": 300,
+        "reqMoney": 500
+      },
+      "huntLv7": {
+        "reqKnowledge": 1200,
+        "reqMoney": 2500
+      },
+      "secretLv4": {
+        "reqKnowledge": 500,
+        "reqMoney": 800
+      },
+      "secretLv7": {
+        "reqKnowledge": 2000,
+        "reqMoney": 4000
       }
     },
     "mobs": {

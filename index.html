@@ -264,13 +264,45 @@
           <span class="pool-label">累積知識：</span>
           <span class="pool-value" id="knowledgeVal">0</span>
         </div>
-        <div class="dispatch-list" style="margin-top: 0.5rem;">
+        <div class="dispatch-list" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
           <button class="build-btn" id="btnTechHero" style="width: 100%;" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">研發【英雄招募令】</span>
               <span class="build-btn-cost">📚 100 知識 | 🪙 50 金</span>
             </div>
             <span class="build-btn-count" id="techHeroStatus">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechHuntLv4" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">研發【戰場開拓 I】(解鎖討伐 Lv.4-6)</span>
+              <span class="build-btn-cost">📚 300 知識 | 🪙 500 金</span>
+            </div>
+            <span class="build-btn-count" id="techHuntLv4Status">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechHuntLv7" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">研發【戰場開拓 II】(解鎖討伐 Lv.7-10)</span>
+              <span class="build-btn-cost">📚 1200 知識 | 🪙 2500 金</span>
+            </div>
+            <span class="build-btn-count" id="techHuntLv7Status">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechSecretLv4" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">研發【神秘特許證 I】(解鎖神秘商店 Lv.4-5)</span>
+              <span class="build-btn-cost">📚 500 知識 | 🪙 800 金</span>
+            </div>
+            <span class="build-btn-count" id="techSecretLv4Status">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechSecretLv7" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">研發【神秘特許證 II】(解鎖神秘商店 Lv.6-7)</span>
+              <span class="build-btn-cost">📚 2000 知識 | 🪙 4000 金</span>
+            </div>
+            <span class="build-btn-count" id="techSecretLv7Status">未解鎖</span>
           </button>
         </div>
       </div>
@@ -280,6 +312,7 @@
         <div class="rpg-sub-tabs">
           <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
           <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
+          <button class="rpg-sub-tab" data-rpg-tab="secret-shop" style="color: #facc15; font-weight: bold;">✨ 神秘商店</button>
           <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
         </div>
         <div class="rpg-panel-container">
@@ -320,6 +353,31 @@
             </div>
             <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
           </div>
+          <!-- SubTab: Secret Shop -->
+          <div class="rpg-panel" id="rpg-secret-shop">
+            <div class="shop-controls" style="border-bottom: 1px solid rgba(234, 179, 8, 0.2); padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <label style="color: #facc15; font-weight: 600;">🔮 貨架裝備等級：</label>
+                <select id="secretShopLevelSelect" style="background: rgba(15, 23, 42, 0.8); border: 1.5px solid #eab308; color: #fff; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                  <option value="1">Lv 1 等級貨架</option>
+                  <option value="2">Lv 2 等級貨架</option>
+                  <option value="3">Lv 3 等級貨架</option>
+                  <option value="4">Lv 4 等級貨架</option>
+                  <option value="5">Lv 5 等級貨架</option>
+                  <option value="6">Lv 6 等級貨架</option>
+                  <option value="7">Lv 7 等級貨架</option>
+                </select>
+              </div>
+              <button id="btnRefreshSecretShop" class="btn-danger" style="background: linear-gradient(135deg, #7e22ce, #b45309); border: 1px solid #eab308; color: #fff; font-weight: bold; box-shadow: 0 0 10px rgba(234,179,8,0.3);">
+                🔁 刷新貨架 (<span id="secretRefreshCostText">💰 200</span>)
+              </button>
+            </div>
+            <div class="secret-shop-grid" id="secretShopGrid">
+              <!-- Filled by JS -->
+            </div>
+            <p class="shop-note" style="color:#f59e0b;">* 神秘商店中機率出現「稀有、史詩、傳說」品質裝備，價格受品質倍率與等級雙重影響，且購買後該架位會完售！</p>
+          </div>
+
           <!-- SubTab: Inventory Panel -->
           <div class="rpg-panel" id="rpg-inventory-panel">
             <div class="inv-grid" id="inventoryContainer">
@@ -376,13 +434,21 @@
                   <button class="quest-go-btn btn-retreat" id="btnQuestRetreat" disabled>🏳️ 撤退</button>
                 </div>
               </div>
-              <div id="bossSelectRow" style="display:none; margin-top: 0.5rem;">
-                <select id="targetBoss">
-                  <option value="greed">👹 【貪】之巨獸 (高金幣)</option>
-                  <option value="anger">🔥 【嗔】之巨獸 (超高傷害)</option>
-                  <option value="ignorance">🦑 【癡】之巨獸 (混亂抗性)</option>
+              <div id="huntSelectRow" style="display:none; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <select id="targetHuntLevel">
+                  <option value="1">🐣 Lv.1 可愛史萊姆</option>
+                  <option value="2">🐣 Lv.2 野蠻哥布林</option>
+                  <option value="3">🐣 Lv.3 瘋狂野豬</option>
+                  <option value="4">⚔️ Lv.4 骷髏小兵</option>
+                  <option value="5">⚔️ Lv.5 森林半人馬</option>
+                  <option value="6">⚔️ Lv.6 地獄犬幼犬</option>
+                  <option value="7">🔥 Lv.7 熔岩蜥蜴</option>
+                  <option value="8">🔥 Lv.8 暗影刺客</option>
+                  <option value="9">🔥 Lv.9 狂暴雙頭魔</option>
+                  <option value="10">👑 Lv.10 超巨型史萊姆王 (終極試煉)</option>
                 </select>
               </div>
+
             </div>
           </div>
         </div>
@@ -435,7 +501,7 @@
           </div>
 
           <div class="velocity-meter">
-            <div class="meter-label">食指運動強度</div>
+            <div class="meter-label">詠唱施法進度</div>
             <div class="meter-track">
               <div class="meter-fill" id="velocityBar" style="width: 0%"></div>
             </div>
@@ -454,11 +520,12 @@
           <h2>ℹ️ 玩法說明</h2>
         </div>
         <ul class="rules-list">
-          <li>⚔️ **戰鬥手勢**：透過切換「布/拳/指」三種手勢來詠唱不同的戰鬥技能，消滅敵人！</li>
-          <li>🌳 **採集系統**：木頭與石頭在「採集」頁面中透過點擊或 AI 食指偵測進行手動採集。</li>
+          <li>⚔️ **戰鬥手勢**：透過搖晃或交替「布/拳/剪/指」手勢進行詠唱，施放強大法術！</li>
+          <li>🌳 **採集系統**：木頭與石頭純粹透過滑鼠或觸控點擊進行採集，回歸原始樂趣。</li>
           <li>🏗️ **建設系統**：在「營地」頁面點擊建設按鈕，自動生產食物、金屬、能源等資源。</li>
           <li>👥 **英雄調度**：在「調度」頁面管理英雄招募、裝備購買與背包管理。</li>
         </ul>
+
       </div>
     </aside>
   </main>
@@ -510,6 +577,7 @@
       </div>
       
       <button class="ctrl-btn" onclick="document.getElementById('examModal').style.display = 'none'" style="background: #ef4444;">放棄測驗</button>
+    </div>
   </div>
   
   <!-- Equip Choice Modal -->

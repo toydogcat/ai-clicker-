@@ -4,7 +4,7 @@ import gameConfig from "./config.json";
 // ==========================================
 // 1. Game State & Constants & DOM Management
 // ==========================================
-const state = {
+const DEFAULT_STATE = {
   wood: 0,
   stone: 0,
   food: 30,
@@ -27,11 +27,24 @@ const state = {
   population: [], // Array of individual resident objects
   bossInvasions: {}, // { greed: timestamp, anger: timestamp, ignorance: timestamp }
   tech: {
-    heroLicense: false
+    heroLicense: false,
+    huntLv4: false,
+    huntLv7: false,
+    secretLv4: false,
+    secretLv7: false
   },
   party: [],
-  inventory: []
+  inventory: [],
+  bossLevel: 1,
+  secretShop: {
+    items: [], // Stores current rack of secret items { item, cost, soldOut }
+    lastLevel: 1
+  }
 };
+
+const state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+window.state = state;
+
 
 
 // DOM References
@@ -108,14 +121,27 @@ const dispatchRpgCard = document.getElementById("dispatchRpgCard");
 const rpgLockOverlay = document.getElementById("rpgLockOverlay");
 const rpgUnlockedContent = document.querySelector(".rpg-unlocked-content");
 const btnTechHero = document.getElementById("btnTechHero");
+const techHeroStatusEl = document.getElementById("techHeroStatus");
+
+const btnTechHuntLv4 = document.getElementById("btnTechHuntLv4");
+const techHuntLv4StatusEl = document.getElementById("techHuntLv4Status");
+const btnTechHuntLv7 = document.getElementById("btnTechHuntLv7");
+const techHuntLv7StatusEl = document.getElementById("techHuntLv7Status");
+const btnTechSecretLv4 = document.getElementById("btnTechSecretLv4");
+const techSecretLv4StatusEl = document.getElementById("techSecretLv4Status");
+const btnTechSecretLv7 = document.getElementById("btnTechSecretLv7");
+const techSecretLv7StatusEl = document.getElementById("techSecretLv7Status");
+
 const researchCard = document.getElementById("researchCard");
 const knowledgeValEl = document.getElementById("knowledgeVal");
-const techHeroStatusEl = document.getElementById("techHeroStatus");
 const invCountEl = document.getElementById("invCount");
 const inventoryContainer = document.getElementById("inventoryContainer");
 const skillDock = document.getElementById("skillDock");
 const battleLogEl = document.getElementById("battleLog");
-
+const secretShopGrid = document.getElementById("secretShopGrid");
+const btnRefreshSecretShop = document.getElementById("btnRefreshSecretShop");
+const secretShopLevelSelect = document.getElementById("secretShopLevelSelect");
+const secretRefreshCostText = document.getElementById("secretRefreshCostText");
 
 // Mobile Tab DOM
 const navItems = document.querySelectorAll(".nav-item");
@@ -189,6 +215,23 @@ function loadGame() {
   }
 }
 
+function deepHydrate(target, source) {
+  if (!source) return;
+  Object.keys(target).forEach(key => {
+    if (source[key] === undefined) return; // Use existing default in target
+    
+    if (Array.isArray(target[key])) {
+      target[key] = JSON.parse(JSON.stringify(source[key]));
+    } else if (typeof target[key] === 'object' && target[key] !== null) {
+      if (typeof source[key] === 'object' && source[key] !== null) {
+        deepHydrate(target[key], source[key]);
+      }
+    } else {
+      target[key] = source[key];
+    }
+  });
+}
+
 function applySaveData(rawString) {
   try {
     const saveData = JSON.parse(rawString);
@@ -198,20 +241,34 @@ function applySaveData(rawString) {
       throw new Error("存檔資料損毀 (無 state 欄位)");
     }
 
-    // Deep merge — only restore known state keys
-    Object.keys(state).forEach(key => {
-      if (saved[key] !== undefined) {
-        if (typeof state[key] === 'object' && state[key] !== null) {
-          state[key] = JSON.parse(JSON.stringify(saved[key]));
-        } else {
-          state[key] = saved[key];
+    // First, restore current state entirely back to default schema defaults
+    const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    Object.keys(state).forEach(key => delete state[key]);
+    Object.assign(state, fresh);
+
+    // Recursively merge loaded state into the fresh default state
+    deepHydrate(state, saved);
+
+    // Backfill any missing resident-level fields for robust backward compatibility
+    if (Array.isArray(state.population)) {
+      state.population.forEach(p => {
+        if (!p.eq) p.eq = {};
+        if (!p.assignment) p.assignment = "idle";
+        if (!p.level) p.level = 1;
+        if (!p.exp) p.exp = 0;
+        if (!p.baseStats) {
+          p.baseStats = { hp: 100, mp: 20, atk: 10, def: 5, matk: 5, spd: 10 };
         }
-      }
-    });
+        // Ensure dynamic parameters exist
+        if (p.hp === undefined) p.hp = p.baseStats.hp;
+        if (p.mp === undefined) p.mp = p.baseStats.mp;
+      });
+    }
 
     // Restore UI from loaded state
     setGatherFocus(state.gatherFocus || 'wood');
     updateUI();
+    updateLevelSelectors();
 
     const date = new Date(saveData.timestamp);
     showToast(`📂 載入成功！（${date.toLocaleTimeString('zh-TW')}）`, "info");
@@ -223,19 +280,15 @@ function applySaveData(rawString) {
 function resetGame() {
   if (!confirm("確定要刪除存檔並重置遊戲嗎？\n（此操作無法復原）")) return;
   localStorage.removeItem(SAVE_KEY);
-  // Reset all state fields back to defaults matching the schema
-  state.wood = 0; state.stone = 0; state.food = 30;
-  state.metal = 0; state.energy = 0; state.money = 0; state.knowledge = 0;
-  state.workerLimit = 5; state.gatherFocus = 'wood';
-  Object.keys(state.buildings).forEach(k => state.buildings[k] = 0);
-  state.population = [];
-  state.bossInvasions = {};
-  state.tech = { heroLicense: false };
-  state.party = [];
-  state.inventory = [];
+  
+  const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  // Fully swap values while keeping reference intact
+  Object.keys(state).forEach(key => delete state[key]);
+  Object.assign(state, fresh);
   
   setGatherFocus('wood');
   updateUI();
+  updateLevelSelectors();
   showToast("🗑️ 已重置！重新開始！", "error");
 }
 
@@ -443,6 +496,54 @@ function updateUI() {
     } else {
       if (btnTechHero) btnTechHero.disabled = (state.knowledge < tCfg.reqKnowledge || state.money < tCfg.reqMoney);
       if (techHeroStatusEl) techHeroStatusEl.textContent = "未研發";
+    }
+
+    // Hunt Lv4
+    const hunt4Cfg = gameConfig.combat.tech.huntLv4;
+    if (state.tech.huntLv4) {
+      if (btnTechHuntLv4) btnTechHuntLv4.disabled = true;
+      if (techHuntLv4StatusEl) techHuntLv4StatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechHuntLv4) btnTechHuntLv4.disabled = (state.knowledge < hunt4Cfg.reqKnowledge || state.money < hunt4Cfg.reqMoney);
+      if (techHuntLv4StatusEl) techHuntLv4StatusEl.textContent = "未研發";
+    }
+
+    // Hunt Lv7
+    const hunt7Cfg = gameConfig.combat.tech.huntLv7;
+    if (state.tech.huntLv7) {
+      if (btnTechHuntLv7) btnTechHuntLv7.disabled = true;
+      if (techHuntLv7StatusEl) techHuntLv7StatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechHuntLv7) btnTechHuntLv7.disabled = (!state.tech.huntLv4 || state.knowledge < hunt7Cfg.reqKnowledge || state.money < hunt7Cfg.reqMoney);
+      if (techHuntLv7StatusEl) techHuntLv7StatusEl.textContent = !state.tech.huntLv4 ? "🔒 需前置" : "未研發";
+    }
+
+    // Secret Lv4
+    const sec4Cfg = gameConfig.combat.tech.secretLv4;
+    if (state.tech.secretLv4) {
+      if (btnTechSecretLv4) btnTechSecretLv4.disabled = true;
+      if (techSecretLv4StatusEl) techSecretLv4StatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechSecretLv4) btnTechSecretLv4.disabled = (state.knowledge < sec4Cfg.reqKnowledge || state.money < sec4Cfg.reqMoney);
+      if (techSecretLv4StatusEl) techSecretLv4StatusEl.textContent = "未研發";
+    }
+
+    // Secret Lv7
+    const sec7Cfg = gameConfig.combat.tech.secretLv7;
+    if (state.tech.secretLv7) {
+      if (btnTechSecretLv7) btnTechSecretLv7.disabled = true;
+      if (techSecretLv7StatusEl) techSecretLv7StatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechSecretLv7) btnTechSecretLv7.disabled = (!state.tech.secretLv4 || state.knowledge < sec7Cfg.reqKnowledge || state.money < sec7Cfg.reqMoney);
+      if (techSecretLv7StatusEl) techSecretLv7StatusEl.textContent = !state.tech.secretLv4 ? "🔒 需前置" : "未研發";
+    }
+    // Update Quest Boss Button Text matching sequential levels
+    const btnQuestBoss = document.getElementById("btnQuestBoss");
+    if (btnQuestBoss) {
+      const bLvl = state.bossLevel || 1;
+      const bossNames = ["【貪】", "【貪 嗔】", "【貪 嗔 癡】"];
+      const bName = bossNames[Math.min(3, bLvl) - 1] || bossNames[0];
+      btnQuestBoss.textContent = `💀 挑戰巨獸 Lv.${bLvl} ${bName}`;
     }
   } else {
     if (researchCard) researchCard.style.display = "none";
@@ -659,15 +760,21 @@ function gameTick() {
 // Tab switching inside RPG Guild
 document.querySelectorAll(".rpg-sub-tab").forEach(tabBtn => {
   tabBtn.addEventListener("click", () => {
-    document.querySelectorAll(".rpg-sub-tab").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".rpg-panel").forEach(p => p.classList.remove("active"));
+    const container = tabBtn.closest(".glass-card, .rpg-unlocked-content");
+    if (!container) return;
+    
+    container.querySelectorAll(".rpg-sub-tab").forEach(b => b.classList.remove("active"));
+    container.querySelectorAll(".rpg-panel").forEach(p => p.classList.remove("active"));
+    
     tabBtn.classList.add("active");
     const panelId = `rpg-${tabBtn.dataset.rpgTab}`;
-    const panel = document.getElementById(panelId);
+    const panel = container.querySelector(`#${panelId}`);
     if (panel) panel.classList.add("active");
     
     if (tabBtn.dataset.rpgTab === "inventory-panel") {
       renderInventory();
+    } else if (tabBtn.dataset.rpgTab === "secret-shop") {
+      renderSecretShop();
     }
   });
 });
@@ -788,41 +895,88 @@ function renderPopulationRoster() {
     row.className = "job-row";
     row.style = "padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;";
     
-    let assignOptions = `<option value="idle" ${p.assignment === 'idle' ? 'selected' : ''}>閒置</option>`;
-    if (p.jobClass === "novice") {
-      assignOptions += `
-        <option value="woodcutter" ${p.assignment === 'woodcutter' ? 'selected' : ''}>伐木</option>
-        <option value="miner" ${p.assignment === 'miner' ? 'selected' : ''}>採礦</option>
-        <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕</option>
-        <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商</option>
-        ${state.buildings.school > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
+    if (p.assignment === "hospital") {
+      // HOSPITAL RENDER LOGIC
+      const reviveCost = p.level * 10;
+      const canAfford = state.money >= reviveCost;
+      
+      row.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="job-title" style="font-size: 1.1rem; color: #94a3b8; text-decoration: line-through;">${p.name} (Lv.${p.level})</span>
+            <span style="margin-left:0.5rem; color:#ef4444; font-weight:bold; font-size: 0.85rem; display: flex; align-items: center; gap: 3px;">🏥 搶救治療中</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.1); padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(239,68,68,0.25);">
+          <span style="font-size: 0.8rem; color: #fca5a5;">⚠️ 0 / ${calcEffStats(p)?.maxHp || 10} HP</span>
+          <button class="ctrl-btn" style="background: ${canAfford ? '#10b981' : '#4b5563'}; color: white; font-weight:bold; border-radius:4px; cursor: ${canAfford ? 'pointer' : 'not-allowed'};" 
+            onclick="reviveHero('${p.id}')" ${canAfford ? '' : 'disabled'}>
+            💖 付費急救 (💰${reviveCost})
+          </button>
+        </div>
+      `;
+    } else {
+      // NORMAL RENDER LOGIC
+      let assignOptions = `<option value="idle" ${p.assignment === 'idle' ? 'selected' : ''}>閒置</option>`;
+      if (p.jobClass === "novice") {
+        assignOptions += `
+          <option value="woodcutter" ${p.assignment === 'woodcutter' ? 'selected' : ''}>伐木</option>
+          <option value="miner" ${p.assignment === 'miner' ? 'selected' : ''}>採礦</option>
+          <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕</option>
+          <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商</option>
+          ${state.buildings.school > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
+        `;
+      }
+      assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
+
+      row.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="job-title" style="font-size: 1.1rem; color: #e2e8f0;">${p.name} (Lv.${p.level})</span>
+            ${promoteHTML}
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px;">
+          <span style="font-size: 0.8rem; color: #94a3b8;">當前指派：</span>
+          <select onchange="changeResidentAssignment('${p.id}', this.value)" class="job-select" style="padding: 0.2rem; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px;">
+            ${assignOptions}
+          </select>
+        </div>
       `;
     }
-    assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
-
-    row.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span class="job-title" style="font-size: 1.1rem; color: #e2e8f0;">${p.name} (Lv.${p.level})</span>
-          ${promoteHTML}
-        </div>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px;">
-        <span style="font-size: 0.8rem; color: #94a3b8;">當前指派：</span>
-        <select onchange="changeResidentAssignment('${p.id}', this.value)" class="job-select" style="padding: 0.2rem; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px;">
-          ${assignOptions}
-        </select>
-      </div>
-    `;
+    
     populationRoster.appendChild(row);
   });
 }
 
+window.reviveHero = function(id) {
+  const p = state.population.find(r => r.id === id);
+  if (!p) return;
+  
+  const reviveCost = p.level * 10;
+  if (state.money < reviveCost) {
+    showToast("❌ 國庫資金不足，支付不起急診費！", "error");
+    return;
+  }
+  
+  state.money -= reviveCost;
+  p.assignment = 'idle'; // Rescued back to camp
+  const eff = calcEffStats(p);
+  if (eff) p.hp = eff.maxHp; // Restore HP
+  
+  showToast(`💖 聖光醫治成功！${p.name} 傷癒歸隊並返回營地！`, "success");
+  updateUI();
+};
+
 window.changeResidentAssignment = function(id, newAssignment) {
   const p = state.population.find(r => r.id === id);
   if (p) {
+    // Hospitalized can't be reassigned normally
+    if (p.assignment === 'hospital') return;
+    
     if (newAssignment === 'combat') {
       const combatants = state.population.filter(r => r.assignment === 'combat');
+
       if (combatants.length >= 4 && p.assignment !== 'combat') {
         showToast("出征隊伍已滿 (上限4人)！", "error");
         updateUI();
@@ -1050,6 +1204,222 @@ document.querySelectorAll(".buy-eq-btn").forEach(btn => {
     updateUI();
   });
 });
+
+// --- Secret Shop Management ---
+function getSecretRefreshCost(level) {
+  const baseCost = gameConfig.eqSpecs.price[level] || 100;
+  return Math.max(200, Math.floor(baseCost * 0.2));
+}
+
+function getSecretShopPrice(level, rarity) {
+  const basePrice = gameConfig.eqSpecs.price[level] || 100;
+  const mults = { normal: 1.2, magic: 2.5, rare: 6.0, epic: 18.0, legend: 50.0 };
+  const m = mults[rarity] || 1;
+  return Math.floor(basePrice * m * 1.5);
+}
+
+function rollSecretShop(isInit = false) {
+  const level = secretShopLevelSelect ? parseInt(secretShopLevelSelect.value) : 1;
+  state.secretShop.lastLevel = level;
+  const items = [];
+  
+  const slots = Object.keys(gameConfig.eqSpecs.slots);
+  
+  // Spawns 6 items
+  for (let i = 0; i < 6; i++) {
+    // Rolled rarity weights
+    let rarity = "normal";
+    const roll = Math.random();
+    if (roll < 0.05) rarity = "legend"; // 5%
+    else if (roll < 0.15) rarity = "epic";   // 10%
+    else if (roll < 0.40) rarity = "rare";   // 25%
+    else if (roll < 0.80) rarity = "magic";  // 40%
+    else rarity = "normal";                  // 20%
+    
+    const slot = slots[Math.floor(Math.random() * slots.length)];
+    const generated = generateItem(level, rarity, slot);
+    const price = getSecretShopPrice(level, rarity);
+    
+    items.push({
+      uid: "secret_" + Date.now() + "_" + i + "_" + Math.floor(Math.random() * 1000),
+      item: generated,
+      cost: price,
+      soldOut: false
+    });
+  }
+  state.secretShop.items = items;
+  
+  if (!isInit) {
+    showToast("✨ 神秘商店商品已重新進貨！", "success");
+  }
+}
+function updateLevelSelectors() {
+  // 1. Update targetHuntLevel dropdown options
+  const targetHuntLevelEl = document.getElementById("targetHuntLevel");
+  if (targetHuntLevelEl) {
+    const currentVal = targetHuntLevelEl.value;
+    targetHuntLevelEl.innerHTML = "";
+    
+    const allHuntOptions = [
+      { v: 1, t: "🐣 Lv.1 可愛史萊姆" },
+      { v: 2, t: "🐣 Lv.2 野蠻哥布林" },
+      { v: 3, t: "🐣 Lv.3 瘋狂野豬" },
+      { v: 4, t: "⚔️ Lv.4 骷髏小兵" },
+      { v: 5, t: "⚔️ Lv.5 森林半人馬" },
+      { v: 6, t: "⚔️ Lv.6 地獄犬幼犬" },
+      { v: 7, t: "🔥 Lv.7 熔岩蜥蜴" },
+      { v: 8, t: "🔥 Lv.8 暗影刺客" },
+      { v: 9, t: "🔥 Lv.9 狂暴雙頭魔" },
+      { v: 10, t: "👑 Lv.10 超巨型史萊姆王 (終極試煉)" }
+    ];
+    
+    let maxHunt = 3;
+    if (state.tech.huntLv7) maxHunt = 10;
+    else if (state.tech.huntLv4) maxHunt = 6;
+    
+    for (let i = 0; i < maxHunt; i++) {
+      const opt = document.createElement("option");
+      opt.value = allHuntOptions[i].v;
+      opt.textContent = allHuntOptions[i].t;
+      targetHuntLevelEl.appendChild(opt);
+    }
+    
+    // Try to restore selection if valid
+    if (parseInt(currentVal) <= maxHunt) {
+      targetHuntLevelEl.value = currentVal;
+    } else {
+      targetHuntLevelEl.value = 1;
+    }
+  }
+  
+  // 2. Update secretShopLevelSelect dropdown options
+  if (secretShopLevelSelect) {
+    const currentVal = secretShopLevelSelect.value;
+    secretShopLevelSelect.innerHTML = "";
+    
+    let maxSecret = 3;
+    if (state.tech.secretLv7) maxSecret = 7;
+    else if (state.tech.secretLv4) maxSecret = 5;
+    
+    for (let i = 1; i <= maxSecret; i++) {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `Lv ${i} 等級貨架`;
+      secretShopLevelSelect.appendChild(opt);
+    }
+    
+    // Try to restore selection if valid
+    if (parseInt(currentVal) <= maxSecret) {
+      secretShopLevelSelect.value = currentVal;
+    } else {
+      secretShopLevelSelect.value = 1;
+    }
+  }
+}
+
+
+window.renderSecretShop = function() {
+  if (!secretShopGrid) return;
+  secretShopGrid.innerHTML = "";
+  
+  const curLevel = secretShopLevelSelect ? parseInt(secretShopLevelSelect.value) : 1;
+  const refreshCost = getSecretRefreshCost(curLevel);
+  if (secretRefreshCostText) secretRefreshCostText.textContent = `💰 ${refreshCost}`;
+  
+  // If items list is empty, auto-roll one!
+  if (!state.secretShop.items || state.secretShop.items.length === 0) {
+    rollSecretShop(true);
+  }
+  
+  state.secretShop.items.forEach(entry => {
+    const { item, cost, soldOut } = entry;
+    const rSpec = gameConfig.eqSpecs.rarities[item.rarity];
+    const rColor = rSpec.color;
+    
+    const card = document.createElement("div");
+    card.className = `secret-item-card ${soldOut ? "sold-out" : ""}`;
+    card.style.borderColor = `${rColor}50`;
+    
+    // Icon and tags
+    const icon = getSlotIcon(item.slot);
+    
+    // Generate stats HTML strings
+    let statsHtml = `<div class="secret-item-main-stat">+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}</div>`;
+    Object.entries(item.extras).forEach(([key, val]) => {
+      statsHtml += `<div class="secret-item-extra-stat">+ ${gameConfig.eqSpecs.statNames[key]}: ${val}${key.includes('lifesteal') ? '%' : ''}</div>`;
+    });
+    
+    card.innerHTML = `
+      <div class="secret-item-title-row">
+        <div class="secret-item-icon">${icon}</div>
+        <div class="secret-item-header-info">
+          <div class="secret-item-name" style="color: ${rColor}; text-shadow: 0 0 6px ${rColor}20;">${item.name}</div>
+          <div class="secret-item-badge" style="color: ${rColor}; border-color: ${rColor}80;">${rSpec.name}</div>
+        </div>
+      </div>
+      <div class="secret-item-stats">
+        ${statsHtml}
+      </div>
+      <button class="secret-item-buy-btn" style="border-color: ${rColor}60;">
+        💰 ${cost.toLocaleString()} 購買
+      </button>
+    `;
+    
+    // Attach buy handler if not sold out
+    if (!soldOut) {
+      const buyBtn = card.querySelector(".secret-item-buy-btn");
+      buyBtn.addEventListener("click", () => {
+        if (state.money < cost) {
+          showToast("💰 金幣不足，買不起這件神裝！", "error");
+          return;
+        }
+        if (state.inventory.length >= 24) {
+          showToast("🎒 背包已滿，裝不下了！", "error");
+          return;
+        }
+        
+        // Deduct cost and deliver item
+        state.money -= cost;
+        entry.soldOut = true;
+        state.inventory.push(item);
+        
+        showToast(`🎉 成功入手極品裝備 [${item.name}]！`, "success");
+        renderSecretShop();
+        renderInventory();
+        updateUI();
+      });
+    }
+    
+    secretShopGrid.appendChild(card);
+  });
+};
+
+// Refresh button handler
+if (btnRefreshSecretShop) {
+  btnRefreshSecretShop.addEventListener("click", () => {
+    const level = parseInt(secretShopLevelSelect.value);
+    const cost = getSecretRefreshCost(level);
+    
+    if (state.money < cost) {
+      showToast(`💰 餘額不足！刷新貨架需要 ${cost} 金幣。`, "error");
+      return;
+    }
+    
+    state.money -= cost;
+    rollSecretShop(false);
+    renderSecretShop();
+    updateUI();
+  });
+}
+
+// Refresh cost update on selector change
+if (secretShopLevelSelect) {
+  secretShopLevelSelect.addEventListener("change", () => {
+    const level = parseInt(secretShopLevelSelect.value);
+    const cost = getSecretRefreshCost(level);
+    if (secretRefreshCostText) secretRefreshCostText.textContent = `💰 ${cost}`;
+  });
+}
 
 // hireHero is replaced by the population system (招募居民 → 轉職)
 // This stub is kept for backward compatibility but does nothing dangerous
@@ -1297,8 +1667,12 @@ function updateHeroSheets() {
     if (partyGroup && p.assignment === 'combat') {
       const effStats = calcEffStats(p);
       const unit = document.createElement("div");
-      unit.className = "combat-unit";
+      
+      const isFocused = combatState.focusedHeroId === p.id;
+      unit.className = `combat-unit ${isFocused ? 'focused-hero' : ''}`;
       unit.id = `unit-${p.id}`;
+      unit.style.cursor = p.hp > 0 ? "pointer" : "not-allowed";
+      
       // Initialize combat temp stats if not present
       if (typeof p.hp === 'undefined') { p.hp = effStats.maxHp; }
       if (typeof p.mp === 'undefined') { p.mp = effStats.maxMp; }
@@ -1307,8 +1681,9 @@ function updateHeroSheets() {
       p.mp = Math.min(p.mp, effStats.maxMp);
 
       unit.innerHTML = `
+        ${isFocused ? '<span class="combat-focus-badge" title="正在控制此英雄施展手勢法術">🎯</span>' : ''}
         <div class="unit-header">
-          <span class="unit-name">${p.name} Lv.<span id="b-${p.id}-lv">${p.level}</span></span>
+          <span class="unit-name" style="${isFocused ? 'color:#facc15; font-weight:bold;' : ''}">${p.name} Lv.<span id="b-${p.id}-lv">${p.level}</span></span>
         </div>
         <div class="stat-bars">
           <div class="bar-wrapper"><div class="bar-fill bg-hp" id="b-${p.id}-hp-bar" style="width:${(p.hp/effStats.maxHp)*100}%"></div><span class="bar-text" id="b-${p.id}-hp-val">${Math.floor(p.hp)}/${effStats.maxHp}</span></div>
@@ -1316,8 +1691,21 @@ function updateHeroSheets() {
           <div class="bar-wrapper atb-wrapper"><div class="bar-fill bg-atb" id="b-${p.id}-atb-bar" style="width:0%"></div></div>
         </div>
       `;
+      
+      // Handle clicking to focus this hero for spellcasting
+      unit.onclick = () => {
+        if (p.hp <= 0) {
+          showToast("❌ 無法控制已倒下的英雄！", "error");
+          return;
+        }
+        combatState.focusedHeroId = p.id;
+        showToast(`🎯 戰術指示：全力輔助【${p.name}】進行詠唱！`, "info");
+        updateHeroSheets(); // Redraw to reflect the focused ring immediately!
+      };
+
       partyGroup.appendChild(unit);
     }
+
   });
 }
 
@@ -1330,8 +1718,10 @@ let combatState = {
   target: "cute_mobs", // cute_mobs or boss_id
   bossType: "greed",
   enemy: null, // currently fighting object
-  party: [] // keys like "warrior", "mage"
+  party: [], // keys like "warrior", "mage"
+  focusedHeroId: null // UID of the hero targeted/controlled by user
 };
+
 
 function logBattle(msg, cssClass="") {
   if (!battleLogEl) return;
@@ -1343,15 +1733,24 @@ function logBattle(msg, cssClass="") {
 }
 
 // Start Hunting!
-document.getElementById("btnQuestHunt")?.addEventListener("click", () => startQuest("hunt"));
-document.getElementById("btnQuestBoss")?.addEventListener("click", () => {
-  const bossSelectRow = document.getElementById("bossSelectRow");
-  if (bossSelectRow.style.display === "none") {
-    bossSelectRow.style.display = "block";
-    showToast("👹 選擇魔王後，再次點擊確認出征！", "info");
+document.getElementById("btnQuestHunt")?.addEventListener("click", () => {
+  const huntSelectRow = document.getElementById("huntSelectRow");
+  if (huntSelectRow.style.display === "none") {
+    huntSelectRow.style.display = "block";
+    // Close boss row to avoid clutter
+    const bossSelectRow = document.getElementById("bossSelectRow");
+    if (bossSelectRow) bossSelectRow.style.display = "none";
+    showToast("⚔️ 選擇討伐等級後，再次點擊確認出征！", "info");
   } else {
-    startQuest("boss");
+    startQuest("hunt");
   }
+});
+
+document.getElementById("btnQuestBoss")?.addEventListener("click", () => {
+  // Close hunt row to keep UI tidy, and launch boss battle immediately
+  const huntSelectRow = document.getElementById("huntSelectRow");
+  if (huntSelectRow) huntSelectRow.style.display = "none";
+  startQuest("boss");
 });
 document.getElementById("btnQuestRetreat")?.addEventListener("click", stopQuest);
 
@@ -1367,10 +1766,14 @@ function startQuest(type) {
   
   combatState.active = true;
   combatState.target = type;
-  combatState.bossType = document.getElementById("targetBoss") ? document.getElementById("targetBoss").value : "greed";
+  
+  // Read user selected hunt level
+  const huntLvlEl = document.getElementById("targetHuntLevel");
+  combatState.huntLevel = huntLvlEl ? parseInt(huntLvlEl.value) : 1;
+
   combatState.party = combatParty.map(p => p.id);
   
-  // Reset dynamic fight parameters
+  // Reset dynamic fight parameters for the selected party
   combatParty.forEach(p => {
     const eff = calcEffStats(p);
     p.hp = eff.maxHp;
@@ -1378,7 +1781,11 @@ function startQuest(type) {
     p.atb = 0;
   });
   
+  // Auto-select the first hero in combat party as default spell caster focus
+  combatState.focusedHeroId = combatParty[0].id;
+  
   spawnEnemy();
+
   
   const btnQuestHunt = document.getElementById("btnQuestHunt");
   if (btnQuestHunt) btnQuestHunt.disabled = true;
@@ -1400,6 +1807,16 @@ function stopQuest() {
   if (combatInterval) clearInterval(combatInterval);
   combatInterval = null;
   
+  // --- 🏥 Hospital System Check ---
+  // Any hero with HP <= 0 is automatically hospitalized and removed from assignment!
+  const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+  combatParty.forEach(p => {
+    if (p.hp <= 0) {
+      p.assignment = "hospital";
+      logBattle(`🏥 急診警告：英雄【${p.name}】重傷倒地，已由野戰擔架送往醫院搶救！`, "log-item-dmg");
+    }
+  });
+  
   const btnQuestHunt = document.getElementById("btnQuestHunt");
   if (btnQuestHunt) btnQuestHunt.disabled = false;
   const btnQuestBoss = document.getElementById("btnQuestBoss");
@@ -1407,6 +1824,12 @@ function stopQuest() {
   const btnQuestRetreat = document.getElementById("btnQuestRetreat");
   if (btnQuestRetreat) btnQuestRetreat.disabled = true;
   
+  // Hide selections
+  const huntSelectRow = document.getElementById("huntSelectRow");
+  if (huntSelectRow) huntSelectRow.style.display = "none";
+  const bossSelectRow = document.getElementById("bossSelectRow");
+  if (bossSelectRow) bossSelectRow.style.display = "none";
+
   skillDock.style.display = "none";
   
   const enemyGroup = document.getElementById("enemyGroup");
@@ -1416,12 +1839,19 @@ function stopQuest() {
   updateUI();
 }
 
+
 function spawnEnemy() {
   let avgLvl = 1;
-  let total = 0;
-  const combatParty = state.population.filter(p => combatState.party.includes(p.id));
-  combatParty.forEach(p => total += p.level);
-  if(combatParty.length > 0) avgLvl = Math.ceil(total / combatParty.length);
+  if (combatState.target === "hunt") {
+    avgLvl = combatState.huntLevel || 1; // Use the manual player selected level!
+  } else {
+    // For boss battles, still auto-scale to average level of party
+    let total = 0;
+    const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+    combatParty.forEach(p => total += p.level);
+    if(combatParty.length > 0) avgLvl = Math.ceil(total / combatParty.length);
+  }
+
   
   combatState.enemies = [];
   const enemyGroup = document.getElementById("enemyGroup");
@@ -1457,16 +1887,27 @@ function spawnEnemy() {
       });
     }
   } else {
-    // Spawn 1 Boss + 2 Minions? Or just 1 Boss for now
-    const bType = combatState.bossType;
-    const bossCfg = gameConfig.combat.bosses[bType];
-    if (bossCfg) {
-      combatState.enemies.push({
-        ...JSON.parse(JSON.stringify(bossCfg)),
-        id: 'enemy-boss',
-        atb: 0,
-        isBoss: true
-      });
+    // Spawn multiple Bosses sequentially matching current state.bossLevel (1 to 3)
+    // Lv 1 -> greed, Lv 2 -> greed + anger, Lv 3 -> greed + anger + ignorance!
+    const bLevel = state.bossLevel || 1;
+    const roster = [
+      { key: "greed", id: "enemy-boss-greed" },
+      { key: "anger", id: "enemy-boss-anger" },
+      { key: "ignorance", id: "enemy-boss-ignorance" }
+    ];
+    
+    const count = Math.min(3, bLevel);
+    for (let i = 0; i < count; i++) {
+      const bType = roster[i].key;
+      const bossCfg = gameConfig.combat.bosses[bType];
+      if (bossCfg) {
+        combatState.enemies.push({
+          ...JSON.parse(JSON.stringify(bossCfg)),
+          id: roster[i].id,
+          atb: 0,
+          isBoss: true
+        });
+      }
     }
   }
   
@@ -1609,7 +2050,20 @@ function enemyExecuteAttack(enemy) {
   const dmg = Math.max(1, enemy.atk - eff.def);
   target.hp = Math.max(0, target.hp - dmg);
   
+  // If the user-focused hero died, automatically shift control to the next alive hero
+  if (target.id === combatState.focusedHeroId && target.hp <= 0) {
+    const remainingAlive = alive.filter(p => p.id !== target.id);
+    if (remainingAlive.length > 0) {
+      combatState.focusedHeroId = remainingAlive[0].id;
+      logBattle(`📣【戰場廣播】對焦英雄【${target.name}】不幸倒地！詠唱輔助轉移至【${remainingAlive[0].name}】！`, "log-item-atb");
+      updateHeroSheets();
+    } else {
+      combatState.focusedHeroId = null;
+    }
+  }
+  
   logBattle(`👾 ${enemy.name} 發動攻擊，${target.name} 受到 <b class="log-item-dmg">${dmg}</b> 傷害。`);
+
   
   // Flash animation
   const pEl = document.getElementById(`prof-${target.id}`);
@@ -1637,6 +2091,8 @@ function checkBattleResolution() {
     });
     
     state.money += totalMoney;
+    const moneyCap = gameConfig.economy.baseMoneyCap + (state.buildings.bank * gameConfig.economy.bankMoneyBonus);
+    if (state.money > moneyCap) state.money = moneyCap;
     combatParty.forEach(p => {
       p.exp += totalExp;
       
@@ -1683,6 +2139,26 @@ function checkBattleResolution() {
       }, 1500);
     } else if (combatState.target === "boss" || combatState.enemies.some(e=>e.isBoss)) {
       logBattle(`👑 史詩成就！你討伐了古老的巨獸，城鎮的危機解除！`, "log-item-drop");
+      
+      // Sequential Level Unlock: If current boss level is defeated, advance it!
+      const prevLevel = state.bossLevel || 1;
+      if (state.bossLevel < 3) {
+        state.bossLevel++;
+        showToast(`🏆 討伐成就解鎖！下一階段挑戰已擴增至 Lv.${state.bossLevel}！`, "success");
+      } else {
+        showToast("🏆 你已成功擊破終極試煉所有巨獸！城鎮的英雄們載歌載舞！", "success");
+      }
+      
+      // Flag matching boss keys as defeated based on previous level
+      const bossMap = ["greed", "anger", "ignorance"];
+      for (let i = 0; i < Math.min(3, prevLevel); i++) {
+        const bName = bossMap[i];
+        if (bName) {
+          state.bossInvasions[bName + 'Defeated'] = true;
+          delete state.bossInvasions[bName]; // Stop active invasion timer
+        }
+      }
+      
       stopQuest();
     }
     
@@ -1889,14 +2365,70 @@ btnTechHero?.addEventListener("click", () => {
   }
 });
 
-// Bind Dispatch Ctrl Buttons
-document.querySelectorAll(".ctrl-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const job = btn.getAttribute("data-job");
-    const isPlus = btn.classList.contains("btn-plus");
-    adjustJob(job, isPlus ? 1 : -1);
-  });
+btnTechHuntLv4?.addEventListener("click", () => {
+  if (state.tech.huntLv4) return;
+  const tCfg = gameConfig.combat.tech.huntLv4;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.huntLv4 = true;
+    spawnFloatingText("🎓 戰場開拓 I 已研發!", "#60a5fa");
+    showToast("⚔️ 解鎖【戰場開拓 I】！討伐上限開放至 Lv.6！", "success");
+    updateLevelSelectors();
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
 });
+
+btnTechHuntLv7?.addEventListener("click", () => {
+  if (state.tech.huntLv7 || !state.tech.huntLv4) return;
+  const tCfg = gameConfig.combat.tech.huntLv7;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.huntLv7 = true;
+    spawnFloatingText("🎓 戰場開拓 II 已研發!", "#60a5fa");
+    showToast("🔥 解鎖【戰場開拓 II】！討伐等級上限完美開放至 Lv.10！", "success");
+    updateLevelSelectors();
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechSecretLv4?.addEventListener("click", () => {
+  if (state.tech.secretLv4) return;
+  const tCfg = gameConfig.combat.tech.secretLv4;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.secretLv4 = true;
+    spawnFloatingText("🎓 神秘特許證 I 已研發!", "#60a5fa");
+    showToast("🔮 解鎖【神秘特許證 I】！神秘商店貨架等級擴充至 Lv.5！", "success");
+    updateLevelSelectors();
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechSecretLv7?.addEventListener("click", () => {
+  if (state.tech.secretLv7 || !state.tech.secretLv4) return;
+  const tCfg = gameConfig.combat.tech.secretLv7;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.secretLv7 = true;
+    spawnFloatingText("🎓 神秘特許證 II 已研發!", "#60a5fa");
+    showToast("👑 解鎖【神秘特許證 II】！神秘商店終極貨架等級全開至 Lv.7！", "success");
+    updateLevelSelectors();
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
 
 // Hook Up Responsive Tab Click Handlers
 navItems.forEach(btn => {
@@ -2001,7 +2533,7 @@ webcamToggleBtn.addEventListener("click", async () => {
         statusText.innerText = "偵測進行中";
         statusDot.classList.add("active");
         predictLoop();
-      });
+      }, { once: true });
     } catch (err) {
       console.error("Camera Error:", err);
       statusText.innerText = "相機存取錯誤";
@@ -2011,57 +2543,408 @@ webcamToggleBtn.addEventListener("click", async () => {
 });
 
 // ==========================================
-// 3. Finger Motion Vector tracking
+// 3. Gesture Classification & Chanting Engine
 // ==========================================
 
 let lastVideoTime = -1;
 let results = undefined;
 
-// Position tracking state
-let prevIndexTip = null; // Stores {x, y} of Landmark 8 in previous frame
-let accumulatedMotion = 0; // Accumulated distance
-const CLICK_THRESHOLD = 0.22; // Total distance accumulation that triggers a click
-const MOTION_DECAY = 0.92; // Natural slowing down per frame
+let chantState = {
+  skill1: 0, // index shake
+  skill2: 0, // scissors shake
+  skill3: 0, // scissor-rock alternate
+  skill4: 0, // rock-paper alternate
+  
+  s1LastX: null,
+  s1Direction: 0, // 0: idle, -1: left, 1: right
+  
+  s2LastX: null,
+  s2Direction: 0,
+  
+  s3LastGesture: null,
+  s4LastGesture: null,
+  
+  lastUpdateTime: Date.now()
+};
 
-function processHandMotion(landmarks) {
-  // Landmark 8 is the Index Finger Tip
-  const indexTip = landmarks[8];
+const SHAKE_DIST_THRESHOLD = 0.04; // Normalized distance trigger (~25px on 640 width)
+
+function resetChantState() {
+  chantState.skill1 = 0;
+  chantState.skill2 = 0;
+  chantState.skill3 = 0;
+  chantState.skill4 = 0;
+  chantState.s1LastX = null;
+  chantState.s1Direction = 0;
+  chantState.s2LastX = null;
+  chantState.s2Direction = 0;
+  chantState.s3LastGesture = null;
+  chantState.s4LastGesture = null;
+}
+
+function classifyHand(landmarks) {
+  // Compare fingertips (Tip.y) to the knuckle joints (PIP.y)
+  // Image top is Y=0, bottom is Y=1. Finger extended = Tip.y < PIP.y.
+  const indexExtended = landmarks[8].y < landmarks[6].y;
+  const middleExtended = landmarks[12].y < landmarks[10].y;
+  const ringExtended = landmarks[16].y < landmarks[14].y;
+  const pinkyExtended = landmarks[20].y < landmarks[18].y;
+
+  if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+    return "INDEX";
+  } else if (indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+    return "SCISSORS";
+  } else if (!indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+    return "ROCK";
+  } else if (indexExtended && middleExtended && ringExtended && pinkyExtended) {
+    return "PAPER";
+  }
+  return "OTHER";
+}
+
+// Core Spell Chanting Processor
+function processHandSpell(landmarks) {
+  const gesture = classifyHand(landmarks);
+  const wristX = landmarks[0].x; // Track movement centering around the wrist x position
   
-  if (prevIndexTip) {
-    // Calculate 2D Euclidean Distance delta
-    const dx = indexTip.x - prevIndexTip.x;
-    const dy = indexTip.y - prevIndexTip.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    
-    // Filter out micro-tremors or tiny shifts (noise reduction)
-    if (dist > 0.005) {
-      accumulatedMotion += dist;
+  chantState.lastUpdateTime = Date.now();
+
+  if (gesture === "INDEX") {
+    // 1. Track Index Shake
+    if (chantState.s1LastX === null) {
+      chantState.s1LastX = wristX;
+    } else {
+      const diff = wristX - chantState.s1LastX;
+      if (chantState.s1Direction === 0) {
+        if (Math.abs(diff) > SHAKE_DIST_THRESHOLD) {
+          chantState.s1Direction = diff > 0 ? 1 : -1;
+          chantState.skill1++;
+          chantState.s1LastX = wristX;
+        }
+      } else if (chantState.s1Direction === 1 && diff < -SHAKE_DIST_THRESHOLD) {
+        chantState.s1Direction = -1;
+        chantState.skill1++;
+        chantState.s1LastX = wristX;
+      } else if (chantState.s1Direction === -1 && diff > SHAKE_DIST_THRESHOLD) {
+        chantState.s1Direction = 1;
+        chantState.skill1++;
+        chantState.s1LastX = wristX;
+      }
     }
-  }
-  
-  // Apply decay to stabilize meter and reward constant motion
-  accumulatedMotion *= MOTION_DECAY;
-  if (accumulatedMotion < 0) accumulatedMotion = 0;
-  
-  // Render intensity onto meter (normalize threshold to visual 0-100%)
-  const visualPercent = Math.min((accumulatedMotion / CLICK_THRESHOLD) * 100, 100);
-  velocityBar.style.width = `${visualPercent}%`;
-  
-  // Trigger Action if user moves index finger rapidly enough
-  if (accumulatedMotion >= CLICK_THRESHOLD) {
-    performClick();
-    accumulatedMotion = 0; // Reset meter after a successful trigger
     
-    // Flash the meter briefly for impact
-    velocityBar.style.backgroundColor = "#ffffff";
-    setTimeout(() => velocityBar.style.backgroundColor = "", 100);
+    // Reset unrelated chanting processes
+    chantState.skill2 = 0; chantState.skill3 = 0; chantState.skill4 = 0;
+    chantState.s2LastX = null; chantState.s2Direction = 0;
+    chantState.s3LastGesture = null; chantState.s4LastGesture = null;
+    
+  } else if (gesture === "SCISSORS") {
+    // 2. Track Scissors Shake
+    if (chantState.s2LastX === null) {
+      chantState.s2LastX = wristX;
+    } else {
+      const diff = wristX - chantState.s2LastX;
+      if (chantState.s2Direction === 0) {
+        if (Math.abs(diff) > SHAKE_DIST_THRESHOLD) {
+          chantState.s2Direction = diff > 0 ? 1 : -1;
+          chantState.skill2++;
+          chantState.s2LastX = wristX;
+        }
+      } else if (chantState.s2Direction === 1 && diff < -SHAKE_DIST_THRESHOLD) {
+        chantState.s2Direction = -1;
+        chantState.skill2++;
+        chantState.s2LastX = wristX;
+      } else if (chantState.s2Direction === -1 && diff > SHAKE_DIST_THRESHOLD) {
+        chantState.s2Direction = 1;
+        chantState.skill2++;
+        chantState.s2LastX = wristX;
+      }
+    }
+    
+    // 3. Track Scissors ↔ Rock Alternate
+    if (chantState.s3LastGesture === null) {
+      chantState.s3LastGesture = "SCISSORS";
+    } else if (chantState.s3LastGesture === "ROCK") {
+      chantState.s3LastGesture = "SCISSORS";
+      chantState.skill3++;
+    }
+    
+    // Reset incompatible systems
+    chantState.skill1 = 0; chantState.skill4 = 0;
+    chantState.s1LastX = null; chantState.s1Direction = 0;
+    chantState.s4LastGesture = null;
+    
+  } else if (gesture === "ROCK") {
+    // 3. Track Scissors ↔ Rock Alternate
+    if (chantState.s3LastGesture === null) {
+      chantState.s3LastGesture = "ROCK";
+    } else if (chantState.s3LastGesture === "SCISSORS") {
+      chantState.s3LastGesture = "ROCK";
+      chantState.skill3++;
+    }
+    
+    // 4. Track Rock ↔ Paper Alternate
+    if (chantState.s4LastGesture === null) {
+      chantState.s4LastGesture = "ROCK";
+    } else if (chantState.s4LastGesture === "PAPER") {
+      chantState.s4LastGesture = "ROCK";
+      chantState.skill4++;
+    }
+    
+    // Reset incompatible
+    chantState.skill1 = 0; chantState.skill2 = 0;
+    chantState.s1LastX = null; chantState.s1Direction = 0;
+    chantState.s2LastX = null; chantState.s2Direction = 0;
+    
+  } else if (gesture === "PAPER") {
+    // 4. Track Rock ↔ Paper Alternate
+    if (chantState.s4LastGesture === null) {
+      chantState.s4LastGesture = "PAPER";
+    } else if (chantState.s4LastGesture === "ROCK") {
+      chantState.s4LastGesture = "PAPER";
+      chantState.skill4++;
+    }
+    
+    // Reset incompatible
+    chantState.skill1 = 0; chantState.skill2 = 0; chantState.skill3 = 0;
+    chantState.s1LastX = null; chantState.s1Direction = 0;
+    chantState.s2LastX = null; chantState.s2Direction = 0;
+    chantState.s3LastGesture = null;
+  } else {
+    // Unrecognized gesture (OTHER) - optionally slightly decays but we let the 2s stale timer handle full resets.
   }
   
-  prevIndexTip = { x: indexTip.x, y: indexTip.y };
+  // Spell Activation Phase!
+  if (chantState.skill1 >= 3) {
+    castSkill1();
+    resetChantState();
+  } else if (chantState.skill2 >= 4) {
+    castSkill2();
+    resetChantState();
+  } else if (chantState.skill3 >= 4) {
+    castSkill3();
+    resetChantState();
+  } else if (chantState.skill4 >= 6) {
+    castSkill4();
+    resetChantState();
+  }
+
+  updateChantUI();
 }
 
 // ==========================================
-// 4. Render & Visualization Loop
+// 4. Spell Executions & Hero-Guided Magic
+// ==========================================
+function getCastingHero() {
+  if (!combatState.active) return null;
+  
+  // 1. Try to get the hero focused by user
+  let caster = state.population.find(p => p.id === combatState.focusedHeroId);
+  
+  // 2. Fallback if caster is dead, missing, or not currently assigned to fight
+  if (!caster || caster.hp <= 0 || caster.assignment !== 'combat') {
+    const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+    const alive = combatParty.filter(p => p.hp > 0);
+    if (alive.length > 0) {
+      combatState.focusedHeroId = alive[0].id;
+      caster = alive[0];
+      updateHeroSheets(); // Redraw layout to auto-select valid fallback
+    } else {
+      return null; // Everyone's dead!
+    }
+  }
+  return caster;
+}
+
+function castSkill1() {
+  const caster = getCastingHero();
+  if (!caster) {
+    showToast("⚠️ 元素聚集完成！但隊伍中已無人能引導回復法術。", "info");
+    return;
+  }
+  
+  const eff = calcEffStats(caster);
+  const healPercent = 0.25; // 25% Max HP
+  const bonusHeal = Math.floor(eff.matk * 2); // Faith multiplier
+  
+  const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+  
+  logBattle(`✨【休息恢復】發動！【${caster.name}】雙手結印詠唱，降下溫暖的治癒雨！`, "log-item-heal");
+  
+  combatParty.forEach(p => {
+    const targetEff = calcEffStats(p);
+    if (p.hp > 0) {
+      const heal = Math.floor(targetEff.maxHp * healPercent) + bonusHeal;
+      p.hp = Math.min(targetEff.maxHp, p.hp + heal);
+      logBattle(`💚 治癒雨滋潤 ${p.name}，回復了 <b class="log-item-heal">${heal}</b> HP！`, "log-item-heal");
+    }
+  });
+  
+  updateCombatBars();
+  spawnFloatingText(`✨【${caster.name}】引導恢復！`, "#10b981");
+}
+
+function castSkill2() {
+  const caster = getCastingHero();
+  if (!caster || !combatState.enemies) {
+    showToast("⚠️ 魔能匯聚完成！無施法主體或目標，釋放失敗。", "info");
+    return;
+  }
+  
+  const aliveEnemies = combatState.enemies.filter(e => e.hp > 0);
+  if (aliveEnemies.length === 0) return;
+  
+  const eff = calcEffStats(caster);
+  const dmg = 50 + Math.floor(eff.matk * 1.5);
+  
+  logBattle(`⚡【魔彈連射】！【${caster.name}】高舉法器，無數奧術光彈射向全場敵軍！`, "log-item-dmg");
+  
+  aliveEnemies.forEach(e => {
+    e.hp = Math.max(0, e.hp - dmg);
+    logBattle(`💥 奧術魔彈轟中 ${e.name}，造成 <b class="log-item-dmg">${dmg}</b> 魔法傷害！`, "log-item-dmg");
+  });
+  
+  spawnFloatingText(`⚡【${caster.name}】魔彈連射！`, "#60a5fa");
+  checkBattleResolution();
+  updateCombatBars();
+}
+
+function castSkill3() {
+  const caster = getCastingHero();
+  if (!caster || !combatState.enemies) {
+    showToast("⚠️ 火元素匯集完畢！可惜目前沒有主體可以發射轟擊。", "info");
+    return;
+  }
+  
+  const aliveEnemies = combatState.enemies.filter(e => e.hp > 0);
+  if (aliveEnemies.length === 0) return;
+  
+  const target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+  const eff = calcEffStats(caster);
+  const dmg = 180 + Math.floor(eff.matk * 4); // Heavy single target ratio
+  
+  logBattle(`🔥【烈焰轟擊】！【${caster.name}】吟誦爆裂咒文，召喚巨型烈焰球！`, "log-item-dmg");
+  target.hp = Math.max(0, target.hp - dmg);
+  
+  logBattle(`☄️ 巨大烈焰火球吞噬 ${target.name}，造成爆裂 <b class="log-item-dmg">${dmg}</b> 傷害！`, "log-item-dmg");
+  
+  spawnFloatingText(`🔥【${caster.name}】烈焰轟擊！`, "#f97316");
+  checkBattleResolution();
+  updateCombatBars();
+}
+
+function castSkill4() {
+  const caster = getCastingHero();
+  if (!caster || !combatState.enemies) {
+    showToast("⚠️ 蒼穹天譴詠唱完畢！但無引導主體，星辰光輝消逝。", "info");
+    return;
+  }
+  
+  const aliveEnemies = combatState.enemies.filter(e => e.hp > 0);
+  if (aliveEnemies.length === 0) return;
+  
+  const eff = calcEffStats(caster);
+  const dmg = 500 + Math.floor(eff.matk * 12); // Ultimate nuke scaling
+  
+  logBattle(`🌌🌌【終極大招 · 蒼穹天譴】！【${caster.name}】開啟靈能界線，召喚墜落的古老星辰！`, "log-item-buff");
+  
+  aliveEnemies.forEach(e => {
+    e.hp = Math.max(0, e.hp - dmg);
+    logBattle(`☄️ 宇宙天體砸扁 ${e.name}，造成毀滅性 <b style="color:#ef4444; font-weight:800;">${dmg}</b> 真實傷害！`, "log-item-dmg");
+  });
+  
+  spawnFloatingText(`🌌【${caster.name}】蒼穹天譴！`, "#ef4444");
+  checkBattleResolution();
+  updateCombatBars();
+}
+
+
+// ==========================================
+// 5. UI Rendering & Sync
+// ==========================================
+function initSkillGrid() {
+  const grid = document.getElementById("gestureSkillGrid");
+  if (!grid) return;
+  grid.innerHTML = `
+    <div class="skill-chant-item" id="chant-skill-1">
+      <div class="chant-info">
+        <span class="chant-name">🛡️ 回復 (食指晃x3)</span>
+        <span class="chant-count" id="chant-val-1">0/3</span>
+      </div>
+      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-1" style="width:0%"></div></div>
+    </div>
+    <div class="skill-chant-item" id="chant-skill-2">
+      <div class="chant-info">
+        <span class="chant-name">⚡ 魔彈 (剪刀晃x4)</span>
+        <span class="chant-count" id="chant-val-2">0/4</span>
+      </div>
+      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-2" style="width:0%"></div></div>
+    </div>
+    <div class="skill-chant-item" id="chant-skill-3">
+      <div class="chant-info">
+        <span class="chant-name">🔥 烈焰 (剪刀↔拳x4)</span>
+        <span class="chant-count" id="chant-val-3">0/4</span>
+      </div>
+      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-3" style="width:0%"></div></div>
+    </div>
+    <div class="skill-chant-item" id="chant-skill-4">
+      <div class="chant-info">
+        <span class="chant-name">💥 天譴 (拳↔布x6)</span>
+        <span class="chant-count" id="chant-val-4">0/6</span>
+      </div>
+      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-4" style="width:0%"></div></div>
+    </div>
+  `;
+}
+
+function updateChantUI() {
+  const fill1 = document.getElementById("chant-bar-1");
+  const val1 = document.getElementById("chant-val-1");
+  const fill2 = document.getElementById("chant-bar-2");
+  const val2 = document.getElementById("chant-val-2");
+  const fill3 = document.getElementById("chant-bar-3");
+  const val3 = document.getElementById("chant-val-3");
+  const fill4 = document.getElementById("chant-bar-4");
+  const val4 = document.getElementById("chant-val-4");
+
+  if (fill1) fill1.style.width = `${(chantState.skill1 / 3) * 100}%`;
+  if (val1) val1.textContent = `${chantState.skill1}/3`;
+  const el1 = document.getElementById("chant-skill-1");
+  if (el1) el1.classList.toggle("active-chanting", chantState.skill1 > 0);
+
+  if (fill2) fill2.style.width = `${(chantState.skill2 / 4) * 100}%`;
+  if (val2) val2.textContent = `${chantState.skill2}/4`;
+  const el2 = document.getElementById("chant-skill-2");
+  if (el2) el2.classList.toggle("active-chanting", chantState.skill2 > 0);
+
+  if (fill3) fill3.style.width = `${(chantState.skill3 / 4) * 100}%`;
+  if (val3) val3.textContent = `${chantState.skill3}/4`;
+  const el3 = document.getElementById("chant-skill-3");
+  if (el3) el3.classList.toggle("active-chanting", chantState.skill3 > 0);
+
+  if (fill4) fill4.style.width = `${(chantState.skill4 / 6) * 100}%`;
+  if (val4) val4.textContent = `${chantState.skill4}/6`;
+  const el4 = document.getElementById("chant-skill-4");
+  if (el4) el4.classList.toggle("active-chanting", chantState.skill4 > 0);
+
+  // Find global peak progress for AI panel
+  const maxProgress = Math.max(
+    chantState.skill1 / 3,
+    chantState.skill2 / 4,
+    chantState.skill3 / 4,
+    chantState.skill4 / 6
+  );
+  
+  if (velocityBar) {
+    velocityBar.style.width = `${maxProgress * 100}%`;
+    if (maxProgress >= 1.0) {
+      velocityBar.style.backgroundColor = "#ffffff";
+      setTimeout(() => velocityBar.style.backgroundColor = "", 150);
+    }
+  }
+}
+
+// ==========================================
+// 6. Render & Visualization Loop
 // ==========================================
 
 const HAND_CONNECTIONS = [
@@ -2118,7 +3001,7 @@ function drawOverlay(landmarks) {
 async function predictLoop() {
   if (!webcamRunning) return;
   
-  // Scale drawing canvas properly (only if video element dimensions are active)
+  // Scale drawing canvas properly
   if (video.videoWidth > 0 && canvasElement.width !== video.videoWidth) {
     canvasElement.width = video.videoWidth;
     canvasElement.height = video.videoHeight;
@@ -2135,13 +3018,14 @@ async function predictLoop() {
   
   if (results && results.landmarks && results.landmarks.length > 0) {
     const currentHand = results.landmarks[0];
-    processHandMotion(currentHand);
+    processHandSpell(currentHand);
     drawOverlay(currentHand);
   } else {
-    // No hand detected -> decay motion
-    accumulatedMotion *= 0.85;
-    velocityBar.style.width = `${Math.min((accumulatedMotion / CLICK_THRESHOLD) * 100, 100)}%`;
-    prevIndexTip = null;
+    // Stale reset: reset if no hands detected for 2 seconds
+    if (Date.now() - chantState.lastUpdateTime > 2000) {
+      resetChantState();
+      updateChantUI();
+    }
   }
   
   requestAnimationFrame(predictLoop);
@@ -2150,5 +3034,8 @@ async function predictLoop() {
 // Init on DOM load
 window.addEventListener("DOMContentLoaded", () => {
   updateUI();
+  updateLevelSelectors();
+  initSkillGrid();
   initMediaPipe();
 });
+

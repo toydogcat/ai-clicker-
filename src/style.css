@@ -154,7 +154,7 @@ h1 {
   color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 600;
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   cursor: pointer;
 }
 
@@ -1264,6 +1264,46 @@ h1 {
   transition: all 0.2s ease;
 }
 
+.combat-unit:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.combat-unit.focused-hero {
+  background: rgba(234, 179, 8, 0.08) !important;
+  border: 1.5px solid #eab308 !important;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+  transform: translateY(-2px);
+  position: relative !important;
+}
+
+.combat-focus-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #eab308;
+  color: #000;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+  border: 1px solid #fff;
+  animation: floatPulse 1.5s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes floatPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+
 .unit-header {
   display: flex;
   justify-content: space-between;
@@ -1765,4 +1805,239 @@ h1 {
   border-radius: 6px;
   font-size: 0.85rem;
 }
+
+#huntSelectRow select {
+  width: 100%;
+  background: #18181b;
+  color: #a78bfa;
+  border: 1px solid #8b5cf6;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+
+/* --- Gesture Casting & Spell Chanting System --- */
+#gestureSkillGrid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 550px) {
+  #gestureSkillGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.skill-chant-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.skill-chant-item.active-chanting {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.chant-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chant-name {
+  color: #f4f4f5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chant-count {
+  color: #c084fc;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.8rem;
+  background: rgba(0,0,0,0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.chant-bar-wrapper {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chant-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #a855f7, #6366f1);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================
+   Secret Shop Styling
+   ========================================== */
+.secret-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.secret-item-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.secret-item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.5);
+}
+
+.secret-item-card.sold-out {
+  opacity: 0.45;
+  filter: grayscale(0.9);
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.secret-item-card.sold-out::after {
+  content: "完售 SOLD OUT";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  background: rgba(185, 28, 28, 0.95);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 1.2rem;
+  padding: 0.4rem 1.2rem;
+  border: 2px solid #fca5a5;
+  border-radius: 6px;
+  z-index: 10;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.secret-item-card.sold-out button {
+  display: none;
+}
+
+.secret-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.secret-item-icon {
+  font-size: 2rem;
+  background: rgba(0,0,0,0.3);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.secret-item-header-info {
+  flex: 1;
+}
+
+.secret-item-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+
+.secret-item-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid;
+}
+
+.secret-item-stats {
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  background: rgba(0,0,0,0.2);
+  padding: 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.secret-item-main-stat {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.secret-item-extra-stat {
+  color: #34d399;
+}
+
+.secret-item-buy-btn {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+  margin-top: auto;
+}
+
+.secret-item-buy-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.02);
+}
+
+.secret-item-buy-btn:active {
+  transform: scale(0.98);
+}
+
+
 
