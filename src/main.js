@@ -474,8 +474,8 @@ function drawOverlay(landmarks) {
 async function predictLoop() {
   if (!webcamRunning) return;
   
-  // Scale drawing canvas properly
-  if (canvasElement.width !== video.videoWidth) {
+  // Scale drawing canvas properly (only if video element dimensions are active)
+  if (video.videoWidth > 0 && canvasElement.width !== video.videoWidth) {
     canvasElement.width = video.videoWidth;
     canvasElement.height = video.videoHeight;
   }
