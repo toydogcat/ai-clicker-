@@ -31,7 +31,7 @@
 
   <main class="game-container">
     <!-- Left Column: Resources & Population -->
-    <aside class="panel-column side-panel" aria-label="資源與統計">
+    <aside class="panel-column side-panel tab-column" id="tab-settlement" aria-label="資源與統計">
       <div class="glass-card resource-card">
         <div class="card-header">
           <h2>📊 資源存量</h2>
@@ -77,19 +77,76 @@
           <p class="survival-hint">⚠️ 警告：食物歸零時，工人將會開始流失。</p>
         </div>
       </div>
+
+      <div class="glass-card build-card">
+        <div class="card-header">
+          <h2>🏗️ 建設發展</h2>
+        </div>
+        <div class="build-actions">
+          <button class="build-btn" id="btn-hire-worker" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">招募工人 (+1 👷)</span>
+              <span class="build-btn-cost">🍞 20 食物</span>
+            </div>
+          </button>
+          
+          <button class="build-btn" id="btn-build-cabin" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">搭建木屋 (+5 上限)</span>
+              <span class="build-btn-cost">🪵 25 木頭</span>
+            </div>
+            <span class="build-btn-count" id="cabinCount">0</span>
+          </button>
+
+          <button class="build-btn" id="btn-build-farm" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">開墾農田 (+1 🍞/s)</span>
+              <span class="build-btn-cost">🪵 30 木 | 🪨 15 石</span>
+            </div>
+            <span class="build-btn-count" id="farmCount">0</span>
+          </button>
+        </div>
+      </div>
     </aside>
 
     <!-- Center Column: Main Interaction Zone -->
-    <section class="panel-column center-panel" aria-label="操作區">
+    <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="操作區">
       <div class="action-hub">
-        <div class="interactive-zone" id="clickTarget" role="button" tabindex="0" aria-label="採集資源">
-          <div class="ring-effect ring-1"></div>
-          <div class="ring-effect ring-2"></div>
-          <div class="core-node">
-            <span class="node-symbol">🌳⛏️</span>
-            <span class="node-label">點擊採集資源</span>
-            <span class="sub-hint">支援滑鼠、觸控與手勢</span>
+        <div class="nodes-cluster" id="nodesContainer">
+          <!-- Forest (Wood) -->
+          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🌳</span>
+              <span class="node-title">採集木頭</span>
+            </div>
           </div>
+          
+          <!-- Quarry (Stone) -->
+          <div class="gather-node" id="node-stone" data-resource="stone" role="button" tabindex="0" aria-label="採集石頭">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🪨</span>
+              <span class="node-title">採集石頭</span>
+            </div>
+          </div>
+          
+          <!-- Wilds (Food) -->
+          <div class="gather-node" id="node-food" data-resource="food" role="button" tabindex="0" aria-label="搜尋食物">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🌾</span>
+              <span class="node-title">搜尋食物</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="focus-badge">
+          <span class="pulse-ring-small"></span>
+          AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
         </div>
         
         <!-- Floating click text container -->
@@ -98,7 +155,7 @@
     </section>
 
     <!-- Right Column: Camera & Detection Panel -->
-    <aside class="panel-column side-panel" aria-label="AI 操控">
+    <aside class="panel-column side-panel tab-column" id="tab-ai" aria-label="AI 操控">
       <div class="glass-card tracking-card">
         <div class="card-header">
           <h2>📷 AI 手勢偵測</h2>
@@ -142,6 +199,22 @@
       </div>
     </aside>
   </main>
+  
+  <!-- Mobile Navigation Bar -->
+  <nav class="mobile-navbar">
+    <button class="nav-item" data-target="tab-settlement">
+      <span class="nav-icon">🏘️</span>
+      <span class="nav-label">營地</span>
+    </button>
+    <button class="nav-item active" data-target="tab-gather">
+      <span class="nav-icon">⚒️</span>
+      <span class="nav-label">採集</span>
+    </button>
+    <button class="nav-item" data-target="tab-ai">
+      <span class="nav-icon">📷</span>
+      <span class="nav-label">AI 操控</span>
+    </button>
+  </nav>
 
   <footer class="app-footer">
     <div class="busuanzi-stats">

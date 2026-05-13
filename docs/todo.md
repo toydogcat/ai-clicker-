@@ -1,5 +1,5 @@
+- [x] 1. 目前資源只有一個能有多個不同資源點擊區嗎 (已完成：新增木、石、食三個互動區 + AI 追蹤鎖定)
+- [x] 2. 可以支源多頁面嗎？ （目前電腦畫面很好，手機可以在下面有多個頁面可以選擇嗎） (已完成：手機版極光毛玻璃導航列 + 分頁切換機制)
+- [x] 3. /home/toymsi/documents/Yolo/Github/ai-clicker-/docs/game_rule.md (已完成：首波自動化、工人消耗與飢荒死亡系統)
 
-1. [x] /home/toymsi/documents/Yolo/Github/ai-clicker-/docs/our_game.md (已設計)
-2. [x] 建立 Github Page 網頁，會開 Actions (已建立)
-3. [x] 你先建立一個，我感受一下畫面排版，他要可以接受3種操作 滑鼠點擊 手機上手指點擊 手關節偵測去看食指有沒有一直動 (已實作)
-4. [x] /home/toymsi/documents/Yolo/Github/ai-yolo/hand-live.html 參考他有關手指偵測的程式 (已參考並實作位移速度演算法)
+

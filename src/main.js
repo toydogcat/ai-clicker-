@@ -1,15 +1,26 @@
 import { HandLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 // ==========================================
-// 1. Game State & DOM Management
+// 1. Game State & Constants & DOM Management
 // ==========================================
 const state = {
   wood: 0,
   stone: 0,
-  food: 10,
+  food: 20, // Start with 20 food so hiring is immediately playable
   workers: 0,
   workerLimit: 5,
-  foodConsumptionRate: 0 // every tick
+  foodConsumptionRate: 0,
+  gatherFocus: 'wood',
+  buildings: {
+    cabins: 0,
+    farms: 0
+  }
+};
+
+const COSTS = {
+  worker: { food: 20 },
+  cabin: { wood: 25 },
+  farm: { wood: 30, stone: 15 }
 };
 
 // DOM References
@@ -20,8 +31,45 @@ const foodRateEl = document.getElementById("foodDrainRate");
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
 const popBarEl = document.getElementById("popLimitBar");
-const clickTarget = document.getElementById("clickTarget");
 const effectsLayer = document.getElementById("clickEffectsLayer");
+
+// Target Nodes DOM
+const nodeWood = document.getElementById("node-wood");
+const nodeStone = document.getElementById("node-stone");
+const nodeFood = document.getElementById("node-food");
+const focusBadgeText = document.getElementById("activeFocusText");
+
+// Build Panel DOM
+const cabinCountEl = document.getElementById("cabinCount");
+const farmCountEl = document.getElementById("farmCount");
+const btnHireWorker = document.getElementById("btn-hire-worker");
+const btnBuildCabin = document.getElementById("btn-build-cabin");
+const btnBuildFarm = document.getElementById("btn-build-farm");
+
+// Mobile Tab DOM
+const navItems = document.querySelectorAll(".nav-item");
+const tabColumns = document.querySelectorAll(".tab-column");
+
+// Set Active Gathering Focus
+function setGatherFocus(resource) {
+  state.gatherFocus = resource;
+  
+  // Update node highlights
+  nodeWood.classList.remove("active");
+  nodeStone.classList.remove("active");
+  nodeFood.classList.remove("active");
+  
+  if (resource === 'wood') {
+    nodeWood.classList.add("active");
+    focusBadgeText.innerHTML = `🌳 採集木頭`;
+  } else if (resource === 'stone') {
+    nodeStone.classList.add("active");
+    focusBadgeText.innerHTML = `🪨 採集石頭`;
+  } else {
+    nodeFood.classList.add("active");
+    focusBadgeText.innerHTML = `🌾 搜尋食物`;
+  }
+}
 
 // Update Display
 function updateUI() {
@@ -29,35 +77,54 @@ function updateUI() {
   stoneEl.textContent = Math.floor(state.stone);
   foodEl.textContent = Math.floor(state.food);
   
-  foodRateEl.textContent = `-${state.foodConsumptionRate}/s`;
-  foodRateEl.className = state.foodConsumptionRate > 0 ? "res-rate alert-text" : "res-rate";
+  // Calculate net food per second
+  const passiveGen = state.buildings.farms * 1;
+  const passiveCon = state.workers * 0.5;
+  const netFoodRate = passiveGen - passiveCon;
+  const sign = netFoodRate >= 0 ? "+" : "";
+  foodRateEl.textContent = `${sign}${netFoodRate.toFixed(1)}/秒`;
+  foodRateEl.className = netFoodRate < 0 ? "res-rate alert-text" : "res-rate";
   
   workerEl.textContent = state.workers;
+  state.workerLimit = 5 + (state.buildings.cabins * 5);
   limitEl.textContent = state.workerLimit;
   
   const percent = (state.workers / state.workerLimit) * 100;
   popBarEl.style.width = `${Math.min(percent, 100)}%`;
+  
+  // Update Building level trackers
+  cabinCountEl.textContent = state.buildings.cabins;
+  farmCountEl.textContent = state.buildings.farms;
+  
+  // Enable/Disable buttons dynamically based on current funds
+  btnHireWorker.disabled = (state.food < COSTS.worker.food || state.workers >= state.workerLimit);
+  btnBuildCabin.disabled = (state.wood < COSTS.cabin.wood);
+  btnBuildFarm.disabled = (state.wood < COSTS.farm.wood || state.stone < COSTS.farm.stone);
 }
 
 // Action Click: Gather Resource
-function performClick(sourceX = null, sourceY = null) {
-  // Randomly award wood (50%), stone (40%), food (10%)
-  const rand = Math.random();
+function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
+  const resource = resourceOverride || state.gatherFocus;
   let text = "";
   let color = "";
 
-  if (rand < 0.5) {
+  if (resource === "wood") {
     state.wood += 1;
     text = "+1 木頭";
     color = "#818cf8"; // indigo
-  } else if (rand < 0.9) {
+  } else if (resource === "stone") {
     state.stone += 1;
     text = "+1 石頭";
     color = "#94a3b8"; // slate
   } else {
     state.food += 1;
     text = "+1 食物";
-    color = "#10b981"; // emerald
+    color = "#f59e0b"; // amber
+  }
+
+  // If manual click, swap the AI targeting lock-on
+  if (resourceOverride) {
+    setGatherFocus(resourceOverride);
   }
 
   updateUI();
@@ -77,39 +144,135 @@ function spawnFloatingText(text, color, clientX = null, clientY = null) {
     x = clientX - rect.left;
     y = clientY - rect.top;
   } else {
-    // Center fallback with slight randomness
-    const rect = effectsLayer.getBoundingClientRect();
-    x = rect.width / 2 + (Math.random() * 60 - 30);
-    y = rect.height / 2 + (Math.random() * 60 - 30);
+    // AI/Automated spawning relative to focused node container
+    const activeNodeEl = document.getElementById(`node-${state.gatherFocus}`);
+    if (activeNodeEl) {
+      const rectNode = activeNodeEl.getBoundingClientRect();
+      const rectLayer = effectsLayer.getBoundingClientRect();
+      x = (rectNode.left - rectLayer.left) + (rectNode.width / 2) + (Math.random() * 60 - 30);
+      y = (rectNode.top - rectLayer.top) + (rectNode.height / 2) + (Math.random() * 60 - 30);
+    } else {
+      const rect = effectsLayer.getBoundingClientRect();
+      x = rect.width / 2 + (Math.random() * 60 - 30);
+      y = rect.height / 2 + (Math.random() * 60 - 30);
+    }
   }
 
   span.style.left = `${x}px`;
   span.style.top = `${y}px`;
-  
-  // Add a slight random X drift for the animation
   span.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 40}px`);
   
   effectsLayer.appendChild(span);
   
-  // Clean up DOM after animation completes
   setTimeout(() => {
     span.remove();
   }, 800);
 }
 
-// Setup Interaction Event Listeners for Mouse/Touch
-clickTarget.addEventListener("mousedown", (e) => {
-  // Only trigger if it's left mouse button
-  if (e.button === 0) {
-    performClick(e.clientX, e.clientY);
+// ==========================================
+// Game Tick Loops (Farms, Consumptions, Jobs)
+// ==========================================
+function gameTick() {
+  // 1. Passive food yield from Farms (+1/s each)
+  state.food += state.buildings.farms * 1;
+  
+  // 2. Worker Consumption (eats 0.5 food/s each)
+  const passiveCon = state.workers * 0.5;
+  state.food -= passiveCon;
+  
+  // 3. Worker Labor Yield (passive +0.2 wood and +0.1 stone/s)
+  state.wood += state.workers * 0.2;
+  state.stone += state.workers * 0.1;
+  
+  // 4. Handle Survival / Hunger Deaths
+  if (state.food < 0) {
+    state.food = 0;
+    // Starving condition: 25% chance per sec to lose worker
+    if (state.workers > 0 && Math.random() < 0.25) {
+      state.workers -= 1;
+      spawnFloatingText("👷 飢荒工人逃亡!", "#ef4444");
+    }
+  }
+  
+  updateUI();
+}
+
+// Initialize background engine loop
+setInterval(gameTick, 1000);
+
+// ==========================================
+// Native Touch/Mouse Bindings
+// ==========================================
+function bindResourceNode(el, resourceType) {
+  const handler = (e) => {
+    e.preventDefault();
+    let clientX = null, clientY = null;
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.button === 0) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    performClick(resourceType, clientX, clientY);
+  };
+  
+  el.addEventListener("mousedown", handler);
+  el.addEventListener("touchstart", handler, { passive: false });
+}
+
+bindResourceNode(nodeWood, 'wood');
+bindResourceNode(nodeStone, 'stone');
+bindResourceNode(nodeFood, 'food');
+
+// Setup Building Card triggers
+btnHireWorker.addEventListener("click", () => {
+  if (state.food >= COSTS.worker.food && state.workers < state.workerLimit) {
+    state.food -= COSTS.worker.food;
+    state.workers += 1;
+    spawnFloatingText("+1 工人 👷", "#10b981");
+    updateUI();
   }
 });
 
-clickTarget.addEventListener("touchstart", (e) => {
-  e.preventDefault(); // Prevent double triggers with mouse emulation
-  const touch = e.touches[0];
-  performClick(touch.clientX, touch.clientY);
-}, { passive: false });
+btnBuildCabin.addEventListener("click", () => {
+  if (state.wood >= COSTS.cabin.wood) {
+    state.wood -= COSTS.cabin.wood;
+    state.buildings.cabins += 1;
+    spawnFloatingText("+1 木屋 🏚️", "#818cf8");
+    updateUI();
+  }
+});
+
+btnBuildFarm.addEventListener("click", () => {
+  if (state.wood >= COSTS.farm.wood && state.stone >= COSTS.farm.stone) {
+    state.wood -= COSTS.farm.wood;
+    state.stone -= COSTS.farm.stone;
+    state.buildings.farms += 1;
+    spawnFloatingText("+1 農田 🌾", "#f59e0b");
+    updateUI();
+  }
+});
+
+// Hook Up Responsive Tab Click Handlers
+navItems.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.getAttribute("data-target");
+    
+    // Update buttons styles
+    navItems.forEach(n => n.classList.remove("active"));
+    btn.classList.add("active");
+    
+    // Toggle visibility of sections
+    tabColumns.forEach(col => {
+      if (col.id === target) {
+        col.classList.add("active");
+      } else {
+        col.classList.remove("active");
+      }
+    });
+  });
+});
 
 // ==========================================
 // 2. AI & Hand Landmarker Integration
