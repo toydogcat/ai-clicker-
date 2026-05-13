@@ -575,11 +575,51 @@ h1 {
 
 /* Footer Styling */
 .app-footer {
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   text-align: center;
   border-top: 1px solid var(--border-light);
   font-size: 0.75rem;
   color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.busuanzi-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  padding: 0.5rem 1.5rem;
+  border-radius: 99px;
+  border: 1px solid var(--border-light);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-divider {
+  color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-item i {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+#busuanzi_value_site_pv, 
+#busuanzi_value_site_uv {
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 700;
 }
 
 /* -------------------------------------------------------------------------- */
