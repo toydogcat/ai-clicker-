@@ -16,7 +16,9 @@ const state = {
     cabins: 0,
     farms: 0,
     smelter: 0,
-    powerPlant: 0
+    powerPlant: 0,
+    warehouse: 0,
+    battery: 0
   },
   jobs: {
     woodcutter: 0,
@@ -30,18 +32,35 @@ const COSTS = {
   cabin: { wood: 25 },
   farm: { wood: 30, stone: 15 },
   smelter: { wood: 40, stone: 50 },
-  powerPlant: { stone: 80, metal: 20 }
+  powerPlant: { stone: 80, metal: 20 },
+  warehouse: { wood: 50, stone: 30 },
+  battery: { stone: 60, metal: 40 }
 };
 
 // DOM References
 const woodEl = document.getElementById("woodCount");
+const woodMaxEl = document.getElementById("woodMax");
+const resWoodItem = document.getElementById("res-wood");
+
 const stoneEl = document.getElementById("stoneCount");
+const stoneMaxEl = document.getElementById("stoneMax");
+const resStoneItem = document.getElementById("res-stone");
+
 const foodEl = document.getElementById("foodCount");
+const foodMaxEl = document.getElementById("foodMax");
 const foodRateEl = document.getElementById("foodDrainRate");
+const resFoodItem = document.getElementById("res-food");
+
 const metalEl = document.getElementById("metalCount");
+const metalMaxEl = document.getElementById("metalMax");
 const metalRateEl = document.getElementById("metalGenRate");
+const resMetalItem = document.getElementById("res-metal");
+
 const energyEl = document.getElementById("energyCount");
+const energyMaxEl = document.getElementById("energyMax");
 const energyRateEl = document.getElementById("energyGenRate");
+const resEnergyItem = document.getElementById("res-energy");
+
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
 const popBarEl = document.getElementById("popLimitBar");
@@ -57,11 +76,16 @@ const cabinCountEl = document.getElementById("cabinCount");
 const farmCountEl = document.getElementById("farmCount");
 const smelterCountEl = document.getElementById("smelterCount");
 const powerCountEl = document.getElementById("powerCount");
+const warehouseCountEl = document.getElementById("warehouseCount");
+const batteryCountEl = document.getElementById("batteryCount");
+
 const btnHireWorker = document.getElementById("btn-hire-worker");
 const btnBuildCabin = document.getElementById("btn-build-cabin");
 const btnBuildFarm = document.getElementById("btn-build-farm");
 const btnBuildSmelter = document.getElementById("btn-build-smelter");
 const btnBuildPower = document.getElementById("btn-build-power");
+const btnBuildWarehouse = document.getElementById("btn-build-warehouse");
+const btnBuildBattery = document.getElementById("btn-build-battery");
 
 // Dispatch Panel DOM
 const idleCountEl = document.getElementById("idleWorkers");
@@ -90,13 +114,42 @@ function setGatherFocus(resource) {
   }
 }
 
+// Calculate Dynamic Storage Limits based on Warehouses/Batteries
+function getCapacities() {
+  const whBonus = state.buildings.warehouse * 100;
+  const batBonus = state.buildings.battery * 100;
+  return {
+    wood: 100 + whBonus,
+    stone: 100 + whBonus,
+    food: 100 + whBonus,
+    metal: 50 + whBonus,
+    energy: 50 + batBonus
+  };
+}
+
 // Update Display
 function updateUI() {
+  const caps = getCapacities();
+  
   woodEl.textContent = Math.floor(state.wood);
+  woodMaxEl.textContent = caps.wood;
+  resWoodItem.classList.toggle("res-full", Math.floor(state.wood) >= caps.wood);
+
   stoneEl.textContent = Math.floor(state.stone);
+  stoneMaxEl.textContent = caps.stone;
+  resStoneItem.classList.toggle("res-full", Math.floor(state.stone) >= caps.stone);
+
   foodEl.textContent = Math.floor(state.food);
+  foodMaxEl.textContent = caps.food;
+  resFoodItem.classList.toggle("res-full", Math.floor(state.food) >= caps.food);
+
   metalEl.textContent = Math.floor(state.metal);
+  metalMaxEl.textContent = caps.metal;
+  resMetalItem.classList.toggle("res-full", Math.floor(state.metal) >= caps.metal);
+
   energyEl.textContent = Math.floor(state.energy);
+  energyMaxEl.textContent = caps.energy;
+  resEnergyItem.classList.toggle("res-full", Math.floor(state.energy) >= caps.energy);
   
   // Calculate net food per second
   const passiveGen = (state.buildings.farms * 1.0) + (state.jobs.farmer * 0.5);
@@ -126,6 +179,8 @@ function updateUI() {
   farmCountEl.textContent = state.buildings.farms;
   smelterCountEl.textContent = state.buildings.smelter;
   powerCountEl.textContent = state.buildings.powerPlant;
+  warehouseCountEl.textContent = state.buildings.warehouse;
+  batteryCountEl.textContent = state.buildings.battery;
 
   // Update Job allocation counters
   const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
@@ -150,6 +205,8 @@ function updateUI() {
   btnBuildFarm.disabled = (state.wood < COSTS.farm.wood || state.stone < COSTS.farm.stone);
   btnBuildSmelter.disabled = (state.wood < COSTS.smelter.wood || state.stone < COSTS.smelter.stone);
   btnBuildPower.disabled = (state.stone < COSTS.powerPlant.stone || state.metal < COSTS.powerPlant.metal);
+  btnBuildWarehouse.disabled = (state.wood < COSTS.warehouse.wood || state.stone < COSTS.warehouse.stone);
+  btnBuildBattery.disabled = (state.stone < COSTS.battery.stone || state.metal < COSTS.battery.metal);
 }
 
 // Dispatch Logic: Assign jobs
@@ -168,15 +225,18 @@ function adjustJob(jobName, delta) {
 // Action Click: Gather Resource
 function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
   const resource = resourceOverride || state.gatherFocus;
+  const caps = getCapacities();
   let text = "";
   let color = "";
 
   if (resource === "wood") {
-    state.wood += 1;
+    if (Math.floor(state.wood) >= caps.wood) return; // Prevent gathering if full
+    state.wood = Math.min(state.wood + 1, caps.wood);
     text = "+1 木頭";
     color = "#818cf8"; // indigo
   } else if (resource === "stone") {
-    state.stone += 1;
+    if (Math.floor(state.stone) >= caps.stone) return; // Prevent gathering if full
+    state.stone = Math.min(state.stone + 1, caps.stone);
     text = "+1 石頭";
     color = "#94a3b8"; // slate
   } else {
@@ -234,6 +294,8 @@ function spawnFloatingText(text, color, clientX = null, clientY = null) {
 // Game Tick Loops (Farms, Consumptions, Jobs)
 // ==========================================
 function gameTick() {
+  const caps = getCapacities();
+
   // 1. Passive food yield (Farms: +1/s, Farmers: +0.5/s)
   const passiveGen = (state.buildings.farms * 1) + (state.jobs.farmer * 0.5);
   state.food += passiveGen;
@@ -249,6 +311,13 @@ function gameTick() {
   // 4. Automated Industrial Yields (Smelters: +0.3/s Metal, Power Plants: +1.0/s Energy)
   state.metal += state.buildings.smelter * 0.3;
   state.energy += state.buildings.powerPlant * 1.0;
+  
+  // Apply resource caps (Food, Wood, Stone, Metal, Energy)
+  state.wood = Math.min(state.wood, caps.wood);
+  state.stone = Math.min(state.stone, caps.stone);
+  state.food = Math.min(state.food, caps.food);
+  state.metal = Math.min(state.metal, caps.metal);
+  state.energy = Math.min(state.energy, caps.energy);
   
   // 5. Handle Survival / Hunger Deaths
   if (state.food < 0) {
@@ -348,6 +417,26 @@ btnBuildPower.addEventListener("click", () => {
     state.metal -= COSTS.powerPlant.metal;
     state.buildings.powerPlant += 1;
     spawnFloatingText("+1 電廠 ⚡", "#facc15");
+    updateUI();
+  }
+});
+
+btnBuildWarehouse.addEventListener("click", () => {
+  if (state.wood >= COSTS.warehouse.wood && state.stone >= COSTS.warehouse.stone) {
+    state.wood -= COSTS.warehouse.wood;
+    state.stone -= COSTS.warehouse.stone;
+    state.buildings.warehouse += 1;
+    spawnFloatingText("+1 倉庫 📦", "#10b981");
+    updateUI();
+  }
+});
+
+btnBuildBattery.addEventListener("click", () => {
+  if (state.stone >= COSTS.battery.stone && state.metal >= COSTS.battery.metal) {
+    state.stone -= COSTS.battery.stone;
+    state.metal -= COSTS.battery.metal;
+    state.buildings.battery += 1;
+    spawnFloatingText("+1 蓄電池 🔋", "#f59e0b");
     updateUI();
   }
 });

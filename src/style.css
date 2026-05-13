@@ -237,6 +237,32 @@ h1 {
   font-size: 1.5rem;
   color: #ffffff;
   margin-top: 0.15rem;
+  display: flex;
+  align-items: baseline;
+  transition: color 0.3s ease;
+}
+
+.res-limit-sep {
+  opacity: 0.3;
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin: 0 0.2rem;
+}
+
+.res-limit {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+/* Trigger when resource hits its limit */
+.res-full .res-value {
+  color: #facc15 !important; /* Bright Gold */
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
+}
+.res-full .res-limit {
+  color: rgba(250, 204, 21, 0.8) !important;
 }
 
 .res-rate {
@@ -1032,6 +1058,14 @@ h1 {
   .res-value {
     font-size: 1.1rem;
     margin-top: 0;
+  }
+  
+  .res-limit-sep {
+    font-size: 0.65rem;
+  }
+  
+  .res-limit {
+    font-size: 0.75rem;
   }
   
   .res-rate {

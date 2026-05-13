@@ -41,21 +41,27 @@
             <span class="res-icon">🪵</span>
             <div class="res-details">
               <label>木頭 (Wood)</label>
-              <span class="res-value" id="woodCount">0</span>
+              <span class="res-value">
+                <span id="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="woodMax">100</span>
+              </span>
             </div>
           </div>
           <div class="resource-item" id="res-stone">
             <span class="res-icon">🪨</span>
             <div class="res-details">
               <label>石頭 (Stone)</label>
-              <span class="res-value" id="stoneCount">0</span>
+              <span class="res-value">
+                <span id="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="stoneMax">100</span>
+              </span>
             </div>
           </div>
           <div class="resource-item" id="res-food">
             <span class="res-icon">🍞</span>
             <div class="res-details">
               <label>食物 (Food)</label>
-              <span class="res-value" id="foodCount">30</span>
+              <span class="res-value">
+                <span id="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit" id="foodMax">100</span>
+              </span>
             </div>
             <div class="res-rate alert-text" id="foodDrainRate">+0.0/秒</div>
           </div>
@@ -63,7 +69,9 @@
             <span class="res-icon">🪙</span>
             <div class="res-details">
               <label>金屬 (Metal)</label>
-              <span class="res-value" id="metalCount">0</span>
+              <span class="res-value">
+                <span id="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="metalMax">50</span>
+              </span>
             </div>
             <div class="res-rate" id="metalGenRate">+0.0/秒</div>
           </div>
@@ -71,7 +79,9 @@
             <span class="res-icon">⚡</span>
             <div class="res-details">
               <label>能源 (Energy)</label>
-              <span class="res-value" id="energyCount">0</span>
+              <span class="res-value">
+                <span id="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="energyMax">50</span>
+              </span>
             </div>
             <div class="res-rate" id="energyGenRate">+0.0/秒</div>
           </div>
@@ -136,6 +146,22 @@
               <span class="build-btn-cost">🪨 80 石 | 🪙 20 金</span>
             </div>
             <span class="build-btn-count" id="powerCount">0</span>
+          </button>
+
+          <button class="build-btn" id="btn-build-warehouse" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">建造倉庫 (四資源 +100)</span>
+              <span class="build-btn-cost">🪵 50 木 | 🪨 30 石</span>
+            </div>
+            <span class="build-btn-count" id="warehouseCount">0</span>
+          </button>
+
+          <button class="build-btn" id="btn-build-battery" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">蓄電池組 (能源 +100)</span>
+              <span class="build-btn-cost">🪨 60 石 | 🪙 40 金</span>
+            </div>
+            <span class="build-btn-count" id="batteryCount">0</span>
           </button>
         </div>
       </div>
