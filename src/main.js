@@ -728,6 +728,13 @@ if (btnHireResident) {
 
 function renderPopulationRoster() {
   if (!populationRoster) return;
+
+  // Prevent wiping roster DOM if the user is currently interacting with a dropdown
+  const active = document.activeElement;
+  if (active && active.tagName === "SELECT" && populationRoster.contains(active)) {
+    return;
+  }
+
   populationRoster.innerHTML = "";
   
   if (state.population.length === 0) {
@@ -826,6 +833,12 @@ window.changeResidentAssignment = function(id, newAssignment) {
       return;
     }
     p.assignment = newAssignment;
+    
+    // Explicitly remove focus to permit immediate UI refresh on the next frame
+    if (document.activeElement && document.activeElement.tagName === "SELECT") {
+      document.activeElement.blur();
+    }
+    
     updateUI();
   }
 };
@@ -843,6 +856,9 @@ window.promoteResident = function(id) {
     p.level = 5;
     p.exp = 0;
     p.assignment = 'idle'; // Heroes can no longer labor
+    
+    if (select) select.blur();
+    
     showToast(`🎉 ${p.name} 成功轉職為 ${gameConfig.heroes[p.jobClass].name}！從 Lv.5 重新出發！`, "success");
     updateUI();
   }
