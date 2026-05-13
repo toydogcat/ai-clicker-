@@ -904,7 +904,8 @@ window.calcEffStats = function(person) {
         }
       });
     }
-  });
+    });
+  }
   
   // Normalize
   eff.spd = Math.max(0.2, eff.spd);
