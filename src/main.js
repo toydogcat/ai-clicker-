@@ -145,70 +145,57 @@ function saveGame(silent = false) {
       state: JSON.parse(JSON.stringify(state)) // deep clone
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-    
-    if (silent === true) return; // explicitly check for true boolean
-    
-    const exportFile = confirm("💾 已存檔至瀏覽器快取！\n\n是否要額外「匯出為 JSON 存檔檔案」備份到電腦？");
-    if (exportFile) {
-      const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ai_clicker_save_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("📤 存檔檔案已下載！", "success");
-    } else {
-      showToast("💾 存檔成功！", "success");
+    if (silent !== true) {
+      showToast("💾 進度已存入瀏覽器快取！", "success");
     }
   } catch (e) {
     showToast("❌ 存檔失敗：" + e.message, "error");
   }
 }
 
-function loadGame(directRaw = null) {
+function exportGame() {
   try {
-    // If directly invoked by event handler, directRaw might be a PointerEvent object. Force null unless string.
-    let raw = (typeof directRaw === 'string') ? directRaw : null;
-    if (!raw) {
-      const localOnly = confirm("【讀取存檔選項】\n\n「確定」：讀取瀏覽器快取存檔\n「取消」：匯入外部 .json 檔案");
-      if (localOnly) {
-        raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) {
-          showToast("📂 找不到本機快取存檔！", "error");
-          return false;
-        }
-      } else {
-        // Trigger file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = e => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = ev => {
-            try {
-              const parsed = JSON.parse(ev.target.result);
-              if (parsed && parsed.state) {
-                // Re-call loadGame with raw data directly
-                loadGame(ev.target.result);
-              } else {
-                showToast("❌ 格式不符！這不是一個有效的存檔 JSON", "error");
-              }
-            } catch (err) {
-              showToast("❌ 檔案損毀或解析失敗！", "error");
-            }
-          };
-          reader.readAsText(file);
-        };
-        input.click();
-        return;
-      }
-    }
+    const saveData = {
+      version: 1,
+      timestamp: Date.now(),
+      state: JSON.parse(JSON.stringify(state))
+    };
+    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai_clicker_save_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("📤 備份檔案下載中...", "success");
+  } catch (e) {
+    showToast("❌ 匯出失敗：" + e.message, "error");
+  }
+}
 
-    const saveData = JSON.parse(raw);
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      showToast("📂 找不到本機快取存檔！", "error");
+      return false;
+    }
+    applySaveData(raw);
+    return true;
+  } catch (e) {
+    showToast("❌ 讀檔失敗：" + e.message, "error");
+    return false;
+  }
+}
+
+function applySaveData(rawString) {
+  try {
+    const saveData = JSON.parse(rawString);
     const saved = saveData.state;
+
+    if (!saved) {
+      throw new Error("存檔資料損毀 (無 state 欄位)");
+    }
 
     // Deep merge — only restore known state keys
     Object.keys(state).forEach(key => {
@@ -226,11 +213,9 @@ function loadGame(directRaw = null) {
     updateUI();
 
     const date = new Date(saveData.timestamp);
-    showToast(`📂 讀檔成功！（${date.toLocaleTimeString('zh-TW')}）`, "info");
-    return true;
-  } catch (e) {
-    showToast("❌ 讀檔失敗：" + e.message, "error");
-    return false;
+    showToast(`📂 載入成功！（${date.toLocaleTimeString('zh-TW')}）`, "info");
+  } catch (err) {
+    showToast("❌ 載入失敗：" + err.message, "error");
   }
 }
 
@@ -257,6 +242,34 @@ function resetGame() {
 document.getElementById("btn-save").addEventListener("click", () => saveGame());
 document.getElementById("btn-load").addEventListener("click", () => loadGame());
 document.getElementById("btn-reset").addEventListener("click", () => resetGame());
+
+// Bind export/import buttons
+const btnExport = document.getElementById("btn-export");
+const btnImport = document.getElementById("btn-import");
+const importInput = document.getElementById("import-file-input");
+
+if (btnExport) {
+  btnExport.addEventListener("click", () => exportGame());
+}
+
+if (btnImport && importInput) {
+  btnImport.addEventListener("click", () => {
+    importInput.click(); // Directly triggered by user click -> browser security won't block!
+  });
+  
+  importInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = ev => {
+      applySaveData(ev.target.result);
+      // Clear input to allow importing the same file name again if needed
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  });
+}
 
 // Auto-save every 30 seconds
 setInterval(() => {
