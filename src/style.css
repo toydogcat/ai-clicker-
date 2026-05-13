@@ -265,6 +265,24 @@ h1 {
   color: rgba(250, 204, 21, 0.8) !important;
 }
 
+/* Money Resource - Golden amber theme */
+.res-money .res-icon { filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.5)); }
+.res-money .res-value { color: #facc15; }
+.res-money .res-rate { color: #facc15; }
+
+/* Knowledge Resource - Purple/indigo theme */
+.res-knowledge .res-icon { filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5)); }
+.res-knowledge .res-value { color: #a78bfa; }
+.res-knowledge .res-rate { color: #a78bfa; }
+
+/* Bank Building Button */
+.btn-bank { border-color: rgba(250, 204, 21, 0.3) !important; }
+.btn-bank:not(:disabled):hover { border-color: rgba(250, 204, 21, 0.7) !important; background: rgba(250, 204, 21, 0.08) !important; }
+
+/* School Building Button */
+.btn-school { border-color: rgba(139, 92, 246, 0.3) !important; }
+.btn-school:not(:disabled):hover { border-color: rgba(139, 92, 246, 0.7) !important; background: rgba(139, 92, 246, 0.08) !important; }
+
 .res-rate {
   position: absolute;
   right: 1rem;

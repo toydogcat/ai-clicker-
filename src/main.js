@@ -6,9 +6,11 @@ import { HandLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 const state = {
   wood: 0,
   stone: 0,
-  food: 30, // Raised start food to support early automated farm rushing
+  food: 30,
   metal: 0,
   energy: 0,
+  money: 0,
+  knowledge: 0,
   workers: 0,
   workerLimit: 5,
   gatherFocus: 'wood',
@@ -18,12 +20,16 @@ const state = {
     smelter: 0,
     powerPlant: 0,
     warehouse: 0,
-    battery: 0
+    battery: 0,
+    bank: 0,
+    school: 0
   },
   jobs: {
     woodcutter: 0,
     miner: 0,
-    farmer: 0
+    farmer: 0,
+    merchant: 0,
+    scholar: 0
   }
 };
 
@@ -34,7 +40,9 @@ const COSTS = {
   smelter: { wood: 40, stone: 50 },
   powerPlant: { stone: 80, metal: 20 },
   warehouse: { wood: 50, stone: 30 },
-  battery: { stone: 60, metal: 40 }
+  battery: { stone: 60, metal: 40 },
+  bank: { wood: 60, metal: 30 },
+  school: { wood: 80, stone: 60, energy: 20 }
 };
 
 // DOM References
@@ -61,6 +69,14 @@ const energyMaxEl = document.getElementById("energyMax");
 const energyRateEl = document.getElementById("energyGenRate");
 const resEnergyItem = document.getElementById("res-energy");
 
+const moneyEl = document.getElementById("moneyCount");
+const moneyMaxEl = document.getElementById("moneyMax");
+const moneyRateEl = document.getElementById("moneyGenRate");
+const resMoneyItem = document.getElementById("res-money");
+
+const knowledgeEl = document.getElementById("knowledgeCount");
+const knowledgeRateEl = document.getElementById("knowledgeGenRate");
+
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
 const popBarEl = document.getElementById("popLimitBar");
@@ -79,6 +95,9 @@ const powerCountEl = document.getElementById("powerCount");
 const warehouseCountEl = document.getElementById("warehouseCount");
 const batteryCountEl = document.getElementById("batteryCount");
 
+const bankCountEl = document.getElementById("bankCount");
+const schoolCountEl = document.getElementById("schoolCount");
+
 const btnHireWorker = document.getElementById("btn-hire-worker");
 const btnBuildCabin = document.getElementById("btn-build-cabin");
 const btnBuildFarm = document.getElementById("btn-build-farm");
@@ -86,12 +105,16 @@ const btnBuildSmelter = document.getElementById("btn-build-smelter");
 const btnBuildPower = document.getElementById("btn-build-power");
 const btnBuildWarehouse = document.getElementById("btn-build-warehouse");
 const btnBuildBattery = document.getElementById("btn-build-battery");
+const btnBuildBank = document.getElementById("btn-build-bank");
+const btnBuildSchool = document.getElementById("btn-build-school");
 
 // Dispatch Panel DOM
 const idleCountEl = document.getElementById("idleWorkers");
 const cntWoodcutterEl = document.getElementById("cnt-woodcutter");
 const cntMinerEl = document.getElementById("cnt-miner");
 const cntFarmerEl = document.getElementById("cnt-farmer");
+const cntMerchantEl = document.getElementById("cnt-merchant");
+const cntScholarEl = document.getElementById("cnt-scholar");
 
 // Mobile Tab DOM
 const navItems = document.querySelectorAll(".nav-item");
@@ -167,6 +190,22 @@ function updateUI() {
   const netEnergyRate = state.buildings.powerPlant * 1.0;
   energyRateEl.textContent = `+${netEnergyRate.toFixed(1)}/秒`;
   
+  // Money display
+  moneyEl.textContent = Math.floor(state.money);
+  moneyMaxEl.textContent = 1000;
+  resMoneyItem.classList.toggle("res-full", Math.floor(state.money) >= 1000);
+
+  // Knowledge display (no cap, just count)
+  knowledgeEl.textContent = Math.floor(state.knowledge);
+
+  // Money rate: bank passive + merchants active
+  const netMoneyRate = (state.buildings.bank * 1.0) + (state.jobs.merchant * 2.0);
+  moneyRateEl.textContent = `+${netMoneyRate.toFixed(1)}/秒`;
+
+  // Knowledge rate: scholars only
+  const netKnowledgeRate = state.jobs.scholar * 1.0;
+  knowledgeRateEl.textContent = `+${netKnowledgeRate.toFixed(1)}/秒`;
+
   workerEl.textContent = state.workers;
   state.workerLimit = 5 + (state.buildings.cabins * 5);
   limitEl.textContent = state.workerLimit;
@@ -181,14 +220,22 @@ function updateUI() {
   powerCountEl.textContent = state.buildings.powerPlant;
   warehouseCountEl.textContent = state.buildings.warehouse;
   batteryCountEl.textContent = state.buildings.battery;
+  bankCountEl.textContent = state.buildings.bank;
+  schoolCountEl.textContent = state.buildings.school;
+
+  // Show/hide merchant and scholar jobs based on prerequisites
+  document.getElementById('job-merchant').style.opacity = '1';
+  document.getElementById('job-scholar').style.opacity = state.buildings.school > 0 ? '1' : '0.3';
 
   // Update Job allocation counters
-  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer + state.jobs.merchant + state.jobs.scholar;
   const idleWorkers = Math.max(0, state.workers - assignedCount);
   idleCountEl.textContent = idleWorkers;
   cntWoodcutterEl.textContent = state.jobs.woodcutter;
   cntMinerEl.textContent = state.jobs.miner;
   cntFarmerEl.textContent = state.jobs.farmer;
+  cntMerchantEl.textContent = state.jobs.merchant;
+  cntScholarEl.textContent = state.jobs.scholar;
 
   // Enable/Disable Job control buttons
   document.querySelectorAll('.ctrl-btn.btn-minus').forEach(btn => {
@@ -207,11 +254,13 @@ function updateUI() {
   btnBuildPower.disabled = (state.stone < COSTS.powerPlant.stone || state.metal < COSTS.powerPlant.metal);
   btnBuildWarehouse.disabled = (state.wood < COSTS.warehouse.wood || state.stone < COSTS.warehouse.stone);
   btnBuildBattery.disabled = (state.stone < COSTS.battery.stone || state.metal < COSTS.battery.metal);
+  btnBuildBank.disabled = (state.wood < COSTS.bank.wood || state.metal < COSTS.bank.metal);
+  btnBuildSchool.disabled = (state.wood < COSTS.school.wood || state.stone < COSTS.school.stone || state.energy < COSTS.school.energy);
 }
 
 // Dispatch Logic: Assign jobs
 function adjustJob(jobName, delta) {
-  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer + state.jobs.merchant + state.jobs.scholar;
   const idleWorkers = state.workers - assignedCount;
 
   if (delta > 0 && idleWorkers > 0) {
@@ -311,7 +360,30 @@ function gameTick() {
   // 4. Automated Industrial Yields (Smelters: +0.3/s Metal, Power Plants: +1.0/s Energy)
   state.metal += state.buildings.smelter * 0.3;
   state.energy += state.buildings.powerPlant * 1.0;
-  
+
+  // 5. Economy: Banks generate passive income; Merchants trade wood+stone for money
+  state.money += state.buildings.bank * 1.0;
+  const merchantIncome = state.jobs.merchant * 2.0;
+  const merchantWoodCost = state.jobs.merchant * 0.2;
+  const merchantStoneCost = state.jobs.merchant * 0.2;
+  if (state.wood >= merchantWoodCost && state.stone >= merchantStoneCost) {
+    state.wood -= merchantWoodCost;
+    state.stone -= merchantStoneCost;
+    state.money += merchantIncome;
+  }
+  state.money = Math.min(state.money, 1000);
+
+  // 6. Knowledge: Scholars generate research (with food+money cost)
+  if (state.jobs.scholar > 0) {
+    const scholarFoodCost = state.jobs.scholar * 0.5;
+    const scholarMoneyCost = state.jobs.scholar * 1.0;
+    if (state.food >= scholarFoodCost && state.money >= scholarMoneyCost) {
+      state.food -= scholarFoodCost;
+      state.money -= scholarMoneyCost;
+      state.knowledge += state.jobs.scholar * 1.0;
+    }
+  }
+
   // Apply resource caps (Food, Wood, Stone, Metal, Energy)
   state.wood = Math.min(state.wood, caps.wood);
   state.stone = Math.min(state.stone, caps.stone);
@@ -328,13 +400,17 @@ function gameTick() {
       spawnFloatingText("👷 飢荒工人逃亡!", "#ef4444");
 
       // Sync job state: Deduct 1 worker from jobs if we have no idle pool remaining
-      const totalAssigned = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+      const totalAssigned = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer + state.jobs.merchant + state.jobs.scholar;
       if (totalAssigned > state.workers) {
-        // Priority to remove from: Woodcutters first, Miners second, Farmers last
+        // Priority to remove from: Woodcutters first, Miners second, Merchants, Scholars, Farmers last
         if (state.jobs.woodcutter > 0) {
           state.jobs.woodcutter -= 1;
         } else if (state.jobs.miner > 0) {
           state.jobs.miner -= 1;
+        } else if (state.jobs.merchant > 0) {
+          state.jobs.merchant -= 1;
+        } else if (state.jobs.scholar > 0) {
+          state.jobs.scholar -= 1;
         } else if (state.jobs.farmer > 0) {
           state.jobs.farmer -= 1;
         }
@@ -437,6 +513,27 @@ btnBuildBattery.addEventListener("click", () => {
     state.metal -= COSTS.battery.metal;
     state.buildings.battery += 1;
     spawnFloatingText("+1 蓄電池 🔋", "#f59e0b");
+    updateUI();
+  }
+});
+
+btnBuildBank.addEventListener("click", () => {
+  if (state.wood >= COSTS.bank.wood && state.metal >= COSTS.bank.metal) {
+    state.wood -= COSTS.bank.wood;
+    state.metal -= COSTS.bank.metal;
+    state.buildings.bank += 1;
+    spawnFloatingText("+1 銀行 💰", "#facc15");
+    updateUI();
+  }
+});
+
+btnBuildSchool.addEventListener("click", () => {
+  if (state.wood >= COSTS.school.wood && state.stone >= COSTS.school.stone && state.energy >= COSTS.school.energy) {
+    state.wood -= COSTS.school.wood;
+    state.stone -= COSTS.school.stone;
+    state.energy -= COSTS.school.energy;
+    state.buildings.school += 1;
+    spawnFloatingText("+1 學院 📚", "#a78bfa");
     updateUI();
   }
 });

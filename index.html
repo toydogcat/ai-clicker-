@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Clicker: Settlement Pioneer</title>
+  <title>Clicker: Settlement Pioneer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script async src="https://www.vercount.one/js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/src/style.css">
 </head>
+
 <body>
   <!-- Ambient Glowing Background Effects -->
   <div class="ambient-glow ambient-1"></div>
@@ -19,7 +23,7 @@
   <header class="app-header">
     <div class="logo-container">
       <span class="logo-icon">⚡</span>
-      <h1>AI Clicker <span class="accent-text">Pioneer</span></h1>
+      <h1>Clicker <span class="accent-text">Pioneer</span></h1>
     </div>
     <div class="system-status">
       <div class="status-badge" id="cameraStatusBadge">
@@ -42,7 +46,8 @@
             <div class="res-details">
               <label>木頭 (Wood)</label>
               <span class="res-value">
-                <span id="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="woodMax">100</span>
+                <span id="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="woodMax">100</span>
               </span>
             </div>
           </div>
@@ -51,7 +56,8 @@
             <div class="res-details">
               <label>石頭 (Stone)</label>
               <span class="res-value">
-                <span id="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="stoneMax">100</span>
+                <span id="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="stoneMax">100</span>
               </span>
             </div>
           </div>
@@ -60,7 +66,8 @@
             <div class="res-details">
               <label>食物 (Food)</label>
               <span class="res-value">
-                <span id="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit" id="foodMax">100</span>
+                <span id="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="foodMax">100</span>
               </span>
             </div>
             <div class="res-rate alert-text" id="foodDrainRate">+0.0/秒</div>
@@ -70,7 +77,8 @@
             <div class="res-details">
               <label>金屬 (Metal)</label>
               <span class="res-value">
-                <span id="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="metalMax">50</span>
+                <span id="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="metalMax">50</span>
               </span>
             </div>
             <div class="res-rate" id="metalGenRate">+0.0/秒</div>
@@ -80,10 +88,32 @@
             <div class="res-details">
               <label>能源 (Energy)</label>
               <span class="res-value">
-                <span id="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit" id="energyMax">50</span>
+                <span id="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="energyMax">50</span>
               </span>
             </div>
             <div class="res-rate" id="energyGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-money" id="res-money">
+            <span class="res-icon">💰</span>
+            <div class="res-details">
+              <label>金錢 (Money)</label>
+              <span class="res-value">
+                <span id="moneyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
+                  id="moneyMax">1000</span>
+              </span>
+            </div>
+            <div class="res-rate" id="moneyGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-knowledge" id="res-knowledge">
+            <span class="res-icon">📚</span>
+            <div class="res-details">
+              <label>研究 (Knowledge)</label>
+              <span class="res-value">
+                <span id="knowledgeCount">0</span>
+              </span>
+            </div>
+            <div class="res-rate" id="knowledgeGenRate">+0.0/秒</div>
           </div>
         </div>
       </div>
@@ -115,7 +145,7 @@
               <span class="build-btn-cost">🍞 20 食物</span>
             </div>
           </button>
-          
+
           <button class="build-btn" id="btn-build-cabin" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">搭建木屋 (+5 上限)</span>
@@ -163,6 +193,22 @@
             </div>
             <span class="build-btn-count" id="batteryCount">0</span>
           </button>
+
+          <button class="build-btn btn-bank" id="btn-build-bank" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">建造銀行 (+1 💰/s)</span>
+              <span class="build-btn-cost">🪵 60 木 | 🪙 30 金</span>
+            </div>
+            <span class="build-btn-count" id="bankCount">0</span>
+          </button>
+
+          <button class="build-btn btn-school" id="btn-build-school" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">建造學院 (解鎖研究)</span>
+              <span class="build-btn-cost">🪵 80 木 | 🪨 60 石 | ⚡ 20 能</span>
+            </div>
+            <span class="build-btn-count" id="schoolCount">0</span>
+          </button>
         </div>
       </div>
     </aside>
@@ -174,7 +220,7 @@
           <h2>👷 人力調度面板</h2>
         </div>
         <p class="card-desc">將閒置的人口指派到特定專長崗位，最大化基礎資源生產量。</p>
-        
+
         <div class="dispatch-pool-bar">
           <span class="pool-label">閒置人口 (待分派)：</span>
           <span class="pool-value alert-text" id="idleWorkers">0</span>
@@ -228,6 +274,38 @@
               <button class="ctrl-btn btn-plus" data-job="farmer" aria-label="增加農夫">+</button>
             </div>
           </div>
+
+          <!-- Job: Merchant -->
+          <div class="job-row" id="job-merchant">
+            <div class="job-info">
+              <span class="job-emoji">💼</span>
+              <div class="job-meta">
+                <span class="job-title">商人</span>
+                <span class="job-yield">+2.0 💰/秒</span>
+              </div>
+            </div>
+            <div class="job-controls">
+              <button class="ctrl-btn btn-minus" data-job="merchant" aria-label="減少商人">-</button>
+              <span class="job-count" id="cnt-merchant">0</span>
+              <button class="ctrl-btn btn-plus" data-job="merchant" aria-label="增加商人">+</button>
+            </div>
+          </div>
+
+          <!-- Job: Scholar (Unlocked by School) -->
+          <div class="job-row" id="job-scholar">
+            <div class="job-info">
+              <span class="job-emoji">👨‍🏫</span>
+              <div class="job-meta">
+                <span class="job-title">學者</span>
+                <span class="job-yield">+1.0 📚/秒</span>
+              </div>
+            </div>
+            <div class="job-controls">
+              <button class="ctrl-btn btn-minus" data-job="scholar" aria-label="減少學者">-</button>
+              <span class="job-count" id="cnt-scholar">0</span>
+              <button class="ctrl-btn btn-plus" data-job="scholar" aria-label="增加學者">+</button>
+            </div>
+          </div>
         </div>
       </div>
     </aside>
@@ -237,7 +315,8 @@
       <div class="action-hub">
         <div class="nodes-cluster" id="nodesContainer">
           <!-- Forest (Wood) -->
-          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
+          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0"
+            aria-label="採集木頭">
             <div class="node-ring"></div>
             <div class="node-glow"></div>
             <div class="node-body">
@@ -245,7 +324,7 @@
               <span class="node-title">採集木頭</span>
             </div>
           </div>
-          
+
           <!-- Quarry (Stone) -->
           <div class="gather-node" id="node-stone" data-resource="stone" role="button" tabindex="0" aria-label="採集石頭">
             <div class="node-ring"></div>
@@ -256,12 +335,12 @@
             </div>
           </div>
         </div>
-        
+
         <div class="focus-badge">
           <span class="pulse-ring-small"></span>
           AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
         </div>
-        
+
         <!-- Floating click text container -->
         <div id="clickEffectsLayer"></div>
       </div>
@@ -274,7 +353,7 @@
           <h2>📷 AI 手勢偵測</h2>
         </div>
         <p class="card-desc">揮動您的<b>食指 (Index Finger)</b> 即可觸發點擊，速度越快，採集速度越快！</p>
-        
+
         <div class="vision-viewport-wrapper">
           <div class="vision-viewport">
             <div class="loading-overlay" id="modelLoader">
@@ -284,7 +363,7 @@
             <video id="webcam" autoplay playsinline muted></video>
             <canvas id="outputCanvas"></canvas>
           </div>
-          
+
           <div class="velocity-meter">
             <div class="meter-label">食指運動強度</div>
             <div class="meter-track">
@@ -299,7 +378,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="glass-card info-card">
         <div class="card-header">
           <h2>ℹ️ 玩法說明</h2>
@@ -312,7 +391,7 @@
       </div>
     </aside>
   </main>
-  
+
   <!-- Mobile Navigation Bar -->
   <nav class="mobile-navbar">
     <button class="nav-item active" data-target="tab-gather">
@@ -348,4 +427,5 @@
 
   <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>
