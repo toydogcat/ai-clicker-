@@ -109,6 +109,71 @@
       </div>
     </aside>
 
+    <!-- Left-Stacked Column: Labor Dispatch Panel -->
+    <aside class="panel-column side-panel tab-column" id="tab-dispatch" aria-label="人力調度">
+      <div class="glass-card dispatch-card">
+        <div class="card-header">
+          <h2>👷 人力調度面板</h2>
+        </div>
+        <p class="card-desc">將閒置的人口指派到特定專長崗位，最大化基礎資源生產量。</p>
+        
+        <div class="dispatch-pool-bar">
+          <span class="pool-label">閒置人口 (待分派)：</span>
+          <span class="pool-value alert-text" id="idleWorkers">0</span>
+        </div>
+
+        <div class="dispatch-list">
+          <!-- Job: Woodcutter -->
+          <div class="job-row" id="job-woodcutter">
+            <div class="job-info">
+              <span class="job-emoji">🪓</span>
+              <div class="job-meta">
+                <span class="job-title">伐木工人</span>
+                <span class="job-yield">+0.6 🪵/秒</span>
+              </div>
+            </div>
+            <div class="job-controls">
+              <button class="ctrl-btn btn-minus" data-job="woodcutter" aria-label="減少伐木工">-</button>
+              <span class="job-count" id="cnt-woodcutter">0</span>
+              <button class="ctrl-btn btn-plus" data-job="woodcutter" aria-label="增加伐木工">+</button>
+            </div>
+          </div>
+
+          <!-- Job: Miner -->
+          <div class="job-row" id="job-miner">
+            <div class="job-info">
+              <span class="job-emoji">⛏️</span>
+              <div class="job-meta">
+                <span class="job-title">採礦工人</span>
+                <span class="job-yield">+0.3 🪨/秒</span>
+              </div>
+            </div>
+            <div class="job-controls">
+              <button class="ctrl-btn btn-minus" data-job="miner" aria-label="減少礦工">-</button>
+              <span class="job-count" id="cnt-miner">0</span>
+              <button class="ctrl-btn btn-plus" data-job="miner" aria-label="增加礦工">+</button>
+            </div>
+          </div>
+
+          <!-- Job: Farmer -->
+          <div class="job-row" id="job-farmer">
+            <div class="job-info">
+              <span class="job-emoji">🌾</span>
+              <div class="job-meta">
+                <span class="job-title">專業農夫</span>
+                <span class="job-yield">+0.5 🍞/秒</span>
+              </div>
+            </div>
+            <div class="job-controls">
+              <button class="ctrl-btn btn-minus" data-job="farmer" aria-label="減少農夫">-</button>
+              <span class="job-count" id="cnt-farmer">0</span>
+              <button class="ctrl-btn btn-plus" data-job="farmer" aria-label="增加農夫">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
     <!-- Center Column: Main Interaction Zone -->
     <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="操作區">
       <div class="action-hub">
@@ -205,6 +270,10 @@
     <button class="nav-item" data-target="tab-settlement">
       <span class="nav-icon">🏘️</span>
       <span class="nav-label">營地</span>
+    </button>
+    <button class="nav-item" data-target="tab-dispatch">
+      <span class="nav-icon">👷</span>
+      <span class="nav-label">調度</span>
     </button>
     <button class="nav-item active" data-target="tab-gather">
       <span class="nav-icon">⚒️</span>

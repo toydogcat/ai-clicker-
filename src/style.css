@@ -785,6 +785,125 @@ h1 {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                          Labor Dispatch Styles                             */
+/* -------------------------------------------------------------------------- */
+.dispatch-pool-bar {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.pool-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pool-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.dispatch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.job-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.job-row:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.job-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.job-emoji {
+  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.job-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.job-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.job-yield {
+  font-size: 0.75rem;
+  color: #10b981; /* Emerald green yield text */
+  font-weight: 600;
+}
+
+.job-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.ctrl-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ctrl-btn:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.job-count {
+  font-size: 1.1rem;
+  font-weight: 800;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* -------------------------------------------------------------------------- */
 /*                          Mobile Navigation UI                              */
 /* -------------------------------------------------------------------------- */
 .mobile-navbar {
@@ -853,6 +972,33 @@ h1 {
   /* In Desktop Mode, ensure all tab columns are ALWAYS displayable as grid items */
   .tab-column {
     display: flex !important;
+    position: relative !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Dual stacked Layout inside Column 1 */
+  #tab-settlement {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  #tab-dispatch {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  #tab-gather {
+    grid-column: 2;
+    grid-row: 1 / span 2; /* Stretch down to center align with dual columns */
+  }
+  
+  #tab-ai {
+    grid-column: 3;
+    grid-row: 1 / span 2; /* Stretch down to center align with dual columns */
   }
 }
 

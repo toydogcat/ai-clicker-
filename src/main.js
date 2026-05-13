@@ -14,6 +14,11 @@ const state = {
   buildings: {
     cabins: 0,
     farms: 0
+  },
+  jobs: {
+    woodcutter: 0,
+    miner: 0,
+    farmer: 0
   }
 };
 
@@ -45,6 +50,12 @@ const farmCountEl = document.getElementById("farmCount");
 const btnHireWorker = document.getElementById("btn-hire-worker");
 const btnBuildCabin = document.getElementById("btn-build-cabin");
 const btnBuildFarm = document.getElementById("btn-build-farm");
+
+// Dispatch Panel DOM
+const idleCountEl = document.getElementById("idleWorkers");
+const cntWoodcutterEl = document.getElementById("cnt-woodcutter");
+const cntMinerEl = document.getElementById("cnt-miner");
+const cntFarmerEl = document.getElementById("cnt-farmer");
 
 // Mobile Tab DOM
 const navItems = document.querySelectorAll(".nav-item");
@@ -78,7 +89,7 @@ function updateUI() {
   foodEl.textContent = Math.floor(state.food);
   
   // Calculate net food per second
-  const passiveGen = state.buildings.farms * 1;
+  const passiveGen = (state.buildings.farms * 1.0) + (state.jobs.farmer * 0.5);
   const passiveCon = state.workers * 0.5;
   const netFoodRate = passiveGen - passiveCon;
   const sign = netFoodRate >= 0 ? "+" : "";
@@ -95,11 +106,41 @@ function updateUI() {
   // Update Building level trackers
   cabinCountEl.textContent = state.buildings.cabins;
   farmCountEl.textContent = state.buildings.farms;
+
+  // Update Job allocation counters
+  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+  const idleWorkers = Math.max(0, state.workers - assignedCount);
+  idleCountEl.textContent = idleWorkers;
+  cntWoodcutterEl.textContent = state.jobs.woodcutter;
+  cntMinerEl.textContent = state.jobs.miner;
+  cntFarmerEl.textContent = state.jobs.farmer;
+
+  // Enable/Disable Job control buttons
+  document.querySelectorAll('.ctrl-btn.btn-minus').forEach(btn => {
+    const jobName = btn.getAttribute('data-job');
+    btn.disabled = (state.jobs[jobName] <= 0);
+  });
+  document.querySelectorAll('.ctrl-btn.btn-plus').forEach(btn => {
+    btn.disabled = (idleWorkers <= 0);
+  });
   
   // Enable/Disable buttons dynamically based on current funds
   btnHireWorker.disabled = (state.food < COSTS.worker.food || state.workers >= state.workerLimit);
   btnBuildCabin.disabled = (state.wood < COSTS.cabin.wood);
   btnBuildFarm.disabled = (state.wood < COSTS.farm.wood || state.stone < COSTS.farm.stone);
+}
+
+// Dispatch Logic: Assign jobs
+function adjustJob(jobName, delta) {
+  const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+  const idleWorkers = state.workers - assignedCount;
+
+  if (delta > 0 && idleWorkers > 0) {
+    state.jobs[jobName] += 1;
+  } else if (delta < 0 && state.jobs[jobName] > 0) {
+    state.jobs[jobName] -= 1;
+  }
+  updateUI();
 }
 
 // Action Click: Gather Resource
@@ -173,16 +214,17 @@ function spawnFloatingText(text, color, clientX = null, clientY = null) {
 // Game Tick Loops (Farms, Consumptions, Jobs)
 // ==========================================
 function gameTick() {
-  // 1. Passive food yield from Farms (+1/s each)
-  state.food += state.buildings.farms * 1;
+  // 1. Passive food yield (Farms: +1/s, Farmers: +0.5/s)
+  const passiveGen = (state.buildings.farms * 1) + (state.jobs.farmer * 0.5);
+  state.food += passiveGen;
   
   // 2. Worker Consumption (eats 0.5 food/s each)
   const passiveCon = state.workers * 0.5;
   state.food -= passiveCon;
   
-  // 3. Worker Labor Yield (passive +0.2 wood and +0.1 stone/s)
-  state.wood += state.workers * 0.2;
-  state.stone += state.workers * 0.1;
+  // 3. Specialized Worker Yields (Lumberjacks: +0.6/s, Miners: +0.3/s)
+  state.wood += state.jobs.woodcutter * 0.6;
+  state.stone += state.jobs.miner * 0.3;
   
   // 4. Handle Survival / Hunger Deaths
   if (state.food < 0) {
@@ -191,6 +233,19 @@ function gameTick() {
     if (state.workers > 0 && Math.random() < 0.25) {
       state.workers -= 1;
       spawnFloatingText("👷 飢荒工人逃亡!", "#ef4444");
+
+      // Sync job state: Deduct 1 worker from jobs if we have no idle pool remaining
+      const totalAssigned = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
+      if (totalAssigned > state.workers) {
+        // Priority to remove from: Woodcutters first, Miners second, Farmers last
+        if (state.jobs.woodcutter > 0) {
+          state.jobs.woodcutter -= 1;
+        } else if (state.jobs.miner > 0) {
+          state.jobs.miner -= 1;
+        } else if (state.jobs.farmer > 0) {
+          state.jobs.farmer -= 1;
+        }
+      }
     }
   }
   
@@ -252,6 +307,15 @@ btnBuildFarm.addEventListener("click", () => {
     spawnFloatingText("+1 農田 🌾", "#f59e0b");
     updateUI();
   }
+});
+
+// Bind Dispatch Ctrl Buttons
+document.querySelectorAll(".ctrl-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const job = btn.getAttribute("data-job");
+    const isPlus = btn.classList.contains("btn-plus");
+    adjustJob(job, isPlus ? 1 : -1);
+  });
 });
 
 // Hook Up Responsive Tab Click Handlers
