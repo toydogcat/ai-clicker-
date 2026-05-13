@@ -87,7 +87,6 @@ const batteryCountEl = document.getElementById("batteryCount");
 const bankCountEl = document.getElementById("bankCount");
 const schoolCountEl = document.getElementById("schoolCount");
 
-const btnHireWorker = document.getElementById("btn-hire-worker");
 const btnBuildCabin = document.getElementById("btn-build-cabin");
 const btnBuildFarm = document.getElementById("btn-build-farm");
 const btnBuildSmelter = document.getElementById("btn-build-smelter");
@@ -237,22 +236,17 @@ function loadGame(directRaw = null) {
 function resetGame() {
   if (!confirm("確定要刪除存檔並重置遊戲嗎？\n（此操作無法復原）")) return;
   localStorage.removeItem(SAVE_KEY);
-  // Reset all state fields back to defaults
+  // Reset all state fields back to defaults matching the schema
   state.wood = 0; state.stone = 0; state.food = 30;
   state.metal = 0; state.energy = 0; state.money = 0; state.knowledge = 0;
-  state.workers = 0; state.workerLimit = 5; state.gatherFocus = 'wood';
+  state.workerLimit = 5; state.gatherFocus = 'wood';
   Object.keys(state.buildings).forEach(k => state.buildings[k] = 0);
-  Object.keys(state.jobs).forEach(k => state.jobs[k] = 0);
+  state.population = [];
+  state.bossInvasions = {};
   state.tech = { heroLicense: false };
+  state.party = [];
   state.inventory = [];
-  state.heroes.warrior = {
-    ...JSON.parse(JSON.stringify(gameConfig.heroes.warrior)),
-    eq: { rhand: null, lhand: null, helm: null, body: null, pants: null, shoes: null }
-  };
-  state.heroes.mage = {
-    ...JSON.parse(JSON.stringify(gameConfig.heroes.mage)),
-    eq: { rhand: null, lhand: null, helm: null, body: null, pants: null, shoes: null }
-  };
+  
   setGatherFocus('wood');
   updateUI();
   showToast("🗑️ 已重置！重新開始！", "error");
@@ -325,10 +319,36 @@ function updateUI() {
   energyMaxEl.textContent = caps.energy;
   resEnergyItem.classList.toggle("res-full", Math.floor(state.energy) >= caps.energy);
   
+  // Calculate dynamic net rates based on active population assignments
+  let totalFoodCost = 0;
+  let populationFoodGen = 0;
+  let populationMoneyGen = 0;
+  let populationKnowledgeGen = 0;
+
+  state.population.forEach(p => {
+    // Food consumption (Novices and Heroes eat similarly, Heroes also eat since they level up)
+    const baseCost = gameConfig.economy.popFoodCost * p.level;
+    totalFoodCost += p.assignment !== 'idle' ? baseCost : (baseCost * 0.2);
+
+    // Job production efficiency
+    const efficiency = 1.0 * p.level * p.slaveStat;
+    if (p.assignment === 'farmer') {
+      populationFoodGen += 0.5 * efficiency;
+    } else if (p.assignment === 'merchant') {
+      if (state.wood >= 0.2 * efficiency && state.stone >= 0.2 * efficiency) {
+        populationMoneyGen += 2.0 * efficiency;
+      }
+    } else if (p.assignment === 'scholar') {
+      const eCfg = gameConfig.economy;
+      if (state.food >= eCfg.scholarFoodCost * efficiency && state.money >= eCfg.scholarMoneyCost * efficiency && state.energy >= eCfg.scholarEnergyCost * efficiency) {
+        populationKnowledgeGen += 1.0 * efficiency;
+      }
+    }
+  });
+
   // Calculate net food per second
-  const passiveGen = (state.buildings.farms * 1.0) + (state.jobs.farmer * 0.5);
-  const passiveCon = state.workers * 0.5;
-  const netFoodRate = passiveGen - passiveCon;
+  const passiveGen = (state.buildings.farms * 1.0) + populationFoodGen;
+  const netFoodRate = passiveGen - totalFoodCost;
   const sign = netFoodRate >= 0 ? "+" : "";
   foodRateEl.textContent = `${sign}${netFoodRate.toFixed(1)}/秒`;
   foodRateEl.className = netFoodRate < 0 ? "res-rate alert-text" : "res-rate";
@@ -351,11 +371,11 @@ function updateUI() {
   knowledgeEl.textContent = Math.floor(state.knowledge);
 
   // Money rate: bank passive + merchants active
-  const netMoneyRate = (state.buildings.bank * 1.0) + (state.jobs.merchant * 2.0);
+  const netMoneyRate = (state.buildings.bank * 1.0) + populationMoneyGen;
   moneyRateEl.textContent = `+${netMoneyRate.toFixed(1)}/秒`;
 
   // Knowledge rate: scholars only
-  const netKnowledgeRate = state.jobs.scholar * 1.0;
+  const netKnowledgeRate = populationKnowledgeGen;
   knowledgeRateEl.textContent = `+${netKnowledgeRate.toFixed(1)}/秒`;
 
   const currentPop = state.population.length;
@@ -1693,16 +1713,6 @@ bindResourceNode(nodeWood, 'wood');
 bindResourceNode(nodeStone, 'stone');
 
 // Setup Building Card triggers
-btnHireWorker.addEventListener("click", () => {
-  const workerMoneyCost = state.buildings.bank > 0 ? gameConfig.economy.recruitBaseCost : 0;
-  if (state.food >= gameConfig.costs.worker.food && state.money >= workerMoneyCost && state.workers < state.workerLimit) {
-    state.food -= gameConfig.costs.worker.food;
-    state.money -= workerMoneyCost;
-    state.workers += 1;
-    spawnFloatingText("+1 工人 👷", "#3b82f6");
-    updateUI();
-  }
-});
 
 btnBuildCabin.addEventListener("click", () => {
   if (state.wood >= gameConfig.costs.cabin.wood) {
