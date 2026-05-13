@@ -120,7 +120,99 @@ const cntScholarEl = document.getElementById("cnt-scholar");
 const navItems = document.querySelectorAll(".nav-item");
 const tabColumns = document.querySelectorAll(".tab-column");
 
-// Set Active Gathering Focus
+// ==========================================
+// 2. Save / Load / Toast System
+// ==========================================
+
+const SAVE_KEY = "ai_clicker_save_v1";
+const toastEl = document.getElementById("toastNotification");
+let toastTimer = null;
+
+function showToast(message, type = "success") {
+  toastEl.textContent = message;
+  toastEl.className = `toast-notification toast-${type} show`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove("show");
+  }, 2500);
+}
+
+function saveGame() {
+  try {
+    const saveData = {
+      version: 1,
+      timestamp: Date.now(),
+      state: JSON.parse(JSON.stringify(state)) // deep clone
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+    showToast("💾 存檔成功！", "success");
+  } catch (e) {
+    showToast("❌ 存檔失敗：" + e.message, "error");
+  }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      showToast("📂 找不到存檔！", "error");
+      return false;
+    }
+    const saveData = JSON.parse(raw);
+    const saved = saveData.state;
+
+    // Deep merge — only restore known state keys
+    Object.keys(state).forEach(key => {
+      if (saved[key] !== undefined) {
+        if (typeof state[key] === 'object' && state[key] !== null) {
+          Object.assign(state[key], saved[key]);
+        } else {
+          state[key] = saved[key];
+        }
+      }
+    });
+
+    // Restore UI from loaded state
+    setGatherFocus(state.gatherFocus || 'wood');
+    updateUI();
+
+    const date = new Date(saveData.timestamp);
+    showToast(`📂 讀檔成功！（${date.toLocaleTimeString('zh-TW')}）`, "info");
+    return true;
+  } catch (e) {
+    showToast("❌ 讀檔失敗：" + e.message, "error");
+    return false;
+  }
+}
+
+function resetGame() {
+  if (!confirm("確定要刪除存檔並重置遊戲嗎？\n（此操作無法復原）")) return;
+  localStorage.removeItem(SAVE_KEY);
+  // Reset all state fields back to defaults
+  state.wood = 0; state.stone = 0; state.food = 30;
+  state.metal = 0; state.energy = 0; state.money = 0; state.knowledge = 0;
+  state.workers = 0; state.workerLimit = 5; state.gatherFocus = 'wood';
+  Object.keys(state.buildings).forEach(k => state.buildings[k] = 0);
+  Object.keys(state.jobs).forEach(k => state.jobs[k] = 0);
+  setGatherFocus('wood');
+  updateUI();
+  showToast("🗑️ 已重置！重新開始！", "error");
+}
+
+// Bind save/load/reset buttons
+document.getElementById("btn-save").addEventListener("click", saveGame);
+document.getElementById("btn-load").addEventListener("click", loadGame);
+document.getElementById("btn-reset").addEventListener("click", resetGame);
+
+// Auto-save every 30 seconds
+setInterval(() => {
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, timestamp: Date.now(), state: JSON.parse(JSON.stringify(state)) }));
+}, 30000);
+
+// ==========================================
+// 3. Set Active Gathering Focus
+// ==========================================
+
 function setGatherFocus(resource) {
   state.gatherFocus = resource;
   
@@ -423,6 +515,31 @@ function gameTick() {
 
 // Initialize background engine loop
 setInterval(gameTick, 1000);
+
+// Auto-load save on startup (silently, no toast)
+(function initLoad() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { updateUI(); return; }
+    const saveData = JSON.parse(raw);
+    const saved = saveData.state;
+    Object.keys(state).forEach(key => {
+      if (saved[key] !== undefined) {
+        if (typeof state[key] === 'object' && state[key] !== null) {
+          Object.assign(state[key], saved[key]);
+        } else {
+          state[key] = saved[key];
+        }
+      }
+    });
+    setGatherFocus(state.gatherFocus || 'wood');
+    updateUI();
+    const date = new Date(saveData.timestamp);
+    showToast(`✅ 自動讀取存檔（${date.toLocaleTimeString('zh-TW')}）`, "info");
+  } catch(e) {
+    updateUI();
+  }
+})();
 
 // ==========================================
 // Native Touch/Mouse Bindings

@@ -130,6 +130,89 @@ h1 {
   animation: pulse 1.5s infinite;
 }
 
+/* Save / Load Controls in Header */
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.save-controls {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+
+.save-btn-load:hover {
+  border-color: rgba(52, 211, 153, 0.6);
+  color: #34d399;
+}
+
+.save-btn-reset:hover {
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+
+/* Auto-save indicator in header */
+#auto-save-indicator {
+  font-size: 0.7rem;
+  color: var(--text-muted, rgba(255,255,255,0.35));
+  white-space: nowrap;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  backdrop-filter: blur(16px);
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast-notification.toast-success { border-color: rgba(52, 211, 153, 0.5); }
+.toast-notification.toast-error   { border-color: rgba(239, 68, 68, 0.5); }
+.toast-notification.toast-info    { border-color: rgba(129, 140, 248, 0.5); }
+
+
 /* Main Grid Container */
 .game-container {
   flex: 1;
