@@ -150,12 +150,7 @@
           <h2>🏗️ 建設發展</h2>
         </div>
         <div class="build-actions">
-          <button class="build-btn" id="btn-hire-worker" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">招募工人 (+1 👷)</span>
-              <span class="build-btn-cost">🍞 20 食物</span>
-            </div>
-          </button>
+          <!-- hire worker button removed, moved to HR panel -->
 
           <button class="build-btn" id="btn-build-cabin" disabled>
             <div class="build-btn-info">
@@ -226,103 +221,174 @@
 
     <!-- Left-Stacked Column: Labor Dispatch Panel -->
     <aside class="panel-column side-panel tab-column" id="tab-dispatch" aria-label="人力調度">
-      <div class="glass-card dispatch-card">
+      <div class="glass-card dispatch-card" style="display: flex; flex-direction: column; max-height: 80vh;">
         <div class="card-header">
-          <h2>👷 人力調度面板</h2>
+          <h2>👷 居民名冊與指派</h2>
         </div>
-        <p class="card-desc">將閒置的人口指派到特定專長崗位，最大化基礎資源生產量。</p>
+        <p class="card-desc">管理城鎮居民。指派勞動以採集資源，或送往公會戰鬥以升級。</p>
 
         <div class="dispatch-pool-bar">
-          <span class="pool-label">閒置人口 (待分派)：</span>
-          <span class="pool-value alert-text" id="idleWorkers">0</span>
+          <span class="pool-label">城鎮人口：</span>
+          <span class="pool-value alert-text"><span id="popCountDisplay">0</span> / <span id="popLimitDisplay">5</span></span>
         </div>
 
-        <div class="dispatch-list">
-          <!-- Job: Woodcutter -->
-          <div class="job-row" id="job-woodcutter">
-            <div class="job-info">
-              <span class="job-emoji">🪓</span>
-              <div class="job-meta">
-                <span class="job-title">伐木工人</span>
-                <span class="job-yield">+0.6 🪵/秒</span>
-              </div>
-            </div>
-            <div class="job-controls">
-              <button class="ctrl-btn btn-minus" data-job="woodcutter" aria-label="減少伐木工">-</button>
-              <span class="job-count" id="cnt-woodcutter">0</span>
-              <button class="ctrl-btn btn-plus" data-job="woodcutter" aria-label="增加伐木工">+</button>
-            </div>
+        <button class="build-btn" id="btn-hire-resident" style="width: 100%; margin-bottom: 1rem;" disabled>
+          <div class="build-btn-info">
+            <span class="build-btn-title">🍻 在酒館招募流浪者</span>
+            <span class="build-btn-cost">🍞 20 食物 | 💰 5 金</span>
           </div>
+        </button>
 
-          <!-- Job: Miner -->
-          <div class="job-row" id="job-miner">
-            <div class="job-info">
-              <span class="job-emoji">⛏️</span>
-              <div class="job-meta">
-                <span class="job-title">採礦工人</span>
-                <span class="job-yield">+0.3 🪨/秒</span>
-              </div>
-            </div>
-            <div class="job-controls">
-              <button class="ctrl-btn btn-minus" data-job="miner" aria-label="減少礦工">-</button>
-              <span class="job-count" id="cnt-miner">0</span>
-              <button class="ctrl-btn btn-plus" data-job="miner" aria-label="增加礦工">+</button>
-            </div>
+        <!-- Dynamic Table for Population -->
+        <div class="roster-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;" id="populationRoster">
+          <div class="empty-inv" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 1rem;">
+            城鎮空無一人，請招募流浪者！
           </div>
+        </div>
+      </div>
 
-          <!-- Job: Farmer -->
-          <div class="job-row" id="job-farmer">
-            <div class="job-info">
-              <span class="job-emoji">🌾</span>
-              <div class="job-meta">
-                <span class="job-title">專業農夫</span>
-                <span class="job-yield">+0.5 🍞/秒</span>
-              </div>
+      <!-- 🔬 Academy Research Card -->
+      <div class="glass-card research-card" id="researchCard" style="display: none; margin-top: 1rem;">
+        <div class="card-header">
+          <h2>🔬 學院研究中心</h2>
+        </div>
+        <p class="card-desc">利用學者的研究成果解鎖先進的城邦科技。</p>
+        <div class="dispatch-pool-bar" style="border-color: #3b82f6; color: #60a5fa;">
+          <span class="pool-label">累積知識：</span>
+          <span class="pool-value" id="knowledgeVal">0</span>
+        </div>
+        <div class="dispatch-list" style="margin-top: 0.5rem;">
+          <button class="build-btn" id="btnTechHero" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">研發【英雄招募令】</span>
+              <span class="build-btn-cost">📚 100 知識 | 🪙 50 金</span>
             </div>
-            <div class="job-controls">
-              <button class="ctrl-btn btn-minus" data-job="farmer" aria-label="減少農夫">-</button>
-              <span class="job-count" id="cnt-farmer">0</span>
-              <button class="ctrl-btn btn-plus" data-job="farmer" aria-label="增加農夫">+</button>
-            </div>
-          </div>
-
-          <!-- Job: Merchant -->
-          <div class="job-row" id="job-merchant">
-            <div class="job-info">
-              <span class="job-emoji">💼</span>
-              <div class="job-meta">
-                <span class="job-title">商人</span>
-                <span class="job-yield">+2.0 💰/秒</span>
-              </div>
-            </div>
-            <div class="job-controls">
-              <button class="ctrl-btn btn-minus" data-job="merchant" aria-label="減少商人">-</button>
-              <span class="job-count" id="cnt-merchant">0</span>
-              <button class="ctrl-btn btn-plus" data-job="merchant" aria-label="增加商人">+</button>
-            </div>
-          </div>
-
-          <!-- Job: Scholar (Unlocked by School) -->
-          <div class="job-row" id="job-scholar">
-            <div class="job-info">
-              <span class="job-emoji">👨‍🏫</span>
-              <div class="job-meta">
-                <span class="job-title">學者</span>
-                <span class="job-yield">+1.0 📚/秒</span>
-              </div>
-            </div>
-            <div class="job-controls">
-              <button class="ctrl-btn btn-minus" data-job="scholar" aria-label="減少學者">-</button>
-              <span class="job-count" id="cnt-scholar">0</span>
-              <button class="ctrl-btn btn-plus" data-job="scholar" aria-label="增加學者">+</button>
-            </div>
-          </div>
+            <span class="build-btn-count" id="techHeroStatus">未解鎖</span>
+          </button>
         </div>
       </div>
     </aside>
 
     <!-- Center Column: Main Interaction Zone -->
     <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="操作區">
+      
+      <!-- ⚔️ RPG Guild & Combat Zone (Locked by default) -->
+      <div class="glass-card rpg-guild-card locked" id="rpgGuildCard">
+        <div class="rpg-lock-overlay" id="rpgLockOverlay">
+          <span class="lock-icon">⚔️ 🔒</span>
+          <h3>冒險者公會尚未成立</h3>
+          <p>在學院中研發「英雄招募令」以開啟 RPG 打怪冒險！</p>
+        </div>
+
+        <div class="rpg-unlocked-content" style="display: none;">
+          <!-- 1. Combat Viewport -->
+          <div class="battle-viewport">
+            <div class="battle-field">
+              <div class="party-side" id="partyGroup">
+                <!-- Dynamically populated by JS (up to 4 heroes) -->
+              </div>
+
+              <div class="battle-versus">VS</div>
+
+              <div class="enemy-side" id="enemyGroup">
+                <!-- Dynamically populated by JS (3~6 enemies) -->
+              </div>
+            </div>
+
+            <div class="battle-log" id="battleLog">
+              <div>🚩 準備出征，打造裝備以提升屬性！</div>
+            </div>
+          </div>
+
+          <!-- 2. Dashboard (Tabs inside Guild: Heroes, Equipment, Shop) -->
+          <div class="rpg-sub-tabs">
+            <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
+            <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
+            <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
+            <button class="rpg-sub-tab" data-rpg-tab="quest-panel">🗺️ 出征任務</button>
+          </div>
+
+          <!-- 3. RPG Sub-Panels Container -->
+          <div class="rpg-panel-container">
+            
+            <!-- SubTab: Hero Sheet -->
+            <div class="rpg-panel active" id="rpg-hero-sheet">
+              <div class="heroes-wrapper" id="guildRoster">
+                <!-- Dynamically populated by JS (12 classes) -->
+              </div>
+
+              <!-- Skills Casting Bar (Active during combat) -->
+              <div class="combat-skill-dock" id="skillDock" style="display:none;">
+                <div class="dock-title">🖐️ 手勢詠唱進度 (切換布/拳/指來詠唱)</div>
+                <div class="skills-grid" id="gestureSkillGrid">
+                  <!-- Dynamically populated skill progress bars based on party members -->
+                </div>
+              </div>
+            </div>
+
+            <!-- SubTab: Gear Shop -->
+            <div class="rpg-panel" id="rpg-gear-shop">
+              <div class="shop-controls">
+                <label>選擇購買等級：</label>
+                <select id="shopLevelSelect">
+                  <option value="1">Lv 1 (💰 100)</option>
+                  <option value="2">Lv 2 (💰 500)</option>
+                  <option value="3">Lv 3 (💰 2000)</option>
+                  <option value="4">Lv 4 (💰 8000)</option>
+                  <option value="5">Lv 5 (💰 25000)</option>
+                  <option value="6">Lv 6 (💰 75000)</option>
+                  <option value="7">Lv 7 (💰 250000)</option>
+                </select>
+              </div>
+              <div class="shop-items-grid">
+                <button class="buy-eq-btn" data-slot="rhand">🗡️ 買武器</button>
+                <button class="buy-eq-btn" data-slot="lhand">🛡️ 買副手</button>
+                <button class="buy-eq-btn" data-slot="helm">🪖 買頭盔</button>
+                <button class="buy-eq-btn" data-slot="body">🥋 買衣服</button>
+                <button class="buy-eq-btn" data-slot="pants">👖 買褲子</button>
+                <button class="buy-eq-btn" data-slot="shoes">👞 買鞋子</button>
+              </div>
+              <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
+            </div>
+
+            <!-- SubTab: Inventory Panel -->
+            <div class="rpg-panel" id="rpg-inventory-panel">
+              <div class="inv-grid" id="inventoryContainer">
+                <!-- Dynamic Inventory Items -->
+                <div class="empty-inv">背包是空的，快去打寶吧！</div>
+              </div>
+            </div>
+
+            <!-- SubTab: Quest Panel -->
+            <div class="rpg-panel" id="rpg-quest-panel">
+              <div class="deploy-config">
+                <h5>1. 當前派遣編制 (已招募英雄自動出征)</h5>
+                <div id="partyStatusList" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.9rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px; color: #94a3b8;">
+                  ⏳ 尚未招募任何英雄，請先前往公會招募。
+                </div>
+              </div>
+              <div class="quest-action-zone">
+                <h5>2. 選擇討伐對象</h5>
+                <div class="quest-btns-row">
+                  <button class="quest-go-btn btn-hunt" id="btnQuestHunt">⚔️ 討伐可愛小怪</button>
+                  <button class="quest-go-btn btn-boss" id="btnQuestBoss">💀 挑戰終極巨獸</button>
+                  <button class="quest-go-btn btn-retreat" id="btnQuestRetreat" disabled>🏳️ 撤退</button>
+                </div>
+              </div>
+              <!-- Boss selection dropdown, visible when selecting boss -->
+              <div id="bossSelectRow" style="display:none; margin-top: 0.5rem;">
+                <select id="targetBoss">
+                  <option value="greed">👹 【貪】之巨獸 (高金幣)</option>
+                  <option value="anger">🔥 【嗔】之巨獸 (超高傷害)</option>
+                  <option value="ignorance">🦑 【癡】之巨獸 (混亂抗性)</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div class="action-hub">
         <div class="nodes-cluster" id="nodesContainer">
           <!-- Forest (Wood) -->
@@ -435,6 +501,23 @@
     </div>
     <p>AI Clicker Prototype © 2026 | Built with MediaPipe Tasks-Vision</p>
   </footer>
+
+  <!-- Calculus Exam Modal -->
+  <div id="examModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="glass-card" style="width: 400px; padding: 2rem; text-align: center; background: #1e293b;">
+      <h2 style="color: #fde047; margin-bottom: 1rem;">📖 轉職殿微積分測驗</h2>
+      <p style="color: #e2e8f0; margin-bottom: 1.5rem;">想突破等級 9，必須具備基礎的微積分知識。<br>請問：變數 x 對 x 進行微分的結果是多少？</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+        <button class="build-btn" onclick="submitExam(0)">選項 0</button>
+        <button class="build-btn" onclick="submitExam(1)">選項 1</button>
+        <button class="build-btn" onclick="submitExam(2)">選項 2</button>
+        <button class="build-btn" onclick="submitExam(3)">選項 3</button>
+      </div>
+      
+      <button class="ctrl-btn" onclick="document.getElementById('examModal').style.display = 'none'" style="background: #ef4444;">放棄測驗</button>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div class="toast-notification" id="toastNotification"></div>

@@ -1,0 +1,195 @@
+{
+  "costs": {
+    "worker": { "food": 20 },
+    "cabin": { "wood": 25 },
+    "farm": { "wood": 30, "stone": 15 },
+    "smelter": { "wood": 40, "stone": 50 },
+    "powerPlant": { "stone": 80, "metal": 20 },
+    "warehouse": { "wood": 50, "stone": 30 },
+    "battery": { "stone": 60, "metal": 40 },
+    "bank": { "stone": 60, "metal": 30 },
+    "school": { "wood": 80, "stone": 60, "energy": 20 }
+  },
+  "economy": {
+    "baseMoneyCap": 1000,
+    "bankMoneyBonus": 50000,
+    "recruitBaseCost": 5,
+    "scholarFoodCost": 0.5,
+    "scholarMoneyCost": 1.0,
+    "scholarEnergyCost": 0.2,
+    "popFoodCost": 0.5,
+    "slaveRange": [0.8, 2.5]
+  },
+  "eqSpecs": {
+    "price": [0, 100, 500, 2000, 8000, 25000, 75000, 250000],
+    "slots": {
+      "rhand": { "name": "右手武器", "mainStat": "atk", "scale": 2.0 },
+      "lhand": { "name": "左手武器", "mainStat": "def", "scale": 1.5 },
+      "helm": { "name": "頭盔", "mainStat": "mdef", "scale": 1.0 },
+      "body": { "name": "身體盔甲", "mainStat": "hp", "scale": 10.0 },
+      "pants": { "name": "褲子", "mainStat": "def", "scale": 0.8 },
+      "shoes": { "name": "鞋子", "mainStat": "spd", "scale": 0.05 }
+    },
+    "rarities": {
+      "normal": { "name": "普通", "color": "#ffffff", "extraStats": 0, "mult": 1.0 },
+      "magic":  { "name": "精良", "color": "#10b981", "extraStats": 1, "mult": 1.2 },
+      "rare":   { "name": "稀有", "color": "#3b82f6", "extraStats": 2, "mult": 1.5 },
+      "epic":   { "name": "史詩", "color": "#a855f7", "extraStats": 3, "mult": 2.0 },
+      "legend": { "name": "傳說", "color": "#eab308", "extraStats": 4, "mult": 3.0 }
+    },
+    "statList": ["hp", "mp", "atk", "def", "matk", "mdef", "spd", "lifesteal", "mlifesteal", "hit", "evasion", "critRate", "critDmg", "lucky"],
+    "statNames": {
+      "hp": "生命值", "mp": "魔力值", "atk": "攻擊力", "def": "防禦力",
+      "matk": "魔法攻擊", "mdef": "魔法防禦", "spd": "速度",
+      "lifesteal": "物理吸血", "mlifesteal": "魔法吸血",
+      "hit": "命中", "evasion": "閃避", "critRate": "暴擊率", "critDmg": "暴擊傷害", "lucky": "幸運"
+    }
+  },
+  "heroes": {
+    "novice": {
+      "name": "無職村民", "unlocked": true, "level": 1, "exp": 0,
+      "hp": 50, "maxHp": 50, "mp": 10, "maxMp": 10,
+      "atk": 5, "def": 2, "matk": 0, "mdef": 0, "spd": 1.0,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.9, "evasion": 0.01, "critRate": 0.05, "critDmg": 1.5, "lucky": 5, "hireCost": 5,
+      "growth": { "hp": 10, "mp": 2, "atk": 1, "def": 1, "matk": 0, "mdef": 0, "spd": 0.02, "hit": 0.01, "evasion": 0.005, "critRate": 0.005, "lucky": 1 }
+    },
+    "warrior": {
+      "name": "勇者", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 120, "maxHp": 120, "mp": 30, "maxMp": 30,
+      "atk": 15, "def": 10, "matk": 2, "mdef": 5, "spd": 1.2,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.1, "critDmg": 2.0, "lucky": 10, "hireCost": 50,
+      "growth": { "hp": 25, "mp": 6, "atk": 4, "def": 3, "matk": 0, "mdef": 1.5, "spd": 0.05, "hit": 0.01, "evasion": 0.005, "critRate": 0.01, "lucky": 2 }
+    },
+    "barbarian": {
+      "name": "野蠻人", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 150, "maxHp": 150, "mp": 20, "maxMp": 20,
+      "atk": 25, "def": 4, "matk": 0, "mdef": 2, "spd": 1.1,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.90, "evasion": 0.02, "critRate": 0.15, "critDmg": 2.5, "lucky": 5, "hireCost": 60,
+      "growth": { "hp": 30, "mp": 3, "atk": 7, "def": 1, "matk": 0, "mdef": 0.5, "spd": 0.05, "hit": 0.015, "evasion": 0.003, "critRate": 0.02, "lucky": 1 }
+    },
+    "shieldWarrior": {
+      "name": "盾戰士", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 180, "maxHp": 180, "mp": 30, "maxMp": 30,
+      "atk": 8, "def": 20, "matk": 0, "mdef": 10, "spd": 0.9,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.05, "critDmg": 2.0, "lucky": 15, "hireCost": 70,
+      "growth": { "hp": 40, "mp": 5, "atk": 2, "def": 6, "matk": 0, "mdef": 3, "spd": 0.04, "hit": 0.01, "evasion": 0.005, "critRate": 0.005, "lucky": 2 }
+    },
+    "rogue": {
+      "name": "盜賊", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 80, "maxHp": 80, "mp": 40, "maxMp": 40,
+      "atk": 12, "def": 5, "matk": 0, "mdef": 5, "spd": 1.5,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.25, "critRate": 0.3, "critDmg": 3.0, "lucky": 30, "hireCost": 80,
+      "growth": { "hp": 15, "mp": 8, "atk": 3, "def": 1.5, "matk": 0, "mdef": 1, "spd": 0.06, "hit": 0.01, "evasion": 0.02, "critRate": 0.03, "lucky": 5 }
+    },
+    "archer": {
+      "name": "弓箭手", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 90, "maxHp": 90, "mp": 40, "maxMp": 40,
+      "atk": 14, "def": 6, "matk": 0, "mdef": 6, "spd": 1.3,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 1.10, "evasion": 0.10, "critRate": 0.25, "critDmg": 2.0, "lucky": 20, "hireCost": 80,
+      "growth": { "hp": 18, "mp": 7, "atk": 4, "def": 1.5, "matk": 0, "mdef": 1.5, "spd": 0.05, "hit": 0.02, "evasion": 0.01, "critRate": 0.025, "lucky": 4 }
+    },
+    "gunner": {
+      "name": "槍手", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 100, "maxHp": 100, "mp": 30, "maxMp": 30,
+      "atk": 30, "def": 8, "matk": 0, "mdef": 8, "spd": 0.8,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.80, "evasion": 0.05, "critRate": 0.1, "critDmg": 2.5, "lucky": 15, "hireCost": 100,
+      "growth": { "hp": 20, "mp": 5, "atk": 8, "def": 2, "matk": 0, "mdef": 1.5, "spd": 0.04, "hit": 0.01, "evasion": 0.003, "critRate": 0.03, "lucky": 4 }
+    },
+    "fighter": {
+      "name": "拳擊手", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 110, "maxHp": 110, "mp": 40, "maxMp": 40,
+      "atk": 10, "def": 8, "matk": 0, "mdef": 6, "spd": 1.8,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 1.0, "evasion": 0.15, "critRate": 0.1, "critDmg": 2.0, "lucky": 20, "hireCost": 90,
+      "growth": { "hp": 22, "mp": 7, "atk": 3, "def": 2, "matk": 0, "mdef": 1.5, "spd": 0.08, "hit": 0.01, "evasion": 0.015, "critRate": 0.02, "lucky": 3 }
+    },
+    "mage": {
+      "name": "法師", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 70, "maxHp": 70, "mp": 100, "maxMp": 100,
+      "atk": 4, "def": 5, "matk": 20, "mdef": 12, "spd": 1.0,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.1, "critDmg": 2.0, "lucky": 25, "hireCost": 80,
+      "growth": { "hp": 12, "mp": 20, "atk": 1, "def": 1, "matk": 6, "mdef": 3, "spd": 0.05, "hit": 0.01, "evasion": 0.005, "critRate": 0.01, "lucky": 4 }
+    },
+    "wizard": {
+      "name": "巫師", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 75, "maxHp": 75, "mp": 120, "maxMp": 120,
+      "atk": 3, "def": 6, "matk": 18, "mdef": 15, "spd": 1.0,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.05, "critDmg": 2.0, "lucky": 35, "hireCost": 90,
+      "growth": { "hp": 13, "mp": 22, "atk": 0.5, "def": 1, "matk": 5, "mdef": 4, "spd": 0.05, "hit": 0.01, "evasion": 0.005, "critRate": 0.005, "lucky": 5 }
+    },
+    "priest": {
+      "name": "牧師", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 90, "maxHp": 90, "mp": 150, "maxMp": 150,
+      "atk": 5, "def": 8, "matk": 10, "mdef": 15, "spd": 1.0,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.05, "critDmg": 2.0, "lucky": 40, "hireCost": 100,
+      "growth": { "hp": 18, "mp": 25, "atk": 1, "def": 2, "matk": 3, "mdef": 4, "spd": 0.05, "hit": 0.01, "evasion": 0.005, "critRate": 0.005, "lucky": 6 }
+    },
+    "paladin": {
+      "name": "聖騎士", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 140, "maxHp": 140, "mp": 80, "maxMp": 80,
+      "atk": 12, "def": 18, "matk": 5, "mdef": 12, "spd": 0.9,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.05, "critDmg": 2.0, "lucky": 20, "hireCost": 120,
+      "growth": { "hp": 30, "mp": 10, "atk": 3, "def": 5, "matk": 2, "mdef": 3, "spd": 0.04, "hit": 0.01, "evasion": 0.005, "critRate": 0.005, "lucky": 3 }
+    },
+    "taoist": {
+      "name": "道士 (巨獸剋星)", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 40, "maxHp": 40, "mp": 80, "maxMp": 80,
+      "atk": 1, "def": 1, "matk": 5, "mdef": 5, "spd": 0.8,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.01, "critDmg": 1.5, "lucky": 80, "hireCost": 500,
+      "growth": { "hp": 10, "mp": 18, "atk": 0.5, "def": 0.5, "matk": 8, "mdef": 2, "spd": 0.02, "hit": 0.01, "evasion": 0.005, "critRate": 0.002, "lucky": 8 }
+    },
+    "monk": {
+      "name": "和尚 (巨獸剋星)", "unlocked": false, "level": 1, "exp": 0,
+      "hp": 50, "maxHp": 50, "mp": 50, "maxMp": 50,
+      "atk": 3, "def": 2, "matk": 2, "mdef": 2, "spd": 0.7,
+      "lifesteal": 0, "mlifesteal": 0, "hit": 0.95, "evasion": 0.05, "critRate": 0.01, "critDmg": 1.5, "lucky": 50, "hireCost": 500,
+      "growth": { "hp": 12, "mp": 10, "atk": 1, "def": 1, "matk": 0.5, "mdef": 1, "spd": 0.03, "hit": 0.015, "evasion": 0.005, "critRate": 0.002, "lucky": 7 }
+    }
+  },
+  "combat": {
+    "tech": {
+      "heroLicense": {
+        "reqKnowledge": 100,
+        "reqMoney": 50
+      }
+    },
+    "mobs": {
+      "list": [
+        { "name": "史萊姆", "avatar": "💧" },
+        { "name": "憤怒蘑菇", "avatar": "🍄" },
+        { "name": "飛天萌蝠", "avatar": "🦇" },
+        { "name": "嘟嘟鳥", "avatar": "🐤" },
+        { "name": "迷你野狼", "avatar": "🐺" }
+      ],
+      "base": {
+        "hp": 80, "atk": 8, "def": 4, "matk": 2, "mdef": 2, "spd": 0.8
+      },
+      "scaling": {
+        "levelMult": 1.4,
+        "duoMult": 1.8,
+        "spdPerLvl": 0.05,
+        "rewardExpBase": 20,
+        "rewardMoneyBase": 15
+      }
+    },
+    "bosses": {
+      "greed": {
+        "name": "👹 貪之巨獸 (終極)",
+        "avatar": "👹",
+        "hp": 3000, "maxHp": 3000, "atk": 80, "def": 40, "matk": 20, "mdef": 30, "spd": 1.1,
+        "rewardExp": 1000, "rewardMoney": 5000
+      },
+      "anger": {
+        "name": "🔥 嗔之巨獸 (終極)",
+        "avatar": "🔥",
+        "hp": 2500, "maxHp": 2500, "atk": 150, "def": 20, "matk": 80, "mdef": 15, "spd": 1.3,
+        "rewardExp": 1000, "rewardMoney": 2000
+      },
+      "ignorance": {
+        "name": "🦑 癡之巨獸 (終極)",
+        "avatar": "🦑",
+        "hp": 4000, "maxHp": 4000, "atk": 60, "def": 60, "matk": 60, "mdef": 60, "spd": 0.9,
+        "rewardExp": 1000, "rewardMoney": 2000
+      }
+    }
+  }
+}
