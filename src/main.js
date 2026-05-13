@@ -104,6 +104,7 @@ const populationRoster = document.getElementById("populationRoster");
 
 // --- RPG & Academy Tech DOM Caches ---
 const rpgGuildCard = document.getElementById("rpgGuildCard");
+const dispatchRpgCard = document.getElementById("dispatchRpgCard");
 const rpgLockOverlay = document.getElementById("rpgLockOverlay");
 const rpgUnlockedContent = document.querySelector(".rpg-unlocked-content");
 const btnTechHero = document.getElementById("btnTechHero");
@@ -451,11 +452,13 @@ function updateUI() {
     rpgGuildCard?.classList.remove("locked");
     if (rpgLockOverlay) rpgLockOverlay.style.display = "none";
     if (rpgUnlockedContent) rpgUnlockedContent.style.display = "block";
+    if (dispatchRpgCard) dispatchRpgCard.style.display = "block";
     updateHeroSheets();
   } else {
     rpgGuildCard?.classList.add("locked");
     if (rpgLockOverlay) rpgLockOverlay.style.display = "flex";
     if (rpgUnlockedContent) rpgUnlockedContent.style.display = "none";
+    if (dispatchRpgCard) dispatchRpgCard.style.display = "none";
   }
 
   renderPopulationRoster();

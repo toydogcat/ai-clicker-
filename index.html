@@ -226,7 +226,7 @@
       </div>
     </aside>
 
-    <!-- Left-Stacked Column: Labor Dispatch Panel -->
+    <!-- Dispatch Column: Roster + Heroes + Weapons + Inventory -->
     <aside class="panel-column side-panel tab-column" id="tab-dispatch" aria-label="人力調度">
       <div class="glass-card dispatch-card" style="display: flex; flex-direction: column; max-height: 80vh;">
         <div class="card-header">
@@ -274,11 +274,65 @@
           </button>
         </div>
       </div>
+
+      <!-- ⚔️ RPG Sub-Panels moved here: Heroes, Weapons, Inventory -->
+      <div class="glass-card" id="dispatchRpgCard" style="display: none; margin-top: 1rem;">
+        <div class="rpg-sub-tabs">
+          <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
+          <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
+          <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
+        </div>
+        <div class="rpg-panel-container">
+          <!-- SubTab: Hero Sheet -->
+          <div class="rpg-panel active" id="rpg-hero-sheet">
+            <div class="heroes-wrapper" id="guildRoster">
+              <!-- Dynamically populated by JS (12 classes) -->
+            </div>
+            <!-- Skills Casting Bar (Active during combat) -->
+            <div class="combat-skill-dock" id="skillDock" style="display:none;">
+              <div class="dock-title">🖐️ 手勢詠唱進度 (切換布/拳/指來施法)</div>
+              <div class="skills-grid" id="gestureSkillGrid">
+                <!-- Dynamically populated skill progress bars based on party members -->
+              </div>
+            </div>
+          </div>
+          <!-- SubTab: Gear Shop -->
+          <div class="rpg-panel" id="rpg-gear-shop">
+            <div class="shop-controls">
+              <label>選擇購買等級：</label>
+              <select id="shopLevelSelect">
+                <option value="1">Lv 1 (💰 100)</option>
+                <option value="2">Lv 2 (💰 500)</option>
+                <option value="3">Lv 3 (💰 2000)</option>
+                <option value="4">Lv 4 (💰 8000)</option>
+                <option value="5">Lv 5 (💰 25000)</option>
+                <option value="6">Lv 6 (💰 75000)</option>
+                <option value="7">Lv 7 (💰 250000)</option>
+              </select>
+            </div>
+            <div class="shop-items-grid">
+              <button class="buy-eq-btn" data-slot="rhand">🗡️ 買武器</button>
+              <button class="buy-eq-btn" data-slot="lhand">🛡️ 買副手</button>
+              <button class="buy-eq-btn" data-slot="helm">🪖 買頭盔</button>
+              <button class="buy-eq-btn" data-slot="body">🥋 買衣服</button>
+              <button class="buy-eq-btn" data-slot="pants">👖 買褲子</button>
+              <button class="buy-eq-btn" data-slot="shoes">👞 買鞋子</button>
+            </div>
+            <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
+          </div>
+          <!-- SubTab: Inventory Panel -->
+          <div class="rpg-panel" id="rpg-inventory-panel">
+            <div class="inv-grid" id="inventoryContainer">
+              <div class="empty-inv">背包是空的，快去打寶吧！</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
 
-    <!-- Center Column: Main Interaction Zone -->
+    <!-- Center Column: Gather + Combat Zone -->
     <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="操作區">
-      
+
       <!-- ⚔️ RPG Guild & Combat Zone (Locked by default) -->
       <div class="glass-card rpg-guild-card locked" id="rpgGuildCard">
         <div class="rpg-lock-overlay" id="rpgLockOverlay">
@@ -291,83 +345,23 @@
           <!-- 1. Combat Viewport -->
           <div class="battle-viewport">
             <div class="battle-field">
-              <div class="party-side" id="partyGroup">
-                <!-- Dynamically populated by JS (up to 4 heroes) -->
-              </div>
-
+              <div class="party-side" id="partyGroup"></div>
               <div class="battle-versus">VS</div>
-
-              <div class="enemy-side" id="enemyGroup">
-                <!-- Dynamically populated by JS (3~6 enemies) -->
-              </div>
+              <div class="enemy-side" id="enemyGroup"></div>
             </div>
-
             <div class="battle-log" id="battleLog">
               <div>🚩 準備出征，打造裝備以提升屬性！</div>
             </div>
           </div>
 
-          <!-- 2. Dashboard (Tabs inside Guild: Heroes, Equipment, Shop) -->
+          <!-- 2. Quest Sub-Tab only -->
           <div class="rpg-sub-tabs">
-            <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
-            <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
-            <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
-            <button class="rpg-sub-tab" data-rpg-tab="quest-panel">🗺️ 出征任務</button>
+            <button class="rpg-sub-tab active" data-rpg-tab="quest-panel">🗺️ 出征任務</button>
           </div>
 
-          <!-- 3. RPG Sub-Panels Container -->
+          <!-- 3. Quest Panel -->
           <div class="rpg-panel-container">
-            
-            <!-- SubTab: Hero Sheet -->
-            <div class="rpg-panel active" id="rpg-hero-sheet">
-              <div class="heroes-wrapper" id="guildRoster">
-                <!-- Dynamically populated by JS (12 classes) -->
-              </div>
-
-              <!-- Skills Casting Bar (Active during combat) -->
-              <div class="combat-skill-dock" id="skillDock" style="display:none;">
-                <div class="dock-title">🖐️ 手勢詠唱進度 (切換布/拳/指來詠唱)</div>
-                <div class="skills-grid" id="gestureSkillGrid">
-                  <!-- Dynamically populated skill progress bars based on party members -->
-                </div>
-              </div>
-            </div>
-
-            <!-- SubTab: Gear Shop -->
-            <div class="rpg-panel" id="rpg-gear-shop">
-              <div class="shop-controls">
-                <label>選擇購買等級：</label>
-                <select id="shopLevelSelect">
-                  <option value="1">Lv 1 (💰 100)</option>
-                  <option value="2">Lv 2 (💰 500)</option>
-                  <option value="3">Lv 3 (💰 2000)</option>
-                  <option value="4">Lv 4 (💰 8000)</option>
-                  <option value="5">Lv 5 (💰 25000)</option>
-                  <option value="6">Lv 6 (💰 75000)</option>
-                  <option value="7">Lv 7 (💰 250000)</option>
-                </select>
-              </div>
-              <div class="shop-items-grid">
-                <button class="buy-eq-btn" data-slot="rhand">🗡️ 買武器</button>
-                <button class="buy-eq-btn" data-slot="lhand">🛡️ 買副手</button>
-                <button class="buy-eq-btn" data-slot="helm">🪖 買頭盔</button>
-                <button class="buy-eq-btn" data-slot="body">🥋 買衣服</button>
-                <button class="buy-eq-btn" data-slot="pants">👖 買褲子</button>
-                <button class="buy-eq-btn" data-slot="shoes">👞 買鞋子</button>
-              </div>
-              <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
-            </div>
-
-            <!-- SubTab: Inventory Panel -->
-            <div class="rpg-panel" id="rpg-inventory-panel">
-              <div class="inv-grid" id="inventoryContainer">
-                <!-- Dynamic Inventory Items -->
-                <div class="empty-inv">背包是空的，快去打寶吧！</div>
-              </div>
-            </div>
-
-            <!-- SubTab: Quest Panel -->
-            <div class="rpg-panel" id="rpg-quest-panel">
+            <div class="rpg-panel active" id="rpg-quest-panel">
               <div class="deploy-config">
                 <h5>1. 當前派遣編制 (已招募英雄自動出征)</h5>
                 <div id="partyStatusList" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.9rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px; color: #94a3b8;">
@@ -382,7 +376,6 @@
                   <button class="quest-go-btn btn-retreat" id="btnQuestRetreat" disabled>🏳️ 撤退</button>
                 </div>
               </div>
-              <!-- Boss selection dropdown, visible when selecting boss -->
               <div id="bossSelectRow" style="display:none; margin-top: 0.5rem;">
                 <select id="targetBoss">
                   <option value="greed">👹 【貪】之巨獸 (高金幣)</option>
@@ -391,16 +384,14 @@
                 </select>
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
+      <!-- 採集節點 -->
       <div class="action-hub">
         <div class="nodes-cluster" id="nodesContainer">
-          <!-- Forest (Wood) -->
-          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0"
-            aria-label="採集木頭">
+          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
             <div class="node-ring"></div>
             <div class="node-glow"></div>
             <div class="node-body">
@@ -408,8 +399,6 @@
               <span class="node-title">採集木頭</span>
             </div>
           </div>
-
-          <!-- Quarry (Stone) -->
           <div class="gather-node" id="node-stone" data-resource="stone" role="button" tabindex="0" aria-label="採集石頭">
             <div class="node-ring"></div>
             <div class="node-glow"></div>
@@ -419,13 +408,10 @@
             </div>
           </div>
         </div>
-
         <div class="focus-badge">
           <span class="pulse-ring-small"></span>
           AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
         </div>
-
-        <!-- Floating click text container -->
         <div id="clickEffectsLayer"></div>
       </div>
     </section>
@@ -436,7 +422,7 @@
         <div class="card-header">
           <h2>📷 AI 手勢偵測</h2>
         </div>
-        <p class="card-desc">揮動您的<b>食指 (Index Finger)</b> 即可觸發點擊，速度越快，採集速度越快！</p>
+        <p class="card-desc">透過<b>手勢</b>施放戰鬥技能！切換「布/拳/指」手勢來觸發不同的技能詠唱，消滅敵人！</p>
 
         <div class="vision-viewport-wrapper">
           <div class="vision-viewport">
@@ -468,9 +454,10 @@
           <h2>ℹ️ 玩法說明</h2>
         </div>
         <ul class="rules-list">
-          <li>🪵 **手動採集**：只有 **木頭** 與 **石頭** 可以透過滑鼠點擊或 AI 進行手動採集。</li>
-          <li>🍞 **生存策略**：**食物、金屬、能源** 需要透過建設農田與工業設施來進行自動化生產！</li>
-          <li>🖐️ **AI 追蹤**：對著鏡頭不斷揮動食指，AI 會自動幫您以光速狂點您所鎖定的原始採集區。</li>
+          <li>⚔️ **戰鬥手勢**：透過切換「布/拳/指」三種手勢來詠唱不同的戰鬥技能，消滅敵人！</li>
+          <li>🌳 **採集系統**：木頭與石頭在「採集」頁面中透過點擊或 AI 食指偵測進行手動採集。</li>
+          <li>🏗️ **建設系統**：在「營地」頁面點擊建設按鈕，自動生產食物、金屬、能源等資源。</li>
+          <li>👥 **英雄調度**：在「調度」頁面管理英雄招募、裝備購買與背包管理。</li>
         </ul>
       </div>
     </aside>
