@@ -394,13 +394,6 @@ h1 {
 #node-stone .node-glow { background: #94a3b8; }
 #node-stone.active .node-ring { border-color: #94a3b8; border-style: solid; }
 
-#node-food.active {
-  border-color: #f59e0b;
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25);
-}
-#node-food .node-glow { background: #f59e0b; }
-#node-food.active .node-ring { border-color: #f59e0b; border-style: solid; }
-
 .node-body {
   display: flex;
   align-items: center;

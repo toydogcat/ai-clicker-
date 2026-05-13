@@ -55,9 +55,25 @@
             <span class="res-icon">🍞</span>
             <div class="res-details">
               <label>食物 (Food)</label>
-              <span class="res-value" id="foodCount">10</span>
+              <span class="res-value" id="foodCount">30</span>
             </div>
-            <div class="res-rate alert-text" id="foodDrainRate">-0/s</div>
+            <div class="res-rate alert-text" id="foodDrainRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item" id="res-metal">
+            <span class="res-icon">🪙</span>
+            <div class="res-details">
+              <label>金屬 (Metal)</label>
+              <span class="res-value" id="metalCount">0</span>
+            </div>
+            <div class="res-rate" id="metalGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item" id="res-energy">
+            <span class="res-icon">⚡</span>
+            <div class="res-details">
+              <label>能源 (Energy)</label>
+              <span class="res-value" id="energyCount">0</span>
+            </div>
+            <div class="res-rate" id="energyGenRate">+0.0/秒</div>
           </div>
         </div>
       </div>
@@ -104,6 +120,22 @@
               <span class="build-btn-cost">🪵 30 木 | 🪨 15 石</span>
             </div>
             <span class="build-btn-count" id="farmCount">0</span>
+          </button>
+
+          <button class="build-btn" id="btn-build-smelter" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">建造熔爐 (+0.3 🪙/s)</span>
+              <span class="build-btn-cost">🪵 40 木 | 🪨 50 石</span>
+            </div>
+            <span class="build-btn-count" id="smelterCount">0</span>
+          </button>
+
+          <button class="build-btn" id="btn-build-power" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">建造發電廠 (+1.0 ⚡/s)</span>
+              <span class="build-btn-cost">🪨 80 石 | 🪙 20 金</span>
+            </div>
+            <span class="build-btn-count" id="powerCount">0</span>
           </button>
         </div>
       </div>
@@ -197,16 +229,6 @@
               <span class="node-title">採集石頭</span>
             </div>
           </div>
-          
-          <!-- Wilds (Food) -->
-          <div class="gather-node" id="node-food" data-resource="food" role="button" tabindex="0" aria-label="搜尋食物">
-            <div class="node-ring"></div>
-            <div class="node-glow"></div>
-            <div class="node-body">
-              <span class="node-emoji">🌾</span>
-              <span class="node-title">搜尋食物</span>
-            </div>
-          </div>
         </div>
         
         <div class="focus-badge">
@@ -257,9 +279,9 @@
           <h2>ℹ️ 玩法說明</h2>
         </div>
         <ul class="rules-list">
-          <li>🖱️ **滑鼠**：單擊中央能量球。</li>
-          <li>📱 **手機**：點擊中央能量球。</li>
-          <li>🖐️ **AI 鏡頭**：對著鏡頭不斷揮動食指，系統將自動偵測位移並轉化為極速連點！</li>
+          <li>🪵 **手動採集**：只有 **木頭** 與 **石頭** 可以透過滑鼠點擊或 AI 進行手動採集。</li>
+          <li>🍞 **生存策略**：**食物、金屬、能源** 需要透過建設農田與工業設施來進行自動化生產！</li>
+          <li>🖐️ **AI 追蹤**：對著鏡頭不斷揮動食指，AI 會自動幫您以光速狂點您所鎖定的原始採集區。</li>
         </ul>
       </div>
     </aside>

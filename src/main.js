@@ -6,14 +6,17 @@ import { HandLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 const state = {
   wood: 0,
   stone: 0,
-  food: 20, // Start with 20 food so hiring is immediately playable
+  food: 30, // Raised start food to support early automated farm rushing
+  metal: 0,
+  energy: 0,
   workers: 0,
   workerLimit: 5,
-  foodConsumptionRate: 0,
   gatherFocus: 'wood',
   buildings: {
     cabins: 0,
-    farms: 0
+    farms: 0,
+    smelter: 0,
+    powerPlant: 0
   },
   jobs: {
     woodcutter: 0,
@@ -25,7 +28,9 @@ const state = {
 const COSTS = {
   worker: { food: 20 },
   cabin: { wood: 25 },
-  farm: { wood: 30, stone: 15 }
+  farm: { wood: 30, stone: 15 },
+  smelter: { wood: 40, stone: 50 },
+  powerPlant: { stone: 80, metal: 20 }
 };
 
 // DOM References
@@ -33,6 +38,10 @@ const woodEl = document.getElementById("woodCount");
 const stoneEl = document.getElementById("stoneCount");
 const foodEl = document.getElementById("foodCount");
 const foodRateEl = document.getElementById("foodDrainRate");
+const metalEl = document.getElementById("metalCount");
+const metalRateEl = document.getElementById("metalGenRate");
+const energyEl = document.getElementById("energyCount");
+const energyRateEl = document.getElementById("energyGenRate");
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
 const popBarEl = document.getElementById("popLimitBar");
@@ -41,15 +50,18 @@ const effectsLayer = document.getElementById("clickEffectsLayer");
 // Target Nodes DOM
 const nodeWood = document.getElementById("node-wood");
 const nodeStone = document.getElementById("node-stone");
-const nodeFood = document.getElementById("node-food");
 const focusBadgeText = document.getElementById("activeFocusText");
 
 // Build Panel DOM
 const cabinCountEl = document.getElementById("cabinCount");
 const farmCountEl = document.getElementById("farmCount");
+const smelterCountEl = document.getElementById("smelterCount");
+const powerCountEl = document.getElementById("powerCount");
 const btnHireWorker = document.getElementById("btn-hire-worker");
 const btnBuildCabin = document.getElementById("btn-build-cabin");
 const btnBuildFarm = document.getElementById("btn-build-farm");
+const btnBuildSmelter = document.getElementById("btn-build-smelter");
+const btnBuildPower = document.getElementById("btn-build-power");
 
 // Dispatch Panel DOM
 const idleCountEl = document.getElementById("idleWorkers");
@@ -68,7 +80,6 @@ function setGatherFocus(resource) {
   // Update node highlights
   nodeWood.classList.remove("active");
   nodeStone.classList.remove("active");
-  nodeFood.classList.remove("active");
   
   if (resource === 'wood') {
     nodeWood.classList.add("active");
@@ -76,9 +87,6 @@ function setGatherFocus(resource) {
   } else if (resource === 'stone') {
     nodeStone.classList.add("active");
     focusBadgeText.innerHTML = `🪨 採集石頭`;
-  } else {
-    nodeFood.classList.add("active");
-    focusBadgeText.innerHTML = `🌾 搜尋食物`;
   }
 }
 
@@ -87,6 +95,8 @@ function updateUI() {
   woodEl.textContent = Math.floor(state.wood);
   stoneEl.textContent = Math.floor(state.stone);
   foodEl.textContent = Math.floor(state.food);
+  metalEl.textContent = Math.floor(state.metal);
+  energyEl.textContent = Math.floor(state.energy);
   
   // Calculate net food per second
   const passiveGen = (state.buildings.farms * 1.0) + (state.jobs.farmer * 0.5);
@@ -95,6 +105,14 @@ function updateUI() {
   const sign = netFoodRate >= 0 ? "+" : "";
   foodRateEl.textContent = `${sign}${netFoodRate.toFixed(1)}/秒`;
   foodRateEl.className = netFoodRate < 0 ? "res-rate alert-text" : "res-rate";
+
+  // Update automated Metal rates
+  const netMetalRate = state.buildings.smelter * 0.3;
+  metalRateEl.textContent = `+${netMetalRate.toFixed(1)}/秒`;
+
+  // Update automated Energy rates
+  const netEnergyRate = state.buildings.powerPlant * 1.0;
+  energyRateEl.textContent = `+${netEnergyRate.toFixed(1)}/秒`;
   
   workerEl.textContent = state.workers;
   state.workerLimit = 5 + (state.buildings.cabins * 5);
@@ -106,6 +124,8 @@ function updateUI() {
   // Update Building level trackers
   cabinCountEl.textContent = state.buildings.cabins;
   farmCountEl.textContent = state.buildings.farms;
+  smelterCountEl.textContent = state.buildings.smelter;
+  powerCountEl.textContent = state.buildings.powerPlant;
 
   // Update Job allocation counters
   const assignedCount = state.jobs.woodcutter + state.jobs.miner + state.jobs.farmer;
@@ -128,6 +148,8 @@ function updateUI() {
   btnHireWorker.disabled = (state.food < COSTS.worker.food || state.workers >= state.workerLimit);
   btnBuildCabin.disabled = (state.wood < COSTS.cabin.wood);
   btnBuildFarm.disabled = (state.wood < COSTS.farm.wood || state.stone < COSTS.farm.stone);
+  btnBuildSmelter.disabled = (state.wood < COSTS.smelter.wood || state.stone < COSTS.smelter.stone);
+  btnBuildPower.disabled = (state.stone < COSTS.powerPlant.stone || state.metal < COSTS.powerPlant.metal);
 }
 
 // Dispatch Logic: Assign jobs
@@ -158,9 +180,7 @@ function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
     text = "+1 石頭";
     color = "#94a3b8"; // slate
   } else {
-    state.food += 1;
-    text = "+1 食物";
-    color = "#f59e0b"; // amber
+    return; // Non-clickable resource
   }
 
   // If manual click, swap the AI targeting lock-on
@@ -225,8 +245,12 @@ function gameTick() {
   // 3. Specialized Worker Yields (Lumberjacks: +0.6/s, Miners: +0.3/s)
   state.wood += state.jobs.woodcutter * 0.6;
   state.stone += state.jobs.miner * 0.3;
+
+  // 4. Automated Industrial Yields (Smelters: +0.3/s Metal, Power Plants: +1.0/s Energy)
+  state.metal += state.buildings.smelter * 0.3;
+  state.energy += state.buildings.powerPlant * 1.0;
   
-  // 4. Handle Survival / Hunger Deaths
+  // 5. Handle Survival / Hunger Deaths
   if (state.food < 0) {
     state.food = 0;
     // Starving condition: 25% chance per sec to lose worker
@@ -278,7 +302,6 @@ function bindResourceNode(el, resourceType) {
 
 bindResourceNode(nodeWood, 'wood');
 bindResourceNode(nodeStone, 'stone');
-bindResourceNode(nodeFood, 'food');
 
 // Setup Building Card triggers
 btnHireWorker.addEventListener("click", () => {
@@ -305,6 +328,26 @@ btnBuildFarm.addEventListener("click", () => {
     state.stone -= COSTS.farm.stone;
     state.buildings.farms += 1;
     spawnFloatingText("+1 農田 🌾", "#f59e0b");
+    updateUI();
+  }
+});
+
+btnBuildSmelter.addEventListener("click", () => {
+  if (state.wood >= COSTS.smelter.wood && state.stone >= COSTS.smelter.stone) {
+    state.wood -= COSTS.smelter.wood;
+    state.stone -= COSTS.smelter.stone;
+    state.buildings.smelter += 1;
+    spawnFloatingText("+1 熔爐 🪙", "#38bdf8");
+    updateUI();
+  }
+});
+
+btnBuildPower.addEventListener("click", () => {
+  if (state.stone >= COSTS.powerPlant.stone && state.metal >= COSTS.powerPlant.metal) {
+    state.stone -= COSTS.powerPlant.stone;
+    state.metal -= COSTS.powerPlant.metal;
+    state.buildings.powerPlant += 1;
+    spawnFloatingText("+1 電廠 ⚡", "#facc15");
     updateUI();
   }
 });
