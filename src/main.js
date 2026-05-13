@@ -14,6 +14,7 @@ const DEFAULT_STATE = {
   knowledge: 0,
   workerLimit: 5,
   gatherFocus: 'wood',
+  difficulty: 'normal', // easy, normal, hard, nightmare
   buildings: {
     cabins: 0,
     farms: 0,
@@ -42,8 +43,55 @@ const DEFAULT_STATE = {
   }
 };
 
+const DIFFICULTY_MULTIPLIERS = {
+  easy: {
+    label: "🌱 簡單",
+    color: "#10b981",
+    gather: 2.0,
+    enemyHp: 0.5,
+    enemyAtk: 0.5,
+    expMoneyMod: 1.5
+  },
+  normal: {
+    label: "⚔️ 一般",
+    color: "#3b82f6",
+    gather: 1.0,
+    enemyHp: 1.0,
+    enemyAtk: 1.0,
+    expMoneyMod: 1.0
+  },
+  hard: {
+    label: "🔥 困難",
+    color: "#f59e0b",
+    gather: 0.7,
+    enemyHp: 1.5,
+    enemyAtk: 1.4,
+    expMoneyMod: 0.8
+  },
+  nightmare: {
+    label: "💀 惡夢",
+    color: "#ef4444",
+    gather: 0.4,
+    enemyHp: 2.5,
+    enemyAtk: 2.0,
+    expMoneyMod: 0.5
+  }
+};
+
 const state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 window.state = state;
+
+window.setDifficulty = function(key) {
+  if (!DIFFICULTY_MULTIPLIERS[key]) return;
+  state.difficulty = key;
+  
+  const modal = document.getElementById("difficultyModal");
+  if (modal) modal.style.display = "none";
+  
+  saveGame(true); // silent save
+  updateUI();
+  showToast(`🎮 冒險開始！已設定為【${DIFFICULTY_MULTIPLIERS[key].label}】！`, "success");
+};
 
 
 
@@ -290,6 +338,9 @@ function resetGame() {
   updateUI();
   updateLevelSelectors();
   showToast("🗑️ 已重置！重新開始！", "error");
+  
+  const modal = document.getElementById("difficultyModal");
+  if (modal) modal.style.display = "flex";
 }
 
 // Bind save/load/reset buttons
@@ -366,6 +417,13 @@ function getCapacities() {
 // Update Display
 function updateUI() {
   const caps = getCapacities();
+
+  const diffBadgeVal = document.getElementById("diffBadgeVal");
+  const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+  if (diffBadgeVal) {
+    diffBadgeVal.textContent = diffCfg.label;
+    diffBadgeVal.style.color = diffCfg.color;
+  }
   
   woodEl.textContent = Math.floor(state.wood);
   woodMaxEl.textContent = caps.wood;
@@ -572,18 +630,22 @@ function updateUI() {
 function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
   const resource = resourceOverride || state.gatherFocus;
   const caps = getCapacities();
+  
+  const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+  const clickYield = 1 * diffCfg.gather;
+  
   let text = "";
   let color = "";
 
   if (resource === "wood") {
     if (Math.floor(state.wood) >= caps.wood) return; // Prevent gathering if full
-    state.wood = Math.min(state.wood + 1, caps.wood);
-    text = "+1 木頭";
+    state.wood = Math.min(state.wood + clickYield, caps.wood);
+    text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 木頭`;
     color = "#818cf8"; // indigo
   } else if (resource === "stone") {
     if (Math.floor(state.stone) >= caps.stone) return; // Prevent gathering if full
-    state.stone = Math.min(state.stone + 1, caps.stone);
-    text = "+1 石頭";
+    state.stone = Math.min(state.stone + clickYield, caps.stone);
+    text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 石頭`;
     color = "#94a3b8"; // slate
   } else {
     return; // Non-clickable resource
@@ -641,14 +703,16 @@ function spawnFloatingText(text, color, clientX = null, clientY = null) {
 // ==========================================
 function gameTick() {
   const caps = getCapacities();
+  const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+  const diffMult = diffCfg.gather;
 
   // 1. Passive food yield (Farms: +1/s)
-  const passiveGen = (state.buildings.farms * 1);
+  const passiveGen = (state.buildings.farms * 1) * diffMult;
   state.food += passiveGen;
   
   // 2. Automated Industrial Yields (Smelters: +0.3/s Metal, Power Plants: +1.0/s Energy)
-  state.metal += state.buildings.smelter * 0.3;
-  state.energy += state.buildings.powerPlant * 1.0;
+  state.metal += (state.buildings.smelter * 0.3) * diffMult;
+  state.energy += (state.buildings.powerPlant * 1.0) * diffMult;
 
   // 3. Banks generate passive income
   state.money += state.buildings.bank * 1.0;
@@ -687,9 +751,9 @@ function gameTick() {
     }
   });
 
-  state.wood += netWood;
-  state.stone += netStone;
-  state.food += netFood;
+  state.wood += netWood * diffMult;
+  state.stone += netStone * diffMult;
+  state.food += netFood * diffMult;
   state.money += netMoney;
   state.knowledge += netKnowledge;
 
@@ -1852,7 +1916,8 @@ function spawnEnemy() {
     if(combatParty.length > 0) avgLvl = Math.ceil(total / combatParty.length);
   }
 
-  
+  const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+
   combatState.enemies = [];
   const enemyGroup = document.getElementById("enemyGroup");
   if (enemyGroup) enemyGroup.innerHTML = "";
@@ -1867,28 +1932,28 @@ function spawnEnemy() {
       const mobData = mobCfg.list[idx];
       
       const scale = Math.pow(mobCfg.scaling.levelMult, avgLvl - 1);
-      // Removed duoScale since party size is dynamic, adjust by a flat logic or keep as is.
       const eId = `enemy-${i}`;
+      const finalHp = Math.floor(mobCfg.base.hp * scale * diffCfg.enemyHp);
+      
       combatState.enemies.push({
         id: eId,
         name: `Lv.${avgLvl} ${mobData.name}`,
         avatar: mobData.avatar,
-        hp: Math.floor(mobCfg.base.hp * scale),
-        maxHp: Math.floor(mobCfg.base.hp * scale),
-        atk: Math.floor(mobCfg.base.atk * scale),
+        hp: finalHp,
+        maxHp: finalHp,
+        atk: Math.floor(mobCfg.base.atk * scale * diffCfg.enemyAtk),
         def: Math.floor(mobCfg.base.def * scale),
         matk: Math.floor(mobCfg.base.matk * scale),
         mdef: Math.floor(mobCfg.base.mdef * scale),
         spd: mobCfg.base.spd + (avgLvl * mobCfg.scaling.spdPerLvl),
         atb: 0,
-        rewardExp: Math.floor(mobCfg.scaling.rewardExpBase * avgLvl / mobCount),
-        rewardMoney: Math.floor(mobCfg.scaling.rewardMoneyBase * avgLvl / mobCount),
+        rewardExp: Math.floor((mobCfg.scaling.rewardExpBase * avgLvl / mobCount) * diffCfg.expMoneyMod),
+        rewardMoney: Math.floor((mobCfg.scaling.rewardMoneyBase * avgLvl / mobCount) * diffCfg.expMoneyMod),
         isBoss: false
       });
     }
   } else {
     // Spawn multiple Bosses sequentially matching current state.bossLevel (1 to 3)
-    // Lv 1 -> greed, Lv 2 -> greed + anger, Lv 3 -> greed + anger + ignorance!
     const bLevel = state.bossLevel || 1;
     const roster = [
       { key: "greed", id: "enemy-boss-greed" },
@@ -1901,8 +1966,15 @@ function spawnEnemy() {
       const bType = roster[i].key;
       const bossCfg = gameConfig.combat.bosses[bType];
       if (bossCfg) {
+        const finalBoss = JSON.parse(JSON.stringify(bossCfg));
+        finalBoss.hp = Math.floor(finalBoss.hp * diffCfg.enemyHp);
+        finalBoss.maxHp = Math.floor(finalBoss.maxHp * diffCfg.enemyHp);
+        finalBoss.atk = Math.floor(finalBoss.atk * diffCfg.enemyAtk);
+        if (finalBoss.rewardExp) finalBoss.rewardExp = Math.floor(finalBoss.rewardExp * diffCfg.expMoneyMod);
+        if (finalBoss.rewardMoney) finalBoss.rewardMoney = Math.floor(finalBoss.rewardMoney * diffCfg.expMoneyMod);
+        
         combatState.enemies.push({
-          ...JSON.parse(JSON.stringify(bossCfg)),
+          ...finalBoss,
           id: roster[i].id,
           atb: 0,
           isBoss: true
@@ -2223,22 +2295,14 @@ setInterval(gameTick, 1000);
 (function initLoad() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) { updateUI(); return; }
-    const saveData = JSON.parse(raw);
-    const saved = saveData.state;
-    Object.keys(state).forEach(key => {
-      if (saved[key] !== undefined) {
-        if (typeof state[key] === 'object' && state[key] !== null) {
-          state[key] = JSON.parse(JSON.stringify(saved[key]));
-        } else {
-          state[key] = saved[key];
-        }
-      }
-    });
-    setGatherFocus(state.gatherFocus || 'wood');
-    updateUI();
-    const date = new Date(saveData.timestamp);
-    showToast(`✅ 自動讀取存檔（${date.toLocaleTimeString('zh-TW')}）`, "info");
+    if (!raw) { 
+      updateUI(); 
+      const modal = document.getElementById("difficultyModal");
+      if (modal) modal.style.display = "flex";
+      return; 
+    }
+    // Reuse robust applySaveData with deep recursive schema migration!
+    applySaveData(raw);
   } catch(e) {
     updateUI();
   }
