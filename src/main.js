@@ -41,7 +41,7 @@ const COSTS = {
   powerPlant: { stone: 80, metal: 20 },
   warehouse: { wood: 50, stone: 30 },
   battery: { stone: 60, metal: 40 },
-  bank: { wood: 60, metal: 30 },
+  bank: { stone: 60, metal: 30 },
   school: { wood: 80, stone: 60, energy: 20 }
 };
 
@@ -339,14 +339,21 @@ function updateUI() {
   });
   
   // Enable/Disable buttons dynamically based on current funds
-  btnHireWorker.disabled = (state.food < COSTS.worker.food || state.workers >= state.workerLimit);
+  const workerMoneyCost = state.buildings.bank > 0 ? 5 : 0;
+  btnHireWorker.disabled = (state.food < COSTS.worker.food || state.money < workerMoneyCost || state.workers >= state.workerLimit);
+  
+  // Update Worker Hire Button Text dynamically if bank is built
+  if (state.buildings.bank > 0) {
+    btnHireWorker.querySelector('.build-btn-cost').textContent = `🍞 20 食 | 💰 5 金`;
+  }
+
   btnBuildCabin.disabled = (state.wood < COSTS.cabin.wood);
   btnBuildFarm.disabled = (state.wood < COSTS.farm.wood || state.stone < COSTS.farm.stone);
   btnBuildSmelter.disabled = (state.wood < COSTS.smelter.wood || state.stone < COSTS.smelter.stone);
   btnBuildPower.disabled = (state.stone < COSTS.powerPlant.stone || state.metal < COSTS.powerPlant.metal);
   btnBuildWarehouse.disabled = (state.wood < COSTS.warehouse.wood || state.stone < COSTS.warehouse.stone);
   btnBuildBattery.disabled = (state.stone < COSTS.battery.stone || state.metal < COSTS.battery.metal);
-  btnBuildBank.disabled = (state.wood < COSTS.bank.wood || state.metal < COSTS.bank.metal);
+  btnBuildBank.disabled = (state.stone < COSTS.bank.stone || state.metal < COSTS.bank.metal);
   btnBuildSchool.disabled = (state.wood < COSTS.school.wood || state.stone < COSTS.school.stone || state.energy < COSTS.school.energy);
 }
 
@@ -465,13 +472,15 @@ function gameTick() {
   }
   state.money = Math.min(state.money, 1000);
 
-  // 6. Knowledge: Scholars generate research (with food+money cost)
+  // 6. Knowledge: Scholars generate research (with food+money+energy cost)
   if (state.jobs.scholar > 0) {
     const scholarFoodCost = state.jobs.scholar * 0.5;
     const scholarMoneyCost = state.jobs.scholar * 1.0;
-    if (state.food >= scholarFoodCost && state.money >= scholarMoneyCost) {
+    const scholarEnergyCost = state.jobs.scholar * 0.2;
+    if (state.food >= scholarFoodCost && state.money >= scholarMoneyCost && state.energy >= scholarEnergyCost) {
       state.food -= scholarFoodCost;
       state.money -= scholarMoneyCost;
+      state.energy -= scholarEnergyCost;
       state.knowledge += state.jobs.scholar * 1.0;
     }
   }
@@ -567,10 +576,12 @@ bindResourceNode(nodeStone, 'stone');
 
 // Setup Building Card triggers
 btnHireWorker.addEventListener("click", () => {
-  if (state.food >= COSTS.worker.food && state.workers < state.workerLimit) {
+  const workerMoneyCost = state.buildings.bank > 0 ? 5 : 0;
+  if (state.food >= COSTS.worker.food && state.money >= workerMoneyCost && state.workers < state.workerLimit) {
     state.food -= COSTS.worker.food;
+    state.money -= workerMoneyCost;
     state.workers += 1;
-    spawnFloatingText("+1 工人 👷", "#10b981");
+    spawnFloatingText("+1 工人 👷", "#3b82f6");
     updateUI();
   }
 });
@@ -635,8 +646,8 @@ btnBuildBattery.addEventListener("click", () => {
 });
 
 btnBuildBank.addEventListener("click", () => {
-  if (state.wood >= COSTS.bank.wood && state.metal >= COSTS.bank.metal) {
-    state.wood -= COSTS.bank.wood;
+  if (state.stone >= COSTS.bank.stone && state.metal >= COSTS.bank.metal) {
+    state.stone -= COSTS.bank.stone;
     state.metal -= COSTS.bank.metal;
     state.buildings.bank += 1;
     spawnFloatingText("+1 銀行 💰", "#facc15");
