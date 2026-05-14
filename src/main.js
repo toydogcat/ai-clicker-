@@ -12,6 +12,7 @@ const DEFAULT_STATE = {
   energy: 0,
   money: 0,
   knowledge: 0,
+  mithril: 0,
   workerLimit: 5,
   gatherFocus: 'wood',
   difficulty: 'normal', // easy, normal, hard, nightmare
@@ -248,6 +249,23 @@ const BUILDING_DATA = {
       { label: "🤖 時空曲率預知中心", autoGen: 22000, energyCost: 8000.0, cost: { money: 8000000, metal: 3000000, energy: 1200000 } },
       { label: "🤖 奇點全知演化矩陣", autoGen: 80000, energyCost: 25000.0, cost: { money: 25000000, metal: 10000000, energy: 4000000 } }
     ]
+  },
+  mithrilFactory: {
+    name: "秘銀工廠",
+    desc: "融合大量金屬、礦石與高純能量，提煉極其珍貴的秘銀幣",
+    icon: "💠",
+    levels: [
+      { label: "💠 秘銀精煉機 Mk-I", autoGen: 0.02, metalCost: 0.5, stoneCost: 0.5, energyCost: 0.5, cost: { money: 500, metal: 200, energy: 50 } },
+      { label: "💠 秘銀精煉機 Mk-II", autoGen: 0.08, metalCost: 1.5, stoneCost: 1.5, energyCost: 1.5, cost: { money: 2000, metal: 800, energy: 200 } },
+      { label: "💠 高溫磁化熔爐", autoGen: 0.3, metalCost: 5.0, stoneCost: 5.0, energyCost: 5.0, cost: { money: 8000, metal: 3000, energy: 800 } },
+      { label: "💠 重氫能熔鑄室", autoGen: 1.0, metalCost: 15.0, stoneCost: 15.0, energyCost: 15.0, cost: { money: 30000, metal: 10000, energy: 3000 } },
+      { label: "💠 質子加速煉鑄陣", autoGen: 3.0, metalCost: 40.0, stoneCost: 40.0, energyCost: 40.0, cost: { money: 120000, metal: 40000, energy: 10000 } },
+      { label: "💠 逆熵物質聚合器", autoGen: 8.0, metalCost: 120.0, stoneCost: 120.0, energyCost: 120.0, cost: { money: 500000, metal: 150000, energy: 40000 } },
+      { label: "💠 行星級地核鍛爐", autoGen: 25.0, metalCost: 400.0, stoneCost: 400.0, energyCost: 400.0, cost: { money: 2000000, metal: 600000, energy: 150000 } },
+      { label: "💠 超新星模擬聚合艙", autoGen: 80.0, metalCost: 1200.0, stoneCost: 1200.0, energyCost: 1200.0, cost: { money: 8000000, metal: 2500000, energy: 600000 } },
+      { label: "💠 暗能量真空提純極", autoGen: 250.0, metalCost: 4000.0, stoneCost: 4000.0, energyCost: 4000.0, cost: { money: 30000000, metal: 10000000, energy: 2500000 } },
+      { label: "💠 奇點無限秘銀核心", autoGen: 800.0, metalCost: 12000.0, stoneCost: 12000.0, energyCost: 12000.0, cost: { money: 100000000, metal: 40000000, energy: 10000000 } }
+    ]
   }
 };
 
@@ -355,6 +373,9 @@ const resMoneyItems = document.querySelectorAll(".res-money");
 
 const knowledgeEls = document.querySelectorAll(".knowledgeCount");
 const knowledgeRateEls = document.querySelectorAll(".knowledgeGenRate");
+
+const mithrilEls = document.querySelectorAll(".mithrilCount");
+const mithrilRateEls = document.querySelectorAll(".mithrilGenRate");
 
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
@@ -760,8 +781,8 @@ function refreshCityDetailPanel() {
     optButtons.forEach(btn => {
       const type = btn.getAttribute("data-type");
       
-      // 自動化採集檢查
-      const isAuto = ['autoWood', 'autoMine', 'autoHarvest'].includes(type);
+      // 自動化採集與秘銀工廠檢查
+      const isAuto = ['autoWood', 'autoMine', 'autoHarvest', 'mithrilFactory'].includes(type);
       if (isAuto) {
         if (!state.tech.automation) {
           btn.style.display = "none";
@@ -820,6 +841,7 @@ function refreshCityDetailPanel() {
     else if (slot.type === 'autoMine') effText = `+${curData.autoGen} 石/秒 (-${curData.energyCost}能)`;
     else if (slot.type === 'autoHarvest') effText = `+${curData.autoGen} 食/秒 (-${curData.energyCost}能)`;
     else if (slot.type === 'autoStudy') effText = `+${curData.autoGen} 知識/秒 (-${curData.energyCost}能)`;
+    else if (slot.type === 'mithrilFactory') effText = `+${curData.autoGen} 秘銀/秒 (-${curData.metalCost}金屬 -${curData.stoneCost}礦石 -${curData.energyCost}能)`;
     
     if (manageBuildingEffect) manageBuildingEffect.textContent = effText;
 
@@ -941,6 +963,11 @@ function getCityStats() {
   let autoEnergyDrain = 0;
   let autoStudyGen = 0;
 
+  let autoMithrilGen = 0;
+  let autoMithrilMetalCost = 0;
+  let autoMithrilStoneCost = 0;
+  let autoMithrilEnergyCost = 0;
+
   if (state.cityLayout && state.cityLayout.slots) {
     state.cityLayout.slots.forEach((slot, idx) => {
       if (idx >= state.cityLayout.maxSlots) return;
@@ -984,10 +1011,16 @@ function getCityStats() {
           autoStudyGen += (data.autoGen || 0);
           autoEnergyDrain += (data.energyCost || 0);
           break;
+        case 'mithrilFactory':
+          autoMithrilGen += (data.autoGen || 0);
+          autoMithrilMetalCost += (data.metalCost || 0);
+          autoMithrilStoneCost += (data.stoneCost || 0);
+          autoMithrilEnergyCost += (data.energyCost || 0);
+          break;
       }
     });
   }
-  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, schoolGen, popLimit, usedSlots, autoWoodGen, autoStoneGen, autoFoodGen, autoEnergyDrain, autoStudyGen };
+  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, schoolGen, popLimit, usedSlots, autoWoodGen, autoStoneGen, autoFoodGen, autoEnergyDrain, autoStudyGen, autoMithrilGen, autoMithrilMetalCost, autoMithrilStoneCost, autoMithrilEnergyCost };
 }
 
 function getExpandCost() {
@@ -1048,6 +1081,7 @@ function updateUI() {
   let populationFoodGen = 0;
   let populationMoneyGen = 0;
   let populationKnowledgeGen = 0;
+  let populationMithrilGen = 0;
 
   state.population.forEach(p => {
     const baseCost = gameConfig.economy.popFoodCost * p.level;
@@ -1064,6 +1098,10 @@ function updateUI() {
       const eCfg = gameConfig.economy;
       if (state.food >= eCfg.scholarFoodCost * efficiency && state.money >= eCfg.scholarMoneyCost * efficiency && state.energy >= eCfg.scholarEnergyCost * efficiency) {
         populationKnowledgeGen += 1.0 * efficiency;
+      }
+    } else if (p.assignment === 'mithrilSmith') {
+      if (state.metal >= 1.0 * efficiency && state.stone >= 1.0 * efficiency && state.energy >= 1.0 * efficiency) {
+        populationMithrilGen += 0.05 * efficiency;
       }
     }
   });
@@ -1100,6 +1138,11 @@ function updateUI() {
   // Knowledge rate: school passive + scholars active + autoStudy active (scaled by difficulty)
   const netKnowledgeRate = ((stats.schoolGen + stats.autoStudyGen) * diffMult) + populationKnowledgeGen;
   setAllText(knowledgeRateEls, `+${netKnowledgeRate.toFixed(1)}/秒`);
+
+  // Mithril display and rate computation
+  setAllText(mithrilEls, Math.floor(state.mithril || 0));
+  const netMithrilRate = (stats.autoMithrilGen * diffMult) + populationMithrilGen;
+  setAllText(mithrilRateEls, `+${netMithrilRate.toFixed(2)}/秒`);
 
   const currentPop = state.population.length;
   workerEl.textContent = currentPop;
@@ -1390,11 +1433,25 @@ function gameTick() {
     }
   }
 
+  // 2.6 Mithril Factory Energy & Metal & Stone Check & Yield
+  if (stats.autoMithrilGen > 0) {
+    if (state.metal >= stats.autoMithrilMetalCost && state.stone >= stats.autoMithrilStoneCost && state.energy >= stats.autoMithrilEnergyCost) {
+      state.metal -= stats.autoMithrilMetalCost;
+      state.stone -= stats.autoMithrilStoneCost;
+      state.energy -= stats.autoMithrilEnergyCost;
+      state.mithril = (state.mithril || 0) + (stats.autoMithrilGen * diffMult);
+    } else {
+      if (Math.random() < 0.05) {
+        showToast("💠 原料不足！秘銀工廠部分生產線被迫停擺！", "error");
+      }
+    }
+  }
+
   // 3. Banks generate passive income
   state.money += stats.bankGen;
   
   // 4. Population Logic
-  let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0;
+  let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0, netMithril = 0;
   
   state.population.forEach(p => {
     // Initialize HP stats if missing
@@ -1453,6 +1510,14 @@ function gameTick() {
         netKnowledge += 1.0 * efficiency;
       }
     }
+    if (p.assignment === 'mithrilSmith') {
+      if (state.metal >= 1.0 * efficiency && state.stone >= 1.0 * efficiency && state.energy >= 1.0 * efficiency) {
+        state.metal -= 1.0 * efficiency;
+        state.stone -= 1.0 * efficiency;
+        state.energy -= 1.0 * efficiency;
+        netMithril += 0.05 * efficiency;
+      }
+    }
   });
 
   state.wood += netWood * diffMult;
@@ -1460,6 +1525,7 @@ function gameTick() {
   state.food += netFood * diffMult;
   state.money += netMoney;
   state.knowledge += netKnowledge + (stats.schoolGen * diffMult);
+  state.mithril = (state.mithril || 0) + netMithril;
 
   // Economy caps
   const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
@@ -1720,6 +1786,7 @@ function renderPopulationRoster() {
           <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕</option>
           <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商</option>
           ${stats.schoolMult > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
+          ${stats.autoMithrilGen > 0 ? `<option value="mithrilSmith" ${p.assignment === 'mithrilSmith' ? 'selected' : ''}>秘銀鑄工</option>` : ''}
         `;
       }
       assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
@@ -2040,15 +2107,18 @@ document.querySelectorAll(".buy-eq-btn").forEach(btn => {
 
 // --- Secret Shop Management ---
 function getSecretRefreshCost(level) {
-  const baseCost = gameConfig.eqSpecs.price[level] || 100;
-  return Math.max(200, Math.floor(baseCost * 0.2));
+  return Math.max(5, level * 2);
 }
 
 function getSecretShopPrice(level, rarity) {
-  const basePrice = gameConfig.eqSpecs.price[level] || 100;
-  const mults = { normal: 1.2, magic: 2.5, rare: 6.0, epic: 18.0, legend: 50.0 };
-  const m = mults[rarity] || 1;
-  return Math.floor(basePrice * m * 1.5);
+  return gameConfig.eqSpecs.price[level] || 100;
+}
+
+function getSecretShopMithrilCost(level, rarity) {
+  const baseMithril = { normal: 0, magic: 2, rare: 8, epic: 25, legend: 80 };
+  const base = baseMithril[rarity] || 0;
+  if (base === 0) return 0;
+  return Math.ceil(base * Math.pow(1.2, level - 1));
 }
 
 function rollSecretShop(isInit = false) {
@@ -2072,11 +2142,13 @@ function rollSecretShop(isInit = false) {
     const slot = slots[Math.floor(Math.random() * slots.length)];
     const generated = generateItem(level, rarity, slot);
     const price = getSecretShopPrice(level, rarity);
+    const mithrilCost = getSecretShopMithrilCost(level, rarity);
     
     items.push({
       uid: "secret_" + Date.now() + "_" + i + "_" + Math.floor(Math.random() * 1000),
       item: generated,
       cost: price,
+      mithrilCost: mithrilCost,
       soldOut: false
     });
   }
@@ -2157,7 +2229,7 @@ window.renderSecretShop = function() {
   
   const curLevel = secretShopLevelSelect ? parseInt(secretShopLevelSelect.value) : 1;
   const refreshCost = getSecretRefreshCost(curLevel);
-  if (secretRefreshCostText) secretRefreshCostText.textContent = `💰 ${refreshCost}`;
+  if (secretRefreshCostText) secretRefreshCostText.textContent = `💠 ${refreshCost}`;
   
   // If items list is empty, auto-roll one!
   if (!state.secretShop.items || state.secretShop.items.length === 0) {
@@ -2165,7 +2237,8 @@ window.renderSecretShop = function() {
   }
   
   state.secretShop.items.forEach(entry => {
-    const { item, cost, soldOut } = entry;
+    const { item, cost, mithrilCost, soldOut } = entry;
+    const mithCost = mithrilCost || 0;
     const rSpec = gameConfig.eqSpecs.rarities[item.rarity];
     const rColor = rSpec.color;
     
@@ -2182,6 +2255,12 @@ window.renderSecretShop = function() {
       statsHtml += `<div class="secret-item-extra-stat">+ ${gameConfig.eqSpecs.statNames[key]}: ${val}${key.includes('lifesteal') ? '%' : ''}</div>`;
     });
     
+    let buyBtnHtml = `💰 ${cost.toLocaleString()}`;
+    if (mithCost > 0) {
+      buyBtnHtml += ` | 💠 ${mithCost.toLocaleString()}`;
+    }
+    buyBtnHtml += ` 購買`;
+
     card.innerHTML = `
       <div class="secret-item-title-row">
         <div class="secret-item-icon">${icon}</div>
@@ -2194,7 +2273,7 @@ window.renderSecretShop = function() {
         ${statsHtml}
       </div>
       <button class="secret-item-buy-btn" style="border-color: ${rColor}60;">
-        💰 ${cost.toLocaleString()} 購買
+        ${buyBtnHtml}
       </button>
     `;
     
@@ -2206,6 +2285,11 @@ window.renderSecretShop = function() {
           showToast("💰 金幣不足，買不起這件神裝！", "error");
           return;
         }
+        const currentMithril = state.mithril || 0;
+        if (currentMithril < mithCost) {
+          showToast("💠 秘銀幣不足，買不起這件神裝！", "error");
+          return;
+        }
         if (state.inventory.length >= 24) {
           showToast("🎒 背包已滿，裝不下了！", "error");
           return;
@@ -2213,6 +2297,7 @@ window.renderSecretShop = function() {
         
         // Deduct cost and deliver item
         state.money -= cost;
+        state.mithril = currentMithril - mithCost;
         entry.soldOut = true;
         state.inventory.push(item);
         
@@ -2232,13 +2317,14 @@ if (btnRefreshSecretShop) {
   btnRefreshSecretShop.addEventListener("click", () => {
     const level = parseInt(secretShopLevelSelect.value);
     const cost = getSecretRefreshCost(level);
+    const currentMithril = state.mithril || 0;
     
-    if (state.money < cost) {
-      showToast(`💰 餘額不足！刷新貨架需要 ${cost} 金幣。`, "error");
+    if (currentMithril < cost) {
+      showToast(`💠 秘銀幣不足！刷新貨架需要 ${cost} 秘銀幣。`, "error");
       return;
     }
     
-    state.money -= cost;
+    state.mithril = currentMithril - cost;
     rollSecretShop(false);
     renderSecretShop();
     updateUI();
@@ -2250,7 +2336,7 @@ if (secretShopLevelSelect) {
   secretShopLevelSelect.addEventListener("change", () => {
     const level = parseInt(secretShopLevelSelect.value);
     const cost = getSecretRefreshCost(level);
-    if (secretRefreshCostText) secretRefreshCostText.textContent = `💰 ${cost}`;
+    if (secretRefreshCostText) secretRefreshCostText.textContent = `💠 ${cost}`;
   });
 }
 

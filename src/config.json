@@ -21,7 +21,7 @@
     "slaveRange": [0.8, 2.5]
   },
   "eqSpecs": {
-    "price": [0, 100, 500, 2000, 8000, 25000, 75000, 250000],
+    "price": [0, 100, 400, 1500, 5000, 15000, 40000, 120000],
     "slots": {
       "rhand": { "name": "右手武器", "mainStat": "atk", "scale": 2.0 },
       "lhand": { "name": "左手武器", "mainStat": "def", "scale": 1.5 },

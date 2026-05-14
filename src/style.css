@@ -370,6 +370,11 @@ h1 {
 .res-knowledge .res-value { color: #a78bfa; }
 .res-knowledge .res-rate { color: #a78bfa; }
 
+/* Mithril Resource - Cyan/sky-blue shimmering theme */
+.res-mithril .res-icon { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6)); }
+.res-mithril .res-value { color: #38bdf8; }
+.res-mithril .res-rate { color: #38bdf8; }
+
 /* Bank Building Button */
 .btn-bank { border-color: rgba(250, 204, 21, 0.3) !important; }
 .btn-bank:not(:disabled):hover { border-color: rgba(250, 204, 21, 0.7) !important; background: rgba(250, 204, 21, 0.08) !important; }
