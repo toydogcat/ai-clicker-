@@ -285,27 +285,15 @@
 
             <!-- Construct options (visible when empty slot clicked) -->
             <div class="slot-construct-list" id="slotConstructList" style="display: none;">
-              <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 800; text-align: center; color: #f1f5f9; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">🔨 在該建地建造新設施</h3>
-              <div class="build-options-grid">
+              <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 800; text-align: center; color: #f1f5f9; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">🔨 城市建設選單</h3>
+              
+              <!-- Category 1: Capacity & functional limits -->
+              <div class="construct-section-title">📦 擴展機能與容量上限</div>
+              <div class="build-options-grid" style="margin-top: 0.25rem;">
                 <button class="opt-build-btn" data-type="cabin">
                   <span class="opt-icon">🛖</span>
                   <span class="opt-title">小木屋</span>
                   <span class="opt-cost">🪵 25</span>
-                </button>
-                <button class="opt-build-btn" data-type="farm">
-                  <span class="opt-icon">🌾</span>
-                  <span class="opt-title">菜園</span>
-                  <span class="opt-cost">🪵 30 | 🪨 15</span>
-                </button>
-                <button class="opt-build-btn" data-type="smelter">
-                  <span class="opt-icon">🪙</span>
-                  <span class="opt-title">簡易熔爐</span>
-                  <span class="opt-cost">🪵 40 | 🪨 50</span>
-                </button>
-                <button class="opt-build-btn" data-type="powerPlant">
-                  <span class="opt-icon">⚡</span>
-                  <span class="opt-title">發電機</span>
-                  <span class="opt-cost">🪨 80 | 🪙 20</span>
                 </button>
                 <button class="opt-build-btn" data-type="warehouse">
                   <span class="opt-icon">📦</span>
@@ -322,23 +310,43 @@
                   <span class="opt-title">城鎮金庫</span>
                   <span class="opt-cost">🪨 60 | 🪙 30</span>
                 </button>
+              </div>
+
+              <!-- Category 2: Active production & automation -->
+              <div class="construct-section-title" style="border-left-color: #eab308 !important;">⚙️ 資源生產與自動化</div>
+              <div class="build-options-grid" style="margin-top: 0.25rem;">
+                <button class="opt-build-btn" data-type="farm">
+                  <span class="opt-icon">🌾</span>
+                  <span class="opt-title">菜園</span>
+                  <span class="opt-cost">🪵 30 | 🪨 15</span>
+                </button>
+                <button class="opt-build-btn" data-type="smelter">
+                  <span class="opt-icon">🪙</span>
+                  <span class="opt-title">簡易熔爐</span>
+                  <span class="opt-cost">🪵 40 | 🪨 50</span>
+                </button>
+                <button class="opt-build-btn" data-type="powerPlant">
+                  <span class="opt-icon">⚡</span>
+                  <span class="opt-title">發電機</span>
+                  <span class="opt-cost">🪨 80 | 🪙 20</span>
+                </button>
                 <button class="opt-build-btn" data-type="school">
                   <span class="opt-icon">📚</span>
                   <span class="opt-title">地方學堂</span>
                   <span class="opt-cost">🪵 80 | 🪨 60</span>
                 </button>
                 <button class="opt-build-btn" data-type="autoWood" style="display: none;">
-                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-icon">🚜</span>
                   <span class="opt-title">自動伐木機</span>
                   <span class="opt-cost">🪙 100 | 🪵 100</span>
                 </button>
                 <button class="opt-build-btn" data-type="autoMine" style="display: none;">
-                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-icon">⛏️</span>
                   <span class="opt-title">自動採礦機</span>
                   <span class="opt-cost">🪙 100 | 🪨 100</span>
                 </button>
                 <button class="opt-build-btn" data-type="autoHarvest" style="display: none;">
-                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-icon">🛸</span>
                   <span class="opt-title">智能農艙</span>
                   <span class="opt-cost">🪙 100 | 🍞 100</span>
                 </button>

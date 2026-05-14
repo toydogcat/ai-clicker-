@@ -2491,3 +2491,19 @@ h1 {
     transform: translateY(0) scale(1);
   }
 }
+
+.construct-section-title {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  padding: 0.45rem 0.75rem !important;
+  border-radius: 8px !important;
+  border-left: 3px solid #3b82f6 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.6rem !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
