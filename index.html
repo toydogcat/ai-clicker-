@@ -515,6 +515,12 @@
                 </div>
               </div>
               <div class="quest-action-zone">
+                <!-- Boss Invasion Countdown Alert Banner -->
+                <div id="bossInvasionTimer" style="display: none; margin-bottom: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); text-align: center; animation: pulse 2s infinite;">
+                  <span style="color: #f87171; font-weight: bold; font-size: 0.85rem;">⚠️ 巨獸入侵倒數：</span>
+                  <span id="bossCountdownText" style="color: #ef4444; font-weight: 800; font-family: monospace; font-size: 1.05rem; text-shadow: 0 0 4px rgba(239,68,68,0.5);">7天 00:00:00</span>
+                </div>
+
                 <h5>2. 選擇討伐對象</h5>
                 <div class="quest-btns-row">
                   <button class="quest-go-btn btn-hunt" id="btnQuestHunt">⚔️ 討伐可愛小怪</button>
@@ -752,6 +758,35 @@
       </div>
       
       <button class="ctrl-btn" onclick="document.getElementById('equipModal').style.display = 'none'" style="background: #ef4444; width: 100%;">取消</button>
+    </div>
+  </div>
+
+  <!-- Unequip Detail Modal -->
+  <div id="unequipModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1100; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="glass-card" id="unequipCard" style="width: 360px; padding: 2rem; text-align: center; background: linear-gradient(145deg, #1e293b, #0f172a); border: 2px solid #475569; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);">
+      <div id="unequipItemIcon" style="font-size: 2.5rem; margin-bottom: 0.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">⚔️</div>
+      <h2 id="unequipItemTitle" style="color: #f8fafc; margin-bottom: 0.25rem; font-size: 1.4rem; font-weight: 800;">神聖大劍</h2>
+      <div id="unequipItemRarity" style="font-size: 0.85rem; font-weight: bold; margin-bottom: 1.2rem; letter-spacing: 1px; text-transform: uppercase;">[史詩]</div>
+      
+      <div class="unequip-details" style="background: rgba(0,0,0,0.25); border-radius: 12px; padding: 1.25rem; text-align: left; font-size: 0.95rem; color: #cbd5e1; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
+        <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+          <span style="color:#94a3b8;">🔹 裝備部位</span>
+          <span id="unequipItemSlot" style="color: #f1f5f9; font-weight:600;">右手</span>
+        </div>
+        <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+          <span style="color:#94a3b8;">🔹 裝備等級</span>
+          <span id="unequipItemLevel" style="color: #f1f5f9; font-weight:600;">Lv.5</span>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-between; font-weight: bold; color: #e2e8f0;">
+          <span>⚡ 屬性加成</span>
+          <span id="unequipItemStats" style="color: #facc15; font-size: 1.05rem; text-shadow: 0 0 4px rgba(250,204,21,0.3);">物攻 +35</span>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="btnConfirmUnequip" class="ctrl-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); flex: 1; font-weight: 700; padding: 0.6rem; border-radius: 10px; border: none;">🔻 脫下裝備</button>
+        <button class="ctrl-btn" onclick="document.getElementById('unequipModal').style.display = 'none'" style="background: #334155; flex: 1; font-weight: 600; padding: 0.6rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); color:#e2e8f0;">返回</button>
+      </div>
     </div>
   </div>
 

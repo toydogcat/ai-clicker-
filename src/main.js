@@ -20,7 +20,12 @@ const DEFAULT_STATE = {
     slots: Array.from({ length: 24 }, () => ({ type: null, level: 1 }))
   },
   population: [], // Array of individual resident objects
-  bossInvasions: {}, // { greed: timestamp, anger: timestamp, ignorance: timestamp }
+  bossInvasions: {
+    activationTime: null,
+    greedDefeated: false,
+    angerDefeated: false,
+    ignoranceDefeated: false
+  }, 
   tech: {
     heroLicense: false,
     huntLv4: false,
@@ -1221,6 +1226,36 @@ function updateUI() {
       const bName = bossNames[Math.min(3, bLvl) - 1] || bossNames[0];
       btnQuestBoss.textContent = `💀 挑戰巨獸 Lv.${bLvl} ${bName}`;
     }
+
+    // Update Invasion Countdown Timer
+    const invasionTimerEl = document.getElementById("bossInvasionTimer");
+    const countdownTextEl = document.getElementById("bossCountdownText");
+    if (invasionTimerEl && countdownTextEl) {
+      const bi = state.bossInvasions || {};
+      const bossesAlive = !(bi.greedDefeated && bi.angerDefeated && bi.ignoranceDefeated);
+      if (state.tech.automation && bi.activationTime && bossesAlive) {
+        invasionTimerEl.style.display = "block";
+        const elapsed = Date.now() - bi.activationTime;
+        const ONE_WEEK = 7 * 24 * 3600 * 1000;
+        const remain = ONE_WEEK - elapsed;
+        
+        if (remain > 0) {
+          const days = Math.floor(remain / (24 * 3600 * 1000));
+          const hours = Math.floor((remain % (24 * 3600 * 1000)) / (3600 * 1000));
+          const mins = Math.floor((remain % (3600 * 1000)) / (60 * 1000));
+          const secs = Math.floor((remain % (60 * 1000)) / 1000);
+          countdownTextEl.textContent = `${days}天 ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          invasionTimerEl.style.background = "rgba(239, 68, 68, 0.15)";
+          invasionTimerEl.style.borderColor = "rgba(239, 68, 68, 0.3)";
+        } else {
+          countdownTextEl.textContent = "⚠️ 入侵中！城市隨時會遭到攻擊！";
+          invasionTimerEl.style.background = "rgba(239, 68, 68, 0.35)";
+          invasionTimerEl.style.borderColor = "rgba(239, 68, 68, 0.6)";
+        }
+      } else {
+        invasionTimerEl.style.display = "none";
+      }
+    }
   } else {
     if (researchCard) researchCard.style.display = "none";
   }
@@ -1447,36 +1482,33 @@ function gameTick() {
     }
   }
 
-  // 6. Boss Invasions
-  const totalBuildings = state.cityLayout.slots.filter(s => s && s.type).length;
-  if (totalBuildings >= 15 && !state.bossInvasions.greed && !state.bossInvasions.greedDefeated) {
-    state.bossInvasions.greed = Date.now();
-    showToast("⚠️ 【貪】之巨獸出現了！請在一週內討伐！", "error");
-  }
-  if (totalBuildings >= 30 && !state.bossInvasions.anger && !state.bossInvasions.angerDefeated) {
-    state.bossInvasions.anger = Date.now();
-    showToast("⚠️ 【嗔】之巨獸出現了！請在一週內討伐！", "error");
-  }
-  if (totalBuildings >= 50 && !state.bossInvasions.ignorance && !state.bossInvasions.ignoranceDefeated) {
-    state.bossInvasions.ignorance = Date.now();
-    showToast("⚠️ 【癡】之巨獸出現了！請在一週內討伐！", "error");
+  // 6. Unified Boss Invasions Triggered by Automation Technology
+  if (state.tech.automation) {
+    if (!state.bossInvasions.activationTime) {
+      state.bossInvasions.activationTime = Date.now();
+      showToast("🚨 警告：自動化信號引來了【貪、嗔、癡】三相巨獸！牠們正往城市移動，請在倒數歸零前消滅牠們！", "error");
+    }
   }
 
-  for (let bossKey in state.bossInvasions) {
-    let ts = state.bossInvasions[bossKey];
-    if (typeof ts === 'number' && ts > 0 && (Date.now() - ts) > 7 * 24 * 3600 * 1000) {
-      // 1/3600 chance per tick (~once per hour of playtime)
+  if (state.bossInvasions.activationTime) {
+    const elapsed = Date.now() - state.bossInvasions.activationTime;
+    const ONE_WEEK = 7 * 24 * 3600 * 1000;
+    const bi = state.bossInvasions;
+    const bossesAlive = !(bi.greedDefeated && bi.angerDefeated && bi.ignoranceDefeated);
+    
+    if (bossesAlive && elapsed >= ONE_WEEK) {
+      // 1/3600 chance per tick (~once per hour of active playtime) to destroy a building
       if (Math.random() < (1 / 3600)) {
         const occupiedSlots = state.cityLayout.slots.filter(s => s && s.type);
         if (occupiedSlots.length > 0) {
-          let targetSlot = occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)];
+          const targetSlot = occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)];
           const type = targetSlot.type;
           const db = BUILDING_DATA[type];
           const displayName = db ? db.name : type;
           
           targetSlot.type = null;
           targetSlot.level = 1;
-          showToast(`🚨 巨獸摧毀了一棟【${displayName}】！快去討伐它！`, "error");
+          showToast(`🚨 災厄降臨！巨獸突破了防禦，摧毀了城市中的一棟【${displayName}】！`, "error");
         }
       }
     }
@@ -2298,14 +2330,13 @@ window.openEquipModal = function(invIndex) {
   const item = state.inventory[invIndex];
   if (!item) return;
   
-  const eligible = state.population.filter(p => p.assignment !== 'hospital');
+  // Filter healthy and sort by level DESC automatically
+  const eligible = state.population
+    .filter(p => p.assignment !== 'hospital')
+    .sort((a, b) => b.level - a.level);
+
   if (eligible.length === 0) {
     showToast("目前沒有健康的村民或英雄可以裝備！", "error");
-    return;
-  }
-  
-  if (eligible.length === 1) {
-    equipItem(invIndex, eligible[0].id);
     return;
   }
   
@@ -2315,7 +2346,8 @@ window.openEquipModal = function(invIndex) {
   
   if (!modal || !itemNameEl || !listEl) return;
   
-  itemNameEl.textContent = `裝備：${item.name} (${gameConfig.eqSpecs.rarities[item.rarity].name})`;
+  const rarColor = gameConfig.eqSpecs.rarities[item.rarity].color;
+  itemNameEl.innerHTML = `裝備：<span style="color:${rarColor}; font-weight:bold;">${item.name}</span> (${gameConfig.eqSpecs.rarities[item.rarity].name})`;
   listEl.innerHTML = "";
   
   eligible.forEach(p => {
@@ -2326,7 +2358,25 @@ window.openEquipModal = function(invIndex) {
     btn.style.alignItems = "center";
     btn.style.padding = "0.75rem 1rem";
     btn.style.width = "100%";
+    btn.style.marginBottom = "0.5rem";
     
+    // Compare attributes against currently equipped
+    const curEquipped = p.eq[item.slot];
+    let diffHtml = "";
+    const statName = gameConfig.eqSpecs.statNames[item.mainStat] || "";
+    if (curEquipped) {
+      const diff = item.mainStatVal - curEquipped.mainStatVal;
+      if (diff > 0) {
+        diffHtml = `<span style="color:#10b981; font-weight:800; font-size:0.75rem;">${statName} +${diff} ↑</span>`;
+      } else if (diff < 0) {
+        diffHtml = `<span style="color:#ef4444; font-weight:800; font-size:0.75rem;">${statName} ${diff} ↓</span>`;
+      } else {
+        diffHtml = `<span style="color:#94a3b8; font-size:0.75rem;">${statName} 無增減</span>`;
+      }
+    } else {
+      diffHtml = `<span style="color:#10b981; font-weight:800; font-size:0.75rem;">${statName} +${item.mainStatVal} ↑</span>`;
+    }
+
     const icon = getHeroIcon(p.jobClass);
     btn.innerHTML = `
       <div style="display:flex; align-items:center; gap:0.75rem;">
@@ -2336,7 +2386,10 @@ window.openEquipModal = function(invIndex) {
           <div style="font-size:0.75rem; color:#94a3b8;">${gameConfig.heroes[p.jobClass].name} (Lv.${p.level})</div>
         </div>
       </div>
-      <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); padding:0.2rem 0.5rem; border-radius:6px; color:#e2e8f0;">選擇</span>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        ${diffHtml}
+        <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); padding:0.2rem 0.5rem; border-radius:6px; color:#e2e8f0; white-space:nowrap;">選擇</span>
+      </div>
     `;
     
     btn.onclick = () => {
@@ -2374,8 +2427,62 @@ window.equipItem = function(invIndex, personId) {
   updateUI();
 };
 
+// Detailed modal to view equipped item specifics & confirm unequip safely
+window.openUnequipModal = function(personId, slotKey) {
+  const person = state.population.find(p => p.id === personId);
+  if (!person) return;
+  const item = person.eq[slotKey];
+  if (!item) return;
+  
+  const modal = document.getElementById("unequipModal");
+  const card = document.getElementById("unequipCard");
+  const icon = document.getElementById("unequipItemIcon");
+  const title = document.getElementById("unequipItemTitle");
+  const rarityEl = document.getElementById("unequipItemRarity");
+  const slotEl = document.getElementById("unequipItemSlot");
+  const lvEl = document.getElementById("unequipItemLevel");
+  const statsEl = document.getElementById("unequipItemStats");
+  const confirmBtn = document.getElementById("btnConfirmUnequip");
+  
+  if (!modal || !card) return;
+  
+  const rarCfg = gameConfig.eqSpecs.rarities[item.rarity];
+  card.style.borderColor = rarCfg.color;
+  
+  icon.textContent = getSlotIcon(slotKey);
+  title.textContent = item.name;
+  title.style.color = rarCfg.color;
+  
+  rarityEl.textContent = `[ ${rarCfg.name} ]`;
+  rarityEl.style.color = rarCfg.color;
+  
+  slotEl.textContent = gameConfig.eqSpecs.slots[slotKey].name;
+  lvEl.textContent = `Lv.${item.level}`;
+  
+  const statName = gameConfig.eqSpecs.statNames[item.mainStat] || "";
+  statsEl.textContent = `${statName} +${item.mainStatVal}`;
+  
+  confirmBtn.onclick = () => {
+    if (state.inventory.length >= 24) {
+      showToast("🎒 背包空間不足！無法卸下裝備。", "error");
+      return;
+    }
+    person.eq[slotKey] = null;
+    state.inventory.push(item);
+    showToast(`🎒 已將 ${item.name} 收回角色背包中。`, "info");
+    modal.style.display = "none";
+    renderInventory();
+    updateUI();
+  };
+  
+  modal.style.display = "flex";
+};
+
 // Render Hero sheets (updates stats & paperdoll display)
 function updateHeroSheets() {
+  // Sort population descending by level globally so all displays align
+  state.population.sort((a, b) => b.level - a.level);
+
   const guildRoster = document.getElementById("guildRoster");
   if (!guildRoster) return;
   
@@ -2500,14 +2607,7 @@ function updateHeroSheets() {
       }
       slotEl.onclick = () => {
         if (item) {
-           if (state.inventory.length >= 24) {
-             showToast("🎒 背包已滿！", "error"); return;
-           }
-           p.eq[slot] = null;
-           state.inventory.push(item);
-           showToast(`脫下裝備`, "info");
-           renderInventory();
-           updateUI();
+          window.openUnequipModal(p.id, slot);
         }
       };
     });
