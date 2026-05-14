@@ -152,20 +152,33 @@
         "reqMoney": 50
       },
       "huntLv4": {
-        "reqKnowledge": 300,
-        "reqMoney": 500
+        "reqKnowledge": 400,
+        "reqMoney": 600
       },
-      "huntLv7": {
-        "reqKnowledge": 1200,
-        "reqMoney": 2500
+      "automation": {
+        "reqKnowledge": 1000,
+        "reqMoney": 1500,
+        "reqEnergy": 200
+      },
+      "autoStudyTech": {
+        "reqKnowledge": 2500,
+        "reqMoney": 4000,
+        "reqEnergy": 500
       },
       "secretLv4": {
-        "reqKnowledge": 500,
-        "reqMoney": 800
+        "reqKnowledge": 6000,
+        "reqMoney": 10000,
+        "reqEnergy": 1200
+      },
+      "huntLv7": {
+        "reqKnowledge": 18000,
+        "reqMoney": 35000,
+        "reqEnergy": 4000
       },
       "secretLv7": {
-        "reqKnowledge": 2000,
-        "reqMoney": 4000
+        "reqKnowledge": 50000,
+        "reqMoney": 100000,
+        "reqEnergy": 10000
       }
     },
     "mobs": {

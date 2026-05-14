@@ -27,7 +27,8 @@ const DEFAULT_STATE = {
     huntLv7: false,
     secretLv4: false,
     secretLv7: false,
-    automation: false
+    automation: false,
+    autoStudyTech: false
   },
   party: [],
   inventory: [],
@@ -163,16 +164,16 @@ const BUILDING_DATA = {
     desc: "解鎖更高等的學院研究科技並加速產能",
     icon: "📚",
     levels: [
-      { label: "📚 地方學堂", mult: 1, cost: { wood: 80, stone: 60, energy: 20 } },
-      { label: "🏛️ 綜合學院", mult: 2, cost: { wood: 300, stone: 200, metal: 100 } },
-      { label: "🎓 國立研究大學", mult: 3, cost: { stone: 800, metal: 400, energy: 200 } },
-      { label: "🧬 皇家先進研究所", mult: 4, cost: { stone: 3000, metal: 1500, energy: 500 } },
-      { label: "🔮 高能物理實驗室", mult: 5, cost: { metal: 6000, energy: 1500, money: 5000 } },
-      { label: "🧠 全息智庫中心", mult: 6, cost: { metal: 20000, energy: 4000, money: 15000 } },
-      { label: "🌀 重大基建算力矩陣", mult: 7, cost: { metal: 80000, energy: 10000, money: 50000 } },
-      { label: "🌌 行星級智慧核心", mult: 8, cost: { metal: 300000, energy: 30000, money: 200000 } },
-      { label: "🧠 宇宙神經學習網路", mult: 9, cost: { metal: 1000000, energy: 80000, money: 800000 } },
-      { label: "🌟 歐米茄全知學社", mult: 10, cost: { metal: 3500000, energy: 250000, money: 3000000 } }
+      { label: "📚 地方學堂", mult: 1, gen: 0.1, cost: { wood: 80, stone: 60, energy: 20 } },
+      { label: "🏛️ 綜合學院", mult: 2, gen: 0.5, cost: { wood: 300, stone: 200, metal: 100 } },
+      { label: "🎓 國立研究大學", mult: 3, gen: 2.0, cost: { stone: 800, metal: 400, energy: 200 } },
+      { label: "🧬 皇家先進研究所", mult: 4, gen: 6.0, cost: { stone: 3000, metal: 1500, energy: 500 } },
+      { label: "🔮 高能物理實驗室", mult: 5, gen: 20.0, cost: { metal: 6000, energy: 1500, money: 5000 } },
+      { label: "🧠 全息智庫中心", mult: 6, gen: 65.0, cost: { metal: 20000, energy: 4000, money: 15000 } },
+      { label: "🌀 重大基建算力矩陣", mult: 7, gen: 220.0, cost: { metal: 80000, energy: 10000, money: 50000 } },
+      { label: "🌌 行星級智慧核心", mult: 8, gen: 800.0, cost: { metal: 300000, energy: 30000, money: 200000 } },
+      { label: "🧠 宇宙神經學習網路", mult: 9, gen: 3000.0, cost: { metal: 1000000, energy: 80000, money: 800000 } },
+      { label: "🌟 歐米茄全知學社", mult: 10, gen: 12000.0, cost: { metal: 3500000, energy: 250000, money: 3000000 } }
     ]
   },
   autoWood: {
@@ -224,6 +225,23 @@ const BUILDING_DATA = {
       { label: "⚙️ 太空光譜生物巨蛋", autoGen: 22000, energyCost: 900.0, cost: { money: 1200000, metal: 400000, energy: 45000 } },
       { label: "⚙️ 微型生態次元圈", autoGen: 70000, energyCost: 2500.0, cost: { money: 5000000, metal: 1500000, energy: 120000 } },
       { label: "⚙️ 生命能階豐裕核心", autoGen: 200000, energyCost: 8000.0, cost: { money: 20000000, metal: 5000000, energy: 400000 } }
+    ]
+  },
+  autoStudy: {
+    name: "自動科研儀",
+    desc: "全天候高算力伺服單元，消耗能量自我進行學術運算產出知識",
+    icon: "🤖",
+    levels: [
+      { label: "🤖 科研伺服節點 I", autoGen: 2, energyCost: 1.0, cost: { money: 500, knowledge: 500 } },
+      { label: "🤖 科研伺服節點 II", autoGen: 6, energyCost: 3.0, cost: { money: 2000, knowledge: 2000, metal: 500 } },
+      { label: "🤖 分散式雲端算力陣", autoGen: 20, energyCost: 8.0, cost: { money: 8000, knowledge: 8000, metal: 2000 } },
+      { label: "🤖 碳基人工神經核心", autoGen: 65, energyCost: 25.0, cost: { money: 25000, metal: 10000, energy: 3000 } },
+      { label: "🤖 量子退火研究陣列", autoGen: 200, energyCost: 80.0, cost: { money: 80000, metal: 30000, energy: 10000 } },
+      { label: "🤖 超維度模擬拓樸艙", autoGen: 650, energyCost: 250.0, cost: { money: 250000, metal: 100000, energy: 35000 } },
+      { label: "🤖 行星級算力主機板", autoGen: 2000, energyCost: 800.0, cost: { money: 800000, metal: 300000, energy: 120000 } },
+      { label: "🤖 亞光速光子運算巨構", autoGen: 7000, energyCost: 2500.0, cost: { money: 2500000, metal: 1000000, energy: 400000 } },
+      { label: "🤖 時空曲率預知中心", autoGen: 22000, energyCost: 8000.0, cost: { money: 8000000, metal: 3000000, energy: 1200000 } },
+      { label: "🤖 奇點全知演化矩陣", autoGen: 80000, energyCost: 25000.0, cost: { money: 25000000, metal: 10000000, energy: 4000000 } }
     ]
   }
 };
@@ -388,6 +406,8 @@ const btnTechSecretLv7 = document.getElementById("btnTechSecretLv7");
 const techSecretLv7StatusEl = document.getElementById("techSecretLv7Status");
 const btnTechAutomation = document.getElementById("btnTechAutomation");
 const techAutomationStatusEl = document.getElementById("techAutomationStatus");
+const btnTechAutoStudy = document.getElementById("btnTechAutoStudy");
+const techAutoStudyStatusEl = document.getElementById("techAutoStudyStatus");
 
 const researchCard = document.getElementById("researchCard");
 const knowledgeValEl = document.getElementById("knowledgeVal");
@@ -735,13 +755,25 @@ function refreshCityDetailPanel() {
     optButtons.forEach(btn => {
       const type = btn.getAttribute("data-type");
       
-      // 自動化機械檢查
+      // 自動化採集檢查
       const isAuto = ['autoWood', 'autoMine', 'autoHarvest'].includes(type);
-      if (isAuto && !state.tech.automation) {
-        btn.style.display = "none";
-        return;
-      } else if (isAuto) {
-        btn.style.display = "flex";
+      if (isAuto) {
+        if (!state.tech.automation) {
+          btn.style.display = "none";
+          return;
+        } else {
+          btn.style.display = "flex";
+        }
+      }
+
+      // 全自動科研儀檢查
+      if (type === 'autoStudy') {
+        if (!state.tech.autoStudyTech) {
+          btn.style.display = "none";
+          return;
+        } else {
+          btn.style.display = "flex";
+        }
       }
 
       const db = BUILDING_DATA[type];
@@ -778,7 +810,11 @@ function refreshCityDetailPanel() {
     else if (slot.type === 'warehouse') effText = `儲存 +${curData.cap}`;
     else if (slot.type === 'battery') effText = `能源 +${curData.cap}`;
     else if (slot.type === 'bank') effText = `利息+${curData.gen}, 上限+${curData.cap}`;
-    else if (slot.type === 'school') effText = `解鎖研究 (加成 x${curData.mult})`;
+    else if (slot.type === 'school') effText = `+${curData.gen} 知識/秒`;
+    else if (slot.type === 'autoWood') effText = `+${curData.autoGen} 木/秒 (-${curData.energyCost}能)`;
+    else if (slot.type === 'autoMine') effText = `+${curData.autoGen} 石/秒 (-${curData.energyCost}能)`;
+    else if (slot.type === 'autoHarvest') effText = `+${curData.autoGen} 食/秒 (-${curData.energyCost}能)`;
+    else if (slot.type === 'autoStudy') effText = `+${curData.autoGen} 知識/秒 (-${curData.energyCost}能)`;
     
     if (manageBuildingEffect) manageBuildingEffect.textContent = effText;
 
@@ -890,6 +926,7 @@ function getCityStats() {
   let bankGen = 0;
   let bankMoneyCap = 0;
   let schoolMult = 0;
+  let schoolGen = 0;
   let popLimit = 5; // 預設 5 人口上限
   let usedSlots = 0;
 
@@ -897,6 +934,7 @@ function getCityStats() {
   let autoStoneGen = 0;
   let autoFoodGen = 0;
   let autoEnergyDrain = 0;
+  let autoStudyGen = 0;
 
   if (state.cityLayout && state.cityLayout.slots) {
     state.cityLayout.slots.forEach((slot, idx) => {
@@ -923,6 +961,7 @@ function getCityStats() {
           break;
         case 'school':
           schoolMult = Math.max(schoolMult, data.mult || 1);
+          schoolGen += (data.gen || 0);
           break;
         case 'autoWood':
           autoWoodGen += (data.autoGen || 0);
@@ -936,10 +975,14 @@ function getCityStats() {
           autoFoodGen += (data.autoGen || 0);
           autoEnergyDrain += (data.energyCost || 0);
           break;
+        case 'autoStudy':
+          autoStudyGen += (data.autoGen || 0);
+          autoEnergyDrain += (data.energyCost || 0);
+          break;
       }
     });
   }
-  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, popLimit, usedSlots, autoWoodGen, autoStoneGen, autoFoodGen, autoEnergyDrain };
+  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, schoolGen, popLimit, usedSlots, autoWoodGen, autoStoneGen, autoFoodGen, autoEnergyDrain, autoStudyGen };
 }
 
 function getExpandCost() {
@@ -1049,8 +1092,8 @@ function updateUI() {
   const netMoneyRate = stats.bankGen + populationMoneyGen;
   setAllText(moneyRateEls, `+${netMoneyRate.toFixed(1)}/秒`);
 
-  // Knowledge rate: scholars only
-  const netKnowledgeRate = populationKnowledgeGen;
+  // Knowledge rate: school passive + scholars active + autoStudy active (scaled by difficulty)
+  const netKnowledgeRate = ((stats.schoolGen + stats.autoStudyGen) * diffMult) + populationKnowledgeGen;
   setAllText(knowledgeRateEls, `+${netKnowledgeRate.toFixed(1)}/秒`);
 
   const currentPop = state.population.length;
@@ -1148,14 +1191,27 @@ function updateUI() {
     }
 
     // Tech Automation
+    const autoCfg = gameConfig.combat.tech.automation;
     if (state.tech.automation) {
       if (btnTechAutomation) btnTechAutomation.disabled = true;
       if (techAutomationStatusEl) techAutomationStatusEl.textContent = "已研發 ✅";
     } else {
       if (btnTechAutomation) {
-        btnTechAutomation.disabled = (state.knowledge < 1000 || state.money < 1500 || state.energy < 200);
+        btnTechAutomation.disabled = (state.knowledge < autoCfg.reqKnowledge || state.money < autoCfg.reqMoney || state.energy < (autoCfg.reqEnergy || 0));
       }
       if (techAutomationStatusEl) techAutomationStatusEl.textContent = "未研發";
+    }
+
+    // Tech AutoStudy
+    const studyCfg = gameConfig.combat.tech.autoStudyTech;
+    if (state.tech.autoStudyTech) {
+      if (btnTechAutoStudy) btnTechAutoStudy.disabled = true;
+      if (techAutoStudyStatusEl) techAutoStudyStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechAutoStudy) {
+        btnTechAutoStudy.disabled = (!state.tech.automation || state.knowledge < studyCfg.reqKnowledge || state.money < studyCfg.reqMoney || state.energy < (studyCfg.reqEnergy || 0));
+      }
+      if (techAutoStudyStatusEl) techAutoStudyStatusEl.textContent = !state.tech.automation ? "🔒 需前置" : "未研發";
     }
     // Update Quest Boss Button Text matching sequential levels
     const btnQuestBoss = document.getElementById("btnQuestBoss");
@@ -1290,6 +1346,7 @@ function gameTick() {
       state.wood += stats.autoWoodGen * diffMult;
       state.stone += stats.autoStoneGen * diffMult;
       state.food += stats.autoFoodGen * diffMult;
+      state.knowledge += stats.autoStudyGen * diffMult;
     } else {
       // Power Outage Warning (throttle via random check to avoid spamming showToast)
       if (Math.random() < 0.1) {
@@ -1367,7 +1424,7 @@ function gameTick() {
   state.stone += netStone * diffMult;
   state.food += netFood * diffMult;
   state.money += netMoney;
-  state.knowledge += netKnowledge;
+  state.knowledge += netKnowledge + (stats.schoolGen * diffMult);
 
   // Economy caps
   const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
@@ -3104,13 +3161,32 @@ btnTechHero?.addEventListener("click", () => {
 
 btnTechAutomation?.addEventListener("click", () => {
   if (state.tech.automation) return;
-  if (state.knowledge >= 1000 && state.money >= 1500 && state.energy >= 200) {
-    state.knowledge -= 1000;
-    state.money -= 1500;
-    state.energy -= 200;
+  const tCfg = gameConfig.combat.tech.automation;
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
     state.tech.automation = true;
-    spawnFloatingText("🎓 自動化機械已研發!", "#34d399");
-    showToast("⚙️ 解鎖【自動化機械】！可在建地建立高效耗電自動採集器！", "success");
+    spawnFloatingText("🎓 自動生產協議已研發!", "#34d399");
+    showToast("⚙️ 解鎖【自動生產協議】！可在建地建立自動化採集機械！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
+  }
+});
+
+btnTechAutoStudy?.addEventListener("click", () => {
+  if (state.tech.autoStudyTech || !state.tech.automation) return;
+  const tCfg = gameConfig.combat.tech.autoStudyTech;
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
+    state.tech.autoStudyTech = true;
+    spawnFloatingText("🎓 自我迭代算法已研發!", "#eab308");
+    showToast("🤖 解鎖【自我迭代算法】！現在可建造強大的「自動科研儀」！", "success");
     updateUI();
   } else {
     showToast("❌ 研究知識、金幣或電力不足！", "error");
@@ -3124,8 +3200,8 @@ btnTechHuntLv4?.addEventListener("click", () => {
     state.knowledge -= tCfg.reqKnowledge;
     state.money -= tCfg.reqMoney;
     state.tech.huntLv4 = true;
-    spawnFloatingText("🎓 戰場開拓 I 已研發!", "#60a5fa");
-    showToast("⚔️ 解鎖【戰場開拓 I】！討伐上限開放至 Lv.6！", "success");
+    spawnFloatingText("🎓 蒸汽齒輪革命已研發!", "#60a5fa");
+    showToast("⚙️ 解鎖【蒸汽齒輪革命】！討伐上限開放至 Lv.6！", "success");
     updateLevelSelectors();
     updateUI();
   } else {
@@ -3136,48 +3212,54 @@ btnTechHuntLv4?.addEventListener("click", () => {
 btnTechHuntLv7?.addEventListener("click", () => {
   if (state.tech.huntLv7 || !state.tech.huntLv4) return;
   const tCfg = gameConfig.combat.tech.huntLv7;
-  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
     state.knowledge -= tCfg.reqKnowledge;
     state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
     state.tech.huntLv7 = true;
-    spawnFloatingText("🎓 戰場開拓 II 已研發!", "#60a5fa");
-    showToast("🔥 解鎖【戰場開拓 II】！討伐等級上限完美開放至 Lv.10！", "success");
+    spawnFloatingText("🎓 反物質星航力已研發!", "#60a5fa");
+    showToast("🚀 解鎖【反物質星航力】！討伐等級上限全開至 Lv.10！", "success");
     updateLevelSelectors();
     updateUI();
   } else {
-    showToast("❌ 研究知識或金幣不足！", "error");
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
   }
 });
 
 btnTechSecretLv4?.addEventListener("click", () => {
   if (state.tech.secretLv4) return;
   const tCfg = gameConfig.combat.tech.secretLv4;
-  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
     state.knowledge -= tCfg.reqKnowledge;
     state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
     state.tech.secretLv4 = true;
-    spawnFloatingText("🎓 神秘特許證 I 已研發!", "#60a5fa");
-    showToast("🔮 解鎖【神秘特許證 I】！神秘商店貨架等級擴充至 Lv.5！", "success");
+    spawnFloatingText("🎓 量子算力特區已研發!", "#60a5fa");
+    showToast("🌐 解鎖【量子算力特區】！神秘商店貨架升級至 Lv.5！", "success");
     updateLevelSelectors();
     updateUI();
   } else {
-    showToast("❌ 研究知識或金幣不足！", "error");
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
   }
 });
 
 btnTechSecretLv7?.addEventListener("click", () => {
   if (state.tech.secretLv7 || !state.tech.secretLv4) return;
   const tCfg = gameConfig.combat.tech.secretLv7;
-  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
     state.knowledge -= tCfg.reqKnowledge;
     state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
     state.tech.secretLv7 = true;
-    spawnFloatingText("🎓 神秘特許證 II 已研發!", "#60a5fa");
-    showToast("👑 解鎖【神秘特許證 II】！神秘商店終極貨架等級全開至 Lv.7！", "success");
+    spawnFloatingText("🎓 歐米茄全知網已研發!", "#60a5fa");
+    showToast("🪐 解鎖【歐米茄全知網】！神秘商店終極貨架全開至 Lv.7！", "success");
     updateLevelSelectors();
     updateUI();
   } else {
-    showToast("❌ 研究知識或金幣不足！", "error");
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
   }
 });
 
