@@ -44,6 +44,12 @@ const DEFAULT_STATE = {
   secretShop: {
     items: [], // Stores current rack of secret items { item, cost, soldOut }
     lastLevel: 1
+  },
+  autoSell: {
+    normal: false,
+    magic: false,
+    rare: false,
+    epic: false
   }
 };
 
@@ -1405,6 +1411,16 @@ function updateUI() {
   }
 
   renderPopulationRoster();
+
+  // Sync auto-sell checkboxes values
+  if (state.autoSell) {
+    const chkNormal = document.getElementById("chkAutoSellNormal");
+    const chkMagic = document.getElementById("chkAutoSellMagic");
+    const chkRare = document.getElementById("chkAutoSellRare");
+    if (chkNormal) chkNormal.checked = !!state.autoSell.normal;
+    if (chkMagic) chkMagic.checked = !!state.autoSell.magic;
+    if (chkRare) chkRare.checked = !!state.autoSell.rare;
+  }
 }
 
 // Removed adjustJob
@@ -1540,6 +1556,7 @@ function gameTick() {
   
   // 4. Population Logic
   let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0, netMithril = 0;
+  const deadResidents = [];
   
   state.population.forEach(p => {
     // Calculate dynamic limits
@@ -1555,10 +1572,22 @@ function gameTick() {
       p.hp = Math.min(curMaxHp, p.hp + 5);
       if (p.hp >= curMaxHp) {
         p.hp = curMaxHp;
-        const nextJob = p.previousAssignment || 'idle';
+        
+        const diff = state.difficulty || 'normal';
+        let nextJob = 'idle';
+        // Maintain current job only for Easy and Test difficulty
+        if (diff === 'easy' || diff === 'test') {
+          nextJob = p.previousAssignment || 'idle';
+        }
+        
         p.assignment = nextJob;
         delete p.previousAssignment;
-        showToast(`🏥 ${p.name} 已在醫院完全康復！已返回：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】`, "success");
+        
+        if (nextJob === 'idle') {
+          showToast(`🏥 ${p.name} 已在醫院完全康復！已轉為【閒置】狀態。`, "success");
+        } else {
+          showToast(`🏥 ${p.name} 已在醫院完全康復！已返回：【${nextJob === 'combat' ? '出征' : '工作岗位'}】`, "success");
+        }
       }
     } else if (p.assignment !== 'idle' && p.assignment !== 'combat') {
       // Different jobs drain different stamina
@@ -1574,10 +1603,18 @@ function gameTick() {
       
       p.hp -= drain;
       if (p.hp <= 1) {
-        p.hp = 1;
-        p.previousAssignment = p.assignment; // Back up their job
-        p.assignment = 'hospital';
-        showToast(`👷 ${p.name} 勞累過度體力透支，已被送去醫院！`, "warning");
+        const diff = state.difficulty || 'normal';
+        if (diff === 'nightmare') {
+          // In Nightmare mode, fatigue causes instant death!
+          deadResidents.push(p.id);
+          spawnFloatingText(`🪦 ${p.name} 勞累過度暴斃!`, "#ef4444");
+          showToast(`🪦 悲報：${p.name} 工作過勞，不幸暴斃身亡！`, "error");
+        } else {
+          p.hp = 1;
+          p.previousAssignment = p.assignment; // Back up their job
+          p.assignment = 'hospital';
+          showToast(`👷 ${p.name} 勞累過度體力透支，已被送去醫院！`, "warning");
+        }
       }
     }
 
@@ -1624,6 +1661,11 @@ function gameTick() {
       }
     }
   });
+
+  // Prune residents who died of fatigue this tick
+  if (deadResidents.length > 0) {
+    state.population = state.population.filter(p => !deadResidents.includes(p.id));
+  }
 
   state.wood += netWood * diffMult;
   state.stone += netStone * diffMult;
@@ -2036,29 +2078,65 @@ window.reviveHero = function(id) {
   updateUI();
 };
 
-window.quickHealHero = function(personId, cost) {
-  if (state.money < cost) {
-    showToast("❌ 金錢不足，無法支付醫療費！", "error");
-    return;
+window.getHealMithrilCost = function(person, eff) {
+  if (!person || !eff) return 0;
+  const hpDeficit = Math.max(0, eff.maxHp - person.hp);
+  const mpDeficit = Math.max(0, eff.maxMp - person.mp);
+  if (hpDeficit <= 0 && mpDeficit <= 0) return 0;
+  return Math.max(1, Math.ceil(person.level * 1.5 * (hpDeficit / eff.maxHp + mpDeficit / eff.maxMp)));
+};
+
+window.quickHealHero = function(personId, cost, currencyType = 'gold') {
+  if (currencyType === 'mithril') {
+    const currentMithril = state.mithril || 0;
+    if (currentMithril < cost) {
+      showToast("❌ 💠 秘銀幣不足，無法支付高級醫療費！", "error");
+      return;
+    }
+  } else {
+    if (state.money < cost) {
+      showToast("❌ 💰 金錢不足，無法支付普通醫療費！", "error");
+      return;
+    }
   }
+
   const person = state.population.find(p => p.id === personId);
   if (!person) return;
   
   const eff = calcEffStats(person);
   if (!eff) return;
   
-  state.money -= cost;
+  if (currencyType === 'mithril') {
+    state.mithril = (state.mithril || 0) - cost;
+  } else {
+    state.money -= cost;
+  }
+  
   person.hp = eff.maxHp;
   person.mp = eff.maxMp;
   
   // Restore duty if manually cured from hospital
   if (person.assignment === 'hospital') {
-    const nextJob = person.previousAssignment || 'idle';
+    const diff = state.difficulty || 'normal';
+    let nextJob = 'idle';
+    if (diff === 'easy' || diff === 'test') {
+      nextJob = person.previousAssignment || 'idle';
+    }
+    
     person.assignment = nextJob;
     delete person.previousAssignment;
-    showToast(`💚 ${person.name} 已完全恢復健康並重返：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】！`, "success");
+    
+    if (nextJob === 'idle') {
+      showToast(`💚 ${person.name} 已痊癒出院，狀態調整為【閒置】！`, "success");
+    } else {
+      showToast(`💚 ${person.name} 已痊癒出院並重返：【${nextJob === 'combat' ? '出征' : '工作岗位'}】！`, "success");
+    }
   } else {
-    showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
+    if (currencyType === 'mithril') {
+      showToast(`✨ 高級聖光醫治！${person.name} 的體力與魔力完全恢復！`, "success");
+    } else {
+      showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
+    }
   }
   updateUI();
 };
@@ -2859,13 +2937,75 @@ function updateHeroSheets() {
           </button>
         `;
       } else if (healCost > 0) {
-        const canPay = state.money >= healCost;
-        healBtnHtml = `
-          <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: ${canPay ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#4b5563'}; color: white; cursor: ${canPay ? 'pointer' : 'not-allowed'}; transition: opacity 0.2s;"
-            onclick="window.quickHealHero('${p.id}', ${healCost})" ${canPay ? '' : 'disabled'}>
-            💚 恢復狀態 (💰${healCost})
-          </button>
-        `;
+        const diff = state.difficulty || 'normal';
+        const isCombat = (p.assignment === 'combat');
+        
+        let currencyType = 'gold';
+        let finalCost = healCost;
+        let isActDisabled = false;
+        let btnLabel = "";
+        
+        if (diff === 'easy' || diff === 'test') {
+          currencyType = 'gold';
+          finalCost = healCost;
+          btnLabel = `💰${finalCost}`;
+        } else if (diff === 'normal') {
+          if (isCombat) {
+            currencyType = 'mithril';
+            finalCost = window.getHealMithrilCost ? window.getHealMithrilCost(p, eff) : 1;
+            btnLabel = `💠${finalCost}`;
+          } else {
+            currencyType = 'gold';
+            finalCost = healCost;
+            btnLabel = `💰${finalCost}`;
+          }
+        } else if (diff === 'hard') {
+          if (isCombat) {
+            currencyType = 'mithril';
+            finalCost = (window.getHealMithrilCost ? window.getHealMithrilCost(p, eff) : 1) * 10;
+            btnLabel = `💠${finalCost}`;
+          } else {
+            currencyType = 'gold';
+            finalCost = healCost;
+            btnLabel = `💰${finalCost}`;
+          }
+        } else if (diff === 'nightmare') {
+          if (isCombat) {
+            isActDisabled = true;
+            btnLabel = `🚫 出征中不可治療`;
+          } else {
+            currencyType = 'mithril';
+            finalCost = (window.getHealMithrilCost ? window.getHealMithrilCost(p, eff) : 1) * 10;
+            btnLabel = `💠${finalCost}`;
+          }
+        }
+
+        let canPay = true;
+        if (!isActDisabled) {
+          if (currencyType === 'mithril') {
+            canPay = (state.mithril || 0) >= finalCost;
+          } else {
+            canPay = state.money >= finalCost;
+          }
+        } else {
+          canPay = false;
+        }
+
+        if (isActDisabled) {
+          healBtnHtml = `
+            <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: #374151; color: #ef4444; cursor: not-allowed;" disabled>
+              ${btnLabel}
+            </button>
+          `;
+        } else {
+          const btnBg = canPay ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#4b5563';
+          healBtnHtml = `
+            <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: ${btnBg}; color: white; cursor: ${canPay ? 'pointer' : 'not-allowed'}; transition: opacity 0.2s;"
+              onclick="window.quickHealHero('${p.id}', ${finalCost}, '${currencyType}')" ${canPay ? '' : 'disabled'}>
+              💚 恢復狀態 (${btnLabel})
+            </button>
+          `;
+        }
       } else {
         healBtnHtml = `
           <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16,185,129,0.05); color: #10b981; cursor: default;" disabled>
@@ -3433,12 +3573,23 @@ function checkBattleResolution() {
     
     if (rKey) {
       const lvl = Math.min(7, Math.ceil(totalExp / 20));
-      if (state.inventory.length < 24) {
-        const dropped = generateItem(lvl, rKey);
-        state.inventory.push(dropped);
-        logBattle(`🎁 怪物掉落神裝：[${dropped.name}]！`, "log-item-drop");
+      
+      // Check Auto-Sell settings
+      if (state.autoSell && state.autoSell[rKey]) {
+        const basePrice = gameConfig.eqSpecs.price[lvl] || 100;
+        const sellVal = Math.ceil(basePrice * 0.3);
+        state.money += sellVal;
+        const rName = gameConfig.eqSpecs.rarities[rKey]?.name || rKey;
+        logBattle(`🤖 自動售出怪物掉落 [${rName}] 裝備，獲得 💰${sellVal}！`, "log-item-drop");
+        updateUI();
       } else {
-        logBattle(`⚠️ 背包滿了，掉落神裝不慎遺失...`);
+        if (state.inventory.length < 24) {
+          const dropped = generateItem(lvl, rKey);
+          state.inventory.push(dropped);
+          logBattle(`🎁 怪物掉落神裝：[${dropped.name}]！`, "log-item-drop");
+        } else {
+          logBattle(`⚠️ 背包滿了，掉落神裝不慎遺失...`);
+        }
       }
     }
     
@@ -4352,8 +4503,60 @@ async function predictLoop() {
   requestAnimationFrame(predictLoop);
 }
 
+// Initialize Inventory Quick Controls
+function initInventoryControls() {
+  const btnSellNormal = document.getElementById("btnSellNormal");
+  const btnSellMagic = document.getElementById("btnSellMagic");
+  const btnSellRare = document.getElementById("btnSellRare");
+  const btnSellEpic = document.getElementById("btnSellEpic");
+
+  const chkNormal = document.getElementById("chkAutoSellNormal");
+  const chkMagic = document.getElementById("chkAutoSellMagic");
+  const chkRare = document.getElementById("chkAutoSellRare");
+
+  const bulkSellByRarity = (rarityKey) => {
+    let count = 0;
+    let totalGold = 0;
+    // Iterate backwards to safely splice
+    for (let i = state.inventory.length - 1; i >= 0; i--) {
+      const item = state.inventory[i];
+      if (item.rarity === rarityKey) {
+        const sellVal = Math.ceil((gameConfig.eqSpecs.price[item.level] || 100) * 0.3);
+        totalGold += sellVal;
+        state.inventory.splice(i, 1);
+        count++;
+      }
+    }
+    if (count > 0) {
+      state.money += totalGold;
+      const rName = gameConfig.eqSpecs.rarities[rarityKey]?.name || rarityKey;
+      showToast(`💰 一鍵賣出 ${count} 件 [${rName}] 裝備，獲得 💰${totalGold.toLocaleString()}`, "info");
+      renderInventory();
+      updateUI();
+    } else {
+      const rName = gameConfig.eqSpecs.rarities[rarityKey]?.name || rarityKey;
+      showToast(`🎒 背包中沒有 [${rName}] 等級的裝備可販售。`, "info");
+    }
+  };
+
+  btnSellNormal?.addEventListener("click", () => bulkSellByRarity("normal"));
+  btnSellMagic?.addEventListener("click", () => bulkSellByRarity("magic"));
+  btnSellRare?.addEventListener("click", () => bulkSellByRarity("rare"));
+  btnSellEpic?.addEventListener("click", () => bulkSellByRarity("epic"));
+
+  const updateSetting = (key, val) => {
+    if (!state.autoSell) state.autoSell = { normal: false, magic: false, rare: false, epic: false };
+    state.autoSell[key] = val;
+  };
+
+  chkNormal?.addEventListener("change", (e) => updateSetting("normal", e.target.checked));
+  chkMagic?.addEventListener("change", (e) => updateSetting("magic", e.target.checked));
+  chkRare?.addEventListener("change", (e) => updateSetting("rare", e.target.checked));
+}
+
 // Init on DOM load
 window.addEventListener("DOMContentLoaded", () => {
+  initInventoryControls();
   updateUI();
   updateLevelSelectors();
   initSkillGrid();

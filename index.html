@@ -703,6 +703,32 @@
           </div>
 
           <div class="rpg-panel" id="rpg-inventory-panel">
+            <!-- 一鍵販售與自動售出控制面板 -->
+            <div class="inventory-controls" style="background: rgba(15, 23, 42, 0.6); padding: 0.8rem 1rem; border-radius: 12px; margin-bottom: 1.2rem; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);">
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                <span style="font-size: 0.8rem; font-weight: 800; color: #94a3b8; margin-right: 0.25rem; white-space: nowrap;">💰 一鍵販售背包：</span>
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                  <button class="ctrl-btn sell-btn-quick" id="btnSellNormal" style="background: rgba(71, 85, 105, 0.2); color: #cbd5e1; border: 1px solid #64748b; font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-weight: bold;">⚪ 普通</button>
+                  <button class="ctrl-btn sell-btn-quick" id="btnSellMagic" style="background: rgba(6, 95, 70, 0.2); color: #a7f3d0; border: 1px solid #10b981; font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-weight: bold;">🟢 精良</button>
+                  <button class="ctrl-btn sell-btn-quick" id="btnSellRare" style="background: rgba(30, 64, 175, 0.2); color: #bfdbfe; border: 1px solid #3b82f6; font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-weight: bold;">🔵 稀有</button>
+                  <button class="ctrl-btn sell-btn-quick" id="btnSellEpic" style="background: rgba(107, 33, 168, 0.2); color: #e9d5ff; border: 1px solid #a855f7; font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-weight: bold;">🟣 史詩</button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.75rem; flex-wrap: wrap;">
+                <span style="font-size: 0.8rem; font-weight: 800; color: #94a3b8; margin-right: 0.25rem; white-space: nowrap;">🤖 掉落自動販售：</span>
+                <div style="display: flex; gap: 0.8rem;">
+                  <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; font-weight: 600;">
+                    <input type="checkbox" id="chkAutoSellNormal" style="accent-color: #64748b; width: 14px; height: 14px; cursor: pointer;"> 普通
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #a7f3d0; cursor: pointer; font-weight: 600;">
+                    <input type="checkbox" id="chkAutoSellMagic" style="accent-color: #10b981; width: 14px; height: 14px; cursor: pointer;"> 精良
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #bfdbfe; cursor: pointer; font-weight: 600;">
+                    <input type="checkbox" id="chkAutoSellRare" style="accent-color: #3b82f6; width: 14px; height: 14px; cursor: pointer;"> 稀有
+                  </label>
+                </div>
+              </div>
+            </div>
             <div class="inv-grid" id="inventoryContainer">
               <div class="empty-inv">背包是空的，快去打寶吧！</div>
             </div>
