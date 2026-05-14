@@ -230,6 +230,7 @@ h1 {
   flex-direction: column;
   gap: 1.5rem;
   padding: 1.5rem;
+  padding-bottom: 110px; /* 提供足量底部間隔，防止浮動導航條遮擋交互按鈕 */
   max-width: 900px;
   margin: 0 auto;
   width: 100%;

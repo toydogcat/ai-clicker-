@@ -1123,19 +1123,20 @@ function spawnFloatingText(text, color, clientX = null, clientY = null) {
 // ==========================================
 function gameTick() {
   const caps = getCapacities();
+  const stats = getCityStats();
   const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
   const diffMult = diffCfg.gather;
 
-  // 1. Passive food yield (Farms: +1/s)
-  const passiveGen = (state.buildings.farms * 1) * diffMult;
+  // 1. Passive food yield
+  const passiveGen = stats.farmGen * diffMult;
   state.food += passiveGen;
   
-  // 2. Automated Industrial Yields (Smelters: +0.3/s Metal, Power Plants: +1.0/s Energy)
-  state.metal += (state.buildings.smelter * 0.3) * diffMult;
-  state.energy += (state.buildings.powerPlant * 1.0) * diffMult;
+  // 2. Automated Industrial Yields
+  state.metal += stats.smelterGen * diffMult;
+  state.energy += stats.powerGen * diffMult;
 
   // 3. Banks generate passive income
-  state.money += state.buildings.bank * 1.0;
+  state.money += stats.bankGen;
   
   // 4. Population Logic
   let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0;
@@ -1178,7 +1179,7 @@ function gameTick() {
   state.knowledge += netKnowledge;
 
   // Economy caps
-  const moneyCap = gameConfig.economy.baseMoneyCap + (state.buildings.bank * gameConfig.economy.bankMoneyBonus);
+  const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
   state.money = Math.min(state.money, moneyCap);
 
   // Apply resource caps (Food, Wood, Stone, Metal, Energy)
@@ -1199,16 +1200,16 @@ function gameTick() {
   }
 
   // 6. Boss Invasions
-  const totalBuildings = Object.values(state.buildings).reduce((a, b) => a + b, 0);
-  if (totalBuildings >= 50 && !state.bossInvasions.greed && !state.bossInvasions.greedDefeated) {
+  const totalBuildings = state.cityLayout.slots.filter(s => s && s.type).length;
+  if (totalBuildings >= 15 && !state.bossInvasions.greed && !state.bossInvasions.greedDefeated) {
     state.bossInvasions.greed = Date.now();
     showToast("⚠️ 【貪】之巨獸出現了！請在一週內討伐！", "error");
   }
-  if (totalBuildings >= 100 && !state.bossInvasions.anger && !state.bossInvasions.angerDefeated) {
+  if (totalBuildings >= 30 && !state.bossInvasions.anger && !state.bossInvasions.angerDefeated) {
     state.bossInvasions.anger = Date.now();
     showToast("⚠️ 【嗔】之巨獸出現了！請在一週內討伐！", "error");
   }
-  if (totalBuildings >= 200 && !state.bossInvasions.ignorance && !state.bossInvasions.ignoranceDefeated) {
+  if (totalBuildings >= 50 && !state.bossInvasions.ignorance && !state.bossInvasions.ignoranceDefeated) {
     state.bossInvasions.ignorance = Date.now();
     showToast("⚠️ 【癡】之巨獸出現了！請在一週內討伐！", "error");
   }
@@ -1218,16 +1219,15 @@ function gameTick() {
     if (typeof ts === 'number' && ts > 0 && (Date.now() - ts) > 7 * 24 * 3600 * 1000) {
       // 1/3600 chance per tick (~once per hour of playtime)
       if (Math.random() < (1 / 3600)) {
-        const buildingNames = {
-          cabins: '木屋', farms: '農田', smelter: '熔爐',
-          powerPlant: '發電廠', warehouse: '倉庫', battery: '蓄電池組',
-          bank: '銀行', school: '學院'
-        };
-        const bKeys = Object.keys(state.buildings).filter(k => state.buildings[k] > 0);
-        if (bKeys.length > 0) {
-          let target = bKeys[Math.floor(Math.random() * bKeys.length)];
-          state.buildings[target]--;
-          const displayName = buildingNames[target] || target;
+        const occupiedSlots = state.cityLayout.slots.filter(s => s && s.type);
+        if (occupiedSlots.length > 0) {
+          let targetSlot = occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)];
+          const type = targetSlot.type;
+          const db = BUILDING_DATA[type];
+          const displayName = db ? db.name : type;
+          
+          targetSlot.type = null;
+          targetSlot.level = 1;
           showToast(`🚨 巨獸摧毀了一棟【${displayName}】！快去討伐它！`, "error");
         }
       }
@@ -1279,7 +1279,9 @@ const NAME_SUFFIXES = ["王", "明", "華", "狗", "柱", "強", "花", "風"];
 
 function hireResident() {
   if (state.population.length >= state.workerLimit) return;
-  const workerMoneyCost = state.buildings.bank > 0 ? gameConfig.economy.recruitBaseCost : 0;
+  const stats = getCityStats();
+  const hasBank = stats.bankMoneyCap > 0 || stats.bankGen > 0;
+  const workerMoneyCost = hasBank ? gameConfig.economy.recruitBaseCost : 0;
   if (state.food < gameConfig.costs.worker.food || state.money < workerMoneyCost) return;
 
   state.food -= gameConfig.costs.worker.food;
@@ -1329,6 +1331,7 @@ function renderPopulationRoster() {
     return;
   }
 
+  const stats = getCityStats();
   populationRoster.innerHTML = "";
   
   if (state.population.length === 0) {
@@ -1408,7 +1411,7 @@ function renderPopulationRoster() {
           <option value="miner" ${p.assignment === 'miner' ? 'selected' : ''}>採礦</option>
           <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕</option>
           <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商</option>
-          ${state.buildings.school > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
+          ${stats.schoolMult > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
         `;
       }
       assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
@@ -2653,7 +2656,8 @@ function checkBattleResolution() {
     });
     
     state.money += totalMoney;
-    const moneyCap = gameConfig.economy.baseMoneyCap + (state.buildings.bank * gameConfig.economy.bankMoneyBonus);
+    const stats = getCityStats();
+    const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
     if (state.money > moneyCap) state.money = moneyCap;
     combatParty.forEach(p => {
       p.exp += totalExp;
