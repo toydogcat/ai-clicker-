@@ -1540,20 +1540,20 @@ function renderPopulationRoster() {
 
     // Exile Button Definition
     const exileBtnHtml = `
-      <button class="ctrl-btn" style="background: #7f1d1d; color: #fca5a5; font-size: 0.85rem; padding: 0.25rem 0.5rem; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; cursor: pointer;" onclick="exileResident('${p.id}')" title="流放出城，釋放床位與人口數">
+      <button class="roster-action-btn btn-exile" onclick="exileResident('${p.id}')" title="流放出城，釋放床位與人口數">
         🥾 流放
       </button>
     `;
 
     // HP / Fatigue Bar HTML
     const hpBarHtml = `
-      <div style="margin-top: 0.3rem;">
-        <div style="width: 100%; height: 5px; background: #334155; border-radius: 3px; overflow: hidden;">
-          <div style="width: ${hpPercent}%; height: 100%; background: linear-gradient(90deg, #ef4444, #f97316); transition: width 0.3s ease;"></div>
+      <div>
+        <div class="hp-bar-wrapper">
+          <div class="hp-bar-fill" style="width: ${hpPercent}%;"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 1px;">
-          <span style="color: #94a3b8;">❤️ 精力(體力/生命)</span>
-          <span style="color: #fca5a5; font-weight:bold;">${Math.floor(currentHp)} / ${Math.floor(maxHp)}</span>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 4px;">
+          <span style="color: #94a3b8; font-weight:500;">❤️ 精力 (體力/生命)</span>
+          <span style="color: #fca5a5; font-weight:800;">${Math.floor(currentHp)} / ${Math.floor(maxHp)}</span>
         </div>
       </div>
     `;
@@ -1576,23 +1576,24 @@ function renderPopulationRoster() {
     if (canPromote) {
       const optionsHTML = availableClasses.map(k => `<option value="${k}">${gameConfig.heroes[k].name}</option>`).join("");
       promoteHTML = `
-        <select id="promote_${p.id}" class="job-select" style="margin-left:0.5rem;">
-          <option value="">選擇職業...</option>
-          ${optionsHTML}
-        </select>
-        <button class="ctrl-btn" onclick="promoteResident('${p.id}')">轉職</button>
+        <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+          <select id="promote_${p.id}" class="roster-assign-select" style="font-size: 0.8rem; padding: 0.25rem 0.5rem !important;">
+            <option value="">選擇職業...</option>
+            ${optionsHTML}
+          </select>
+          <button class="roster-action-btn btn-promote" style="padding: 0.25rem 0.6rem !important; font-size: 0.8rem !important;" onclick="promoteResident('${p.id}')">轉職</button>
+        </div>
       `;
     } else if (p.jobClass !== "novice") {
-      promoteHTML = `<span style="margin-left:0.5rem; color:#fde047; font-weight:bold;">[${gameConfig.heroes[p.jobClass].name}]</span>`;
+      promoteHTML = `<span class="roster-badge-class">${gameConfig.heroes[p.jobClass].name}</span>`;
     }
 
     if (needsExam) {
-      promoteHTML += `<button class="ctrl-btn" style="margin-left:0.5rem; background:#ef4444;" onclick="openExamModal('${p.id}')">📖 參加微積分升級考</button>`;
+      promoteHTML += `<button class="roster-action-btn btn-exam" style="margin-left:0.4rem; padding: 0.25rem 0.6rem !important; font-size: 0.8rem !important;" onclick="openExamModal('${p.id}')">📖 升級考</button>`;
     }
 
     const row = document.createElement("div");
-    row.className = "job-row";
-    row.style = "padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;";
+    row.className = "roster-card";
     
     if (p.assignment === "hospital") {
       // HOSPITAL RENDER LOGIC (WITH FREE NATURAL HEALING PROGRESS)
@@ -1600,20 +1601,22 @@ function renderPopulationRoster() {
       const canAfford = state.money >= reviveCost;
       
       row.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="job-title" style="font-size: 1.1rem; color: #94a3b8; text-decoration: line-through;">${p.name} (Lv.${p.level})</span>
-            <span style="margin-left:0.5rem; color:#ef4444; font-weight:bold; font-size: 0.85rem; display: flex; align-items: center; gap: 3px;">🏥 療養痊癒中(+5 HP/s)</span>
+        <div class="roster-header">
+          <div class="roster-name-block">
+            <span class="roster-name" style="color: #94a3b8; text-decoration: line-through; opacity: 0.7;">${p.name} (Lv.${p.level})</span>
+            <span style="background: rgba(239,68,68,0.15); color:#ef4444; font-weight:bold; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); display: inline-flex; align-items: center; gap: 4px;">🏥 療養中(+5/s)</span>
           </div>
           ${exileBtnHtml}
         </div>
-        ${hpBarHtml}
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.1); padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(239,68,68,0.25);">
-          <span style="font-size: 0.8rem; color: #fca5a5;">⏳ 自然恢復中...</span>
-          <button class="ctrl-btn" style="background: ${canAfford ? '#10b981' : '#4b5563'}; color: white; font-weight:bold; border-radius:4px; cursor: ${canAfford ? 'pointer' : 'not-allowed'};" 
-            onclick="reviveHero('${p.id}')" ${canAfford ? '' : 'disabled'}>
-            💖 付費急救 (💰${reviveCost})
-          </button>
+        <div class="roster-body-box" style="border-color: rgba(239,68,68,0.15) !important;">
+          ${hpBarHtml}
+          <div class="roster-assign-row">
+            <span style="font-size: 0.8rem; color: #fca5a5; display: flex; align-items: center; gap: 4px; font-weight:500;">⏳ 正在醫院靜養康復</span>
+            <button class="roster-action-btn btn-heal" 
+              onclick="reviveHero('${p.id}')" ${canAfford ? '' : 'disabled'}>
+              💖 付費急救 (💰${reviveCost})
+            </button>
+          </div>
         </div>
       `;
     } else {
@@ -1631,19 +1634,21 @@ function renderPopulationRoster() {
       assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
 
       row.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="job-title" style="font-size: 1.1rem; color: #e2e8f0;">${p.name} (Lv.${p.level})</span>
+        <div class="roster-header">
+          <div class="roster-name-block">
+            <span class="roster-name">${p.name} (Lv.${p.level})</span>
             ${promoteHTML}
           </div>
           ${exileBtnHtml}
         </div>
-        ${hpBarHtml}
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px;">
-          <span style="font-size: 0.8rem; color: #94a3b8;">當前指派：</span>
-          <select onchange="changeResidentAssignment('${p.id}', this.value)" class="job-select" style="padding: 0.2rem; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px;">
-            ${assignOptions}
-          </select>
+        <div class="roster-body-box">
+          ${hpBarHtml}
+          <div class="roster-assign-row">
+            <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">當前指派任務</span>
+            <select onchange="changeResidentAssignment('${p.id}', this.value)" class="roster-assign-select">
+              ${assignOptions}
+            </select>
+          </div>
         </div>
       `;
     }
