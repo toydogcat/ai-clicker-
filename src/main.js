@@ -26,7 +26,8 @@ const DEFAULT_STATE = {
     huntLv4: false,
     huntLv7: false,
     secretLv4: false,
-    secretLv7: false
+    secretLv7: false,
+    automation: false
   },
   party: [],
   inventory: [],
@@ -46,7 +47,13 @@ const BUILDING_DATA = {
       { label: "🛖 小木屋", pop: 3, cost: { wood: 25 } },
       { label: "🏡 舒適木房", pop: 8, cost: { wood: 100, stone: 30 } },
       { label: "🏢 現代公寓", pop: 20, cost: { wood: 400, stone: 200, metal: 50 } },
-      { label: "🏙️ 高級大樓", pop: 50, cost: { wood: 1200, stone: 600, metal: 200 } }
+      { label: "🏙️ 高級大樓", pop: 50, cost: { wood: 1200, stone: 600, metal: 200 } },
+      { label: "🏰 貴族官邸", pop: 120, cost: { wood: 4000, stone: 2000, metal: 500 } },
+      { label: "💒 生態莊園", pop: 300, cost: { wood: 15000, stone: 8000, metal: 2000, money: 500 } },
+      { label: "🕋 全息集落", pop: 700, cost: { wood: 50000, stone: 25000, metal: 6000, energy: 100 } },
+      { label: "🌆 摩天巨構", pop: 1800, cost: { wood: 200000, stone: 100000, metal: 15000, energy: 300 } },
+      { label: "🌍 生態穹頂", pop: 4500, cost: { wood: 800000, stone: 400000, metal: 40000, energy: 1000 } },
+      { label: "🛸 星際方舟", pop: 12000, cost: { wood: 3000000, stone: 1500000, metal: 100000, energy: 3000 } }
     ]
   },
   farm: {
@@ -57,7 +64,13 @@ const BUILDING_DATA = {
       { label: "🌾 菜園", gen: 0.5, cost: { wood: 30, stone: 15 } },
       { label: "🚜 大型農場", gen: 2.0, cost: { wood: 150, stone: 80 } },
       { label: "🏭 自動水耕艙", gen: 6.0, cost: { stone: 300, metal: 100 } },
-      { label: "🌽 生物農場巨蛋", gen: 20.0, cost: { metal: 500, energy: 200 } }
+      { label: "🌽 生物農場巨蛋", gen: 20.0, cost: { metal: 500, energy: 200 } },
+      { label: "🧬 基因培植園", gen: 60.0, cost: { metal: 1500, energy: 400 } },
+      { label: "🧪 營養液巨塔", gen: 180.0, cost: { metal: 4000, energy: 1000, money: 1000 } },
+      { label: "🌴 生物圈三號", gen: 500.0, cost: { metal: 12000, energy: 2500 } },
+      { label: "🥗 分子烹飪網", gen: 1500.0, cost: { metal: 40000, energy: 6000 } },
+      { label: "🌀 物質合成器", gen: 4000.0, cost: { metal: 150000, energy: 15000 } },
+      { label: "🌟 無限豐饒之泉", gen: 12000.0, cost: { metal: 500000, energy: 40000 } }
     ]
   },
   smelter: {
@@ -67,7 +80,14 @@ const BUILDING_DATA = {
     levels: [
       { label: "🪙 簡易熔爐", gen: 0.2, cost: { wood: 40, stone: 50 } },
       { label: "🏭 工業煉鐵廠", gen: 0.8, cost: { stone: 200, metal: 50 } },
-      { label: "⚡ 高溫等離子爐", gen: 3.0, cost: { metal: 400, energy: 150 } }
+      { label: "⚡ 高溫等離子爐", gen: 3.0, cost: { metal: 400, energy: 150 } },
+      { label: "💥 核融合熔煉爐", gen: 10.0, cost: { metal: 1500, energy: 400 } },
+      { label: "🌌 奈米重組儀", gen: 35.0, cost: { metal: 5000, energy: 1000 } },
+      { label: "🔮 暗物質凝聚器", gen: 120.0, cost: { metal: 15000, energy: 3000, money: 2000 } },
+      { label: "💎 強子粉碎煉製廠", gen: 400.0, cost: { metal: 50000, energy: 8000 } },
+      { label: "🧬 分子鏈重構基站", gen: 1200.0, cost: { metal: 180000, energy: 20000 } },
+      { label: "☄️ 小行星捕獲冶煉機", gen: 3500.0, cost: { metal: 600000, energy: 50000 } },
+      { label: "🪐 星系物質轉換核心", gen: 10000.0, cost: { metal: 2000000, energy: 150000 } }
     ]
   },
   powerPlant: {
@@ -77,7 +97,14 @@ const BUILDING_DATA = {
     levels: [
       { label: "⚡ 蒸汽發電機", gen: 0.5, cost: { stone: 80, metal: 20 } },
       { label: "☢️ 風力發電機組", gen: 2.0, cost: { stone: 300, metal: 150 } },
-      { label: "⚛️ 核能發電廠", gen: 8.0, cost: { metal: 600, energy: 100 } }
+      { label: "⚛️ 核能發電廠", gen: 8.0, cost: { metal: 600, energy: 100 } },
+      { label: "🌀 托卡馬克聚變堆", gen: 25.0, cost: { metal: 2000, money: 1000 } },
+      { label: "🛰️ 軌道微波電網", gen: 80.0, cost: { metal: 6000, money: 3000 } },
+      { label: "🛸 反物質反應爐", gen: 250.0, cost: { metal: 20000, money: 8000 } },
+      { label: "☀️ 戴森雲接收器", gen: 800.0, cost: { metal: 80000, money: 25000 } },
+      { label: "💫 奇點引力電站", gen: 2500.0, cost: { metal: 250000, money: 80000 } },
+      { label: "🌌 宇宙微波背景發電", gen: 7000.0, cost: { metal: 800000, money: 250000 } },
+      { label: "🎇 全維度真空提取極", gen: 20000.0, cost: { metal: 2500000, money: 800000 } }
     ]
   },
   warehouse: {
@@ -87,7 +114,14 @@ const BUILDING_DATA = {
     levels: [
       { label: "📦 臨時儲藏點", cap: 100, cost: { wood: 50, stone: 30 } },
       { label: "🏭 鋼鐵貨倉", cap: 400, cost: { wood: 200, stone: 150, metal: 50 } },
-      { label: "🏦 自動化物流中心", cap: 1500, cost: { stone: 600, metal: 300 } }
+      { label: "🏦 自動化物流中心", cap: 1500, cost: { stone: 600, metal: 300 } },
+      { label: "🏬 全息壓縮貨櫃園", cap: 5000, cost: { stone: 2000, metal: 1000, energy: 200 } },
+      { label: "🌌 超維度收納區", cap: 20000, cost: { metal: 4000, energy: 600 } },
+      { label: "🛰️ 地球軌道貨倉系統", cap: 80000, cost: { metal: 15000, energy: 2000 } },
+      { label: "🪐 太空電梯終端站", cap: 300000, cost: { metal: 50000, energy: 6000 } },
+      { label: "💫 空間摺疊收容所", cap: 1200000, cost: { metal: 180000, energy: 20000 } },
+      { label: "🌀 微型奇點倉庫", cap: 5000000, cost: { metal: 600000, energy: 60000 } },
+      { label: "🌌 無限空間口袋", cap: 20000000, cost: { metal: 2000000, energy: 200000 } }
     ]
   },
   battery: {
@@ -97,7 +131,14 @@ const BUILDING_DATA = {
     levels: [
       { label: "🔋 小型蓄電池組", cap: 50, cost: { stone: 60, metal: 40 } },
       { label: "📡 電流控制中心", cap: 200, cost: { stone: 200, metal: 150 } },
-      { label: "🛰️ 超導網格節點", cap: 800, cost: { metal: 500, energy: 200 } }
+      { label: "🛰️ 超導網格節點", cap: 800, cost: { metal: 500, energy: 200 } },
+      { label: "💠 電漿儲能容器", cap: 3000, cost: { metal: 1500, money: 800 } },
+      { label: "💫 零點能存儲器", cap: 12000, cost: { metal: 5000, energy: 1000 } },
+      { label: "🌌 強磁單極阱", cap: 50000, cost: { metal: 15000, energy: 3000 } },
+      { label: "⚛️ 量子能階蓄電池", cap: 200000, cost: { metal: 50000, energy: 8000 } },
+      { label: "💥 亞原子儲能矩陣", cap: 800000, cost: { metal: 180000, energy: 25000 } },
+      { label: "💫 時空曲率電網", cap: 3000000, cost: { metal: 600000, energy: 80000 } },
+      { label: "🎆 多維熱力學儲能環", cap: 12000000, cost: { metal: 2000000, energy: 250000 } }
     ]
   },
   bank: {
@@ -107,17 +148,82 @@ const BUILDING_DATA = {
     levels: [
       { label: "🏦 城鎮金庫", cap: 1000, gen: 0.5, cost: { stone: 60, metal: 30 } },
       { label: "🏛️ 中央銀行", cap: 8000, gen: 3.0, cost: { stone: 300, metal: 150 } },
-      { label: "💎 皇家金融總部", cap: 50000, gen: 15.0, cost: { metal: 600, energy: 100 } }
+      { label: "💎 皇家金融總部", cap: 50000, gen: 15.0, cost: { metal: 600, energy: 100 } },
+      { label: "🏢 跨國投資財團", cap: 250000, gen: 60.0, cost: { metal: 2000, energy: 400 } },
+      { label: "🌍 全球期貨交易所", cap: 1000000, gen: 250.0, cost: { metal: 8000, energy: 1500 } },
+      { label: "📊 全息高頻交易中心", cap: 4000000, gen: 1000.0, cost: { metal: 30000, energy: 5000 } },
+      { label: "💳 行星信用儲蓄體", cap: 15000000, gen: 3500.0, cost: { metal: 100000, energy: 15000 } },
+      { label: "🌟 聯邦鑄幣總局", cap: 60000000, gen: 12000.0, cost: { metal: 350000, energy: 40000 } },
+      { label: "🪙 宇宙金融主網", cap: 250000000, gen: 40000.0, cost: { metal: 1200000, energy: 120000 } },
+      { label: "👑 終極造物財閥總部", cap: 1000000000, gen: 150000.0, cost: { metal: 4000000, energy: 400000 } }
     ]
   },
   school: {
     name: "學術機構",
-    desc: "解鎖更高等的學院研究科技",
+    desc: "解鎖更高等的學院研究科技並加速產能",
     icon: "📚",
     levels: [
       { label: "📚 地方學堂", mult: 1, cost: { wood: 80, stone: 60, energy: 20 } },
       { label: "🏛️ 綜合學院", mult: 2, cost: { wood: 300, stone: 200, metal: 100 } },
-      { label: "🎓 國立研究大學", mult: 3, cost: { stone: 800, metal: 400, energy: 200 } }
+      { label: "🎓 國立研究大學", mult: 3, cost: { stone: 800, metal: 400, energy: 200 } },
+      { label: "🧬 皇家先進研究所", mult: 4, cost: { stone: 3000, metal: 1500, energy: 500 } },
+      { label: "🔮 高能物理實驗室", mult: 5, cost: { metal: 6000, energy: 1500, money: 5000 } },
+      { label: "🧠 全息智庫中心", mult: 6, cost: { metal: 20000, energy: 4000, money: 15000 } },
+      { label: "🌀 重大基建算力矩陣", mult: 7, cost: { metal: 80000, energy: 10000, money: 50000 } },
+      { label: "🌌 行星級智慧核心", mult: 8, cost: { metal: 300000, energy: 30000, money: 200000 } },
+      { label: "🧠 宇宙神經學習網路", mult: 9, cost: { metal: 1000000, energy: 80000, money: 800000 } },
+      { label: "🌟 歐米茄全知學社", mult: 10, cost: { metal: 3500000, energy: 250000, money: 3000000 } }
+    ]
+  },
+  autoWood: {
+    name: "自動伐木機",
+    desc: "全自動高效伐木工廠，每秒消耗電力產生巨量木頭",
+    icon: "⚙️",
+    levels: [
+      { label: "⚙️ 自動伐木 Mk-I", autoGen: 5, energyCost: 0.5, cost: { money: 100, wood: 100 } },
+      { label: "⚙️ 自動伐木 Mk-II", autoGen: 15, energyCost: 1.5, cost: { money: 400, wood: 400, metal: 100 } },
+      { label: "⚙️ 自動伐木 Mk-III", autoGen: 45, energyCost: 4.0, cost: { money: 1500, wood: 1500, metal: 500 } },
+      { label: "⚙️ 雷射割木機群", autoGen: 150, energyCost: 12.0, cost: { money: 5000, metal: 2000, energy: 500 } },
+      { label: "⚙️ 奈米砍伐陣列", autoGen: 500, energyCost: 35.0, cost: { money: 20000, metal: 8000, energy: 1500 } },
+      { label: "⚙️ 全息樹木合成器", autoGen: 1600, energyCost: 100.0, cost: { money: 80000, metal: 30000, energy: 5000 } },
+      { label: "⚙️ 時空軌道收割槍", autoGen: 5000, energyCost: 300.0, cost: { money: 300000, metal: 100000, energy: 15000 } },
+      { label: "⚙️ 物質轉寫伐木艙", autoGen: 15000, energyCost: 900.0, cost: { money: 1200000, metal: 400000, energy: 45000 } },
+      { label: "⚙️ 多維度植披收存儀", autoGen: 45000, energyCost: 2500.0, cost: { money: 5000000, metal: 1500000, energy: 120000 } },
+      { label: "⚙️ 根源木元素萃取極", autoGen: 150000, energyCost: 8000.0, cost: { money: 20000000, metal: 5000000, energy: 400000 } }
+    ]
+  },
+  autoMine: {
+    name: "自動採礦機",
+    desc: "地殼重型鑽探基站，每秒消耗電力快速產出石頭",
+    icon: "⚙️",
+    levels: [
+      { label: "⚙️ 鑽探岩鑽 Mk-I", autoGen: 3, energyCost: 0.5, cost: { money: 100, stone: 100 } },
+      { label: "⚙️ 鑽探岩鑽 Mk-II", autoGen: 9, energyCost: 1.5, cost: { money: 400, stone: 400, metal: 100 } },
+      { label: "⚙️ 鑽探岩鑽 Mk-III", autoGen: 28, energyCost: 4.0, cost: { money: 1500, stone: 1500, metal: 500 } },
+      { label: "⚙️ 電漿熔岩鑽探機", autoGen: 100, energyCost: 12.0, cost: { money: 5000, metal: 2000, energy: 500 } },
+      { label: "⚙️ 地函地震採礦陣", autoGen: 350, energyCost: 35.0, cost: { money: 20000, metal: 8000, energy: 1500 } },
+      { label: "⚙️ 粒子重組碎岩機", autoGen: 1100, energyCost: 100.0, cost: { money: 80000, metal: 30000, energy: 5000 } },
+      { label: "⚙️ 小行星牽引鑽機", autoGen: 3500, energyCost: 300.0, cost: { money: 300000, metal: 100000, energy: 15000 } },
+      { label: "⚙️ 地心引力收束儀", autoGen: 11000, energyCost: 900.0, cost: { money: 1200000, metal: 400000, energy: 45000 } },
+      { label: "⚙️ 時空斷層碎裂極", autoGen: 35000, energyCost: 2500.0, cost: { money: 5000000, metal: 1500000, energy: 120000 } },
+      { label: "⚙️ 星體基質坍縮器", autoGen: 100000, energyCost: 8000.0, cost: { money: 20000000, metal: 5000000, energy: 400000 } }
+    ]
+  },
+  autoHarvest: {
+    name: "智能農艙",
+    desc: "密閉式液態智能培養艙，消耗電力源源不絕生產食物",
+    icon: "⚙️",
+    levels: [
+      { label: "⚙️ 智能水耕 Mk-I", autoGen: 8, energyCost: 0.5, cost: { money: 100, food: 100 } },
+      { label: "⚙️ 智能水耕 Mk-II", autoGen: 24, energyCost: 1.5, cost: { money: 400, food: 400, metal: 100 } },
+      { label: "⚙️ 智能水耕 Mk-III", autoGen: 70, energyCost: 4.0, cost: { money: 1500, food: 1500, metal: 500 } },
+      { label: "⚙️ 高能生長光照室", autoGen: 220, energyCost: 12.0, cost: { money: 5000, metal: 2000, energy: 500 } },
+      { label: "⚙️ 生質合成工廠", autoGen: 700, energyCost: 35.0, cost: { money: 20000, metal: 8000, energy: 1500 } },
+      { label: "⚙️ 全息光合培育塔", autoGen: 2200, energyCost: 100.0, cost: { money: 80000, metal: 30000, energy: 5000 } },
+      { label: "⚙️ 奈米分子營養槽", autoGen: 7000, energyCost: 300.0, cost: { money: 300000, metal: 100000, energy: 15000 } },
+      { label: "⚙️ 太空光譜生物巨蛋", autoGen: 22000, energyCost: 900.0, cost: { money: 1200000, metal: 400000, energy: 45000 } },
+      { label: "⚙️ 微型生態次元圈", autoGen: 70000, energyCost: 2500.0, cost: { money: 5000000, metal: 1500000, energy: 120000 } },
+      { label: "⚙️ 生命能階豐裕核心", autoGen: 200000, energyCost: 8000.0, cost: { money: 20000000, metal: 5000000, energy: 400000 } }
     ]
   }
 };
@@ -279,6 +385,8 @@ const btnTechSecretLv4 = document.getElementById("btnTechSecretLv4");
 const techSecretLv4StatusEl = document.getElementById("techSecretLv4Status");
 const btnTechSecretLv7 = document.getElementById("btnTechSecretLv7");
 const techSecretLv7StatusEl = document.getElementById("techSecretLv7Status");
+const btnTechAutomation = document.getElementById("btnTechAutomation");
+const techAutomationStatusEl = document.getElementById("techAutomationStatus");
 
 const researchCard = document.getElementById("researchCard");
 const knowledgeValEl = document.getElementById("knowledgeVal");
@@ -625,6 +733,16 @@ function refreshCityDetailPanel() {
     const optButtons = slotConstructList.querySelectorAll(".opt-build-btn");
     optButtons.forEach(btn => {
       const type = btn.getAttribute("data-type");
+      
+      // 自動化機械檢查
+      const isAuto = ['autoWood', 'autoMine', 'autoHarvest'].includes(type);
+      if (isAuto && !state.tech.automation) {
+        btn.style.display = "none";
+        return;
+      } else if (isAuto) {
+        btn.style.display = "flex";
+      }
+
       const db = BUILDING_DATA[type];
       if (db && db.levels && db.levels[0]) {
         const firstLv = db.levels[0];
@@ -773,6 +891,11 @@ function getCityStats() {
   let popLimit = 5; // 預設 5 人口上限
   let usedSlots = 0;
 
+  let autoWoodGen = 0;
+  let autoStoneGen = 0;
+  let autoFoodGen = 0;
+  let autoEnergyDrain = 0;
+
   if (state.cityLayout && state.cityLayout.slots) {
     state.cityLayout.slots.forEach((slot, idx) => {
       if (idx >= state.cityLayout.maxSlots) return;
@@ -799,10 +922,22 @@ function getCityStats() {
         case 'school':
           schoolMult = Math.max(schoolMult, data.mult || 1);
           break;
+        case 'autoWood':
+          autoWoodGen += (data.autoGen || 0);
+          autoEnergyDrain += (data.energyCost || 0);
+          break;
+        case 'autoMine':
+          autoStoneGen += (data.autoGen || 0);
+          autoEnergyDrain += (data.energyCost || 0);
+          break;
+        case 'autoHarvest':
+          autoFoodGen += (data.autoGen || 0);
+          autoEnergyDrain += (data.energyCost || 0);
+          break;
       }
     });
   }
-  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, popLimit, usedSlots };
+  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, popLimit, usedSlots, autoWoodGen, autoStoneGen, autoFoodGen, autoEnergyDrain };
 }
 
 function getExpandCost() {
@@ -1009,6 +1144,17 @@ function updateUI() {
       if (btnTechSecretLv7) btnTechSecretLv7.disabled = (!state.tech.secretLv4 || state.knowledge < sec7Cfg.reqKnowledge || state.money < sec7Cfg.reqMoney);
       if (techSecretLv7StatusEl) techSecretLv7StatusEl.textContent = !state.tech.secretLv4 ? "🔒 需前置" : "未研發";
     }
+
+    // Tech Automation
+    if (state.tech.automation) {
+      if (btnTechAutomation) btnTechAutomation.disabled = true;
+      if (techAutomationStatusEl) techAutomationStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechAutomation) {
+        btnTechAutomation.disabled = (state.knowledge < 1000 || state.money < 1500 || state.energy < 200);
+      }
+      if (techAutomationStatusEl) techAutomationStatusEl.textContent = "未研發";
+    }
     // Update Quest Boss Button Text matching sequential levels
     const btnQuestBoss = document.getElementById("btnQuestBoss");
     if (btnQuestBoss) {
@@ -1135,6 +1281,21 @@ function gameTick() {
   state.metal += stats.smelterGen * diffMult;
   state.energy += stats.powerGen * diffMult;
 
+  // 2.5 Automation Machinery Energy Check & Yield
+  if (stats.autoEnergyDrain > 0) {
+    if (state.energy >= stats.autoEnergyDrain) {
+      state.energy -= stats.autoEnergyDrain;
+      state.wood += stats.autoWoodGen * diffMult;
+      state.stone += stats.autoStoneGen * diffMult;
+      state.food += stats.autoFoodGen * diffMult;
+    } else {
+      // Power Outage Warning (throttle via random check to avoid spamming showToast)
+      if (Math.random() < 0.1) {
+        showToast("⚡ 電力不足！自動化機械被迫停機斷電！", "error");
+      }
+    }
+  }
+
   // 3. Banks generate passive income
   state.money += stats.bankGen;
   
@@ -1142,6 +1303,34 @@ function gameTick() {
   let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0;
   
   state.population.forEach(p => {
+    // Initialize HP stats if missing
+    if (p.hp === undefined) p.hp = 100;
+    if (p.maxHp === undefined) p.maxHp = 100;
+
+    // Fatigue & Recovery Logic
+    if (p.assignment === 'hospital') {
+      p.hp = Math.min(p.maxHp, p.hp + 5);
+      if (p.hp >= p.maxHp) {
+        p.hp = p.maxHp;
+        p.assignment = 'idle';
+        showToast(`🏥 ${p.name} 已在醫院完全康復！`, "success");
+      }
+    } else if (p.assignment !== 'idle') {
+      // Only working humans get fatigued. (Exclude auto machines? We only have humans in population array, machines are buildings)
+      p.hp -= 1;
+      if (p.hp <= 1) {
+        p.hp = 1;
+        p.assignment = 'hospital';
+        showToast(`👷 ${p.name} 勞累過度體力透支，已被送去醫院！`, "warning");
+      }
+    }
+
+    // Resource production & food costs (only works if healthy)
+    if (p.assignment === 'hospital') {
+      state.food -= (gameConfig.economy.popFoodCost * p.level * 0.2); // Eats 20% while resting
+      return; // Does not work!
+    }
+
     let foodCost = gameConfig.economy.popFoodCost * p.level;
     let efficiency = 1.0 * p.level * p.slaveStat;
 
@@ -1343,16 +1532,39 @@ function renderPopulationRoster() {
     const canPromote = p.level >= 5 && p.jobClass === "novice";
     const needsExam = p.level === 9 && p.exp >= window.getReqExp(9);
     
+    // Calculate Dynamic Stats for HP displays
+    const eff = calcEffStats(p);
+    const maxHp = eff?.maxHp || 100;
+    const currentHp = p.hp !== undefined ? p.hp : maxHp;
+    const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
+
+    // Exile Button Definition
+    const exileBtnHtml = `
+      <button class="ctrl-btn" style="background: #7f1d1d; color: #fca5a5; font-size: 0.85rem; padding: 0.25rem 0.5rem; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; cursor: pointer;" onclick="exileResident('${p.id}')" title="流放出城，釋放床位與人口數">
+        🥾 流放
+      </button>
+    `;
+
+    // HP / Fatigue Bar HTML
+    const hpBarHtml = `
+      <div style="margin-top: 0.3rem;">
+        <div style="width: 100%; height: 5px; background: #334155; border-radius: 3px; overflow: hidden;">
+          <div style="width: ${hpPercent}%; height: 100%; background: linear-gradient(90deg, #ef4444, #f97316); transition: width 0.3s ease;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 1px;">
+          <span style="color: #94a3b8;">❤️ 精力(體力/生命)</span>
+          <span style="color: #fca5a5; font-weight:bold;">${Math.floor(currentHp)} / ${Math.floor(maxHp)}</span>
+        </div>
+      </div>
+    `;
+
     // Determine available classes for promotion based on faith and base stats
     const allHeroKeys = Object.keys(gameConfig.heroes).filter(k => k !== "novice");
     const faithClasses = ["priest", "paladin", "taoist", "monk"];
     
-    // Filter logic based on faith and some basic stat thresholds to simulate potential
     const availableClasses = allHeroKeys.filter(k => {
       if (p.faith && !faithClasses.includes(k)) return false;
       if (!p.faith && faithClasses.includes(k)) return false;
-      
-      // Simple stat requirements
       if (k === "warrior" && p.baseStats.atk < 3) return false;
       if (k === "mage" && p.baseStats.matk < 2) return false;
       if (k === "shieldWarrior" && p.baseStats.def < 3) return false;
@@ -1383,7 +1595,7 @@ function renderPopulationRoster() {
     row.style = "padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;";
     
     if (p.assignment === "hospital") {
-      // HOSPITAL RENDER LOGIC
+      // HOSPITAL RENDER LOGIC (WITH FREE NATURAL HEALING PROGRESS)
       const reviveCost = p.level * 10;
       const canAfford = state.money >= reviveCost;
       
@@ -1391,11 +1603,13 @@ function renderPopulationRoster() {
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span class="job-title" style="font-size: 1.1rem; color: #94a3b8; text-decoration: line-through;">${p.name} (Lv.${p.level})</span>
-            <span style="margin-left:0.5rem; color:#ef4444; font-weight:bold; font-size: 0.85rem; display: flex; align-items: center; gap: 3px;">🏥 搶救治療中</span>
+            <span style="margin-left:0.5rem; color:#ef4444; font-weight:bold; font-size: 0.85rem; display: flex; align-items: center; gap: 3px;">🏥 療養痊癒中(+5 HP/s)</span>
           </div>
+          ${exileBtnHtml}
         </div>
+        ${hpBarHtml}
         <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.1); padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(239,68,68,0.25);">
-          <span style="font-size: 0.8rem; color: #fca5a5;">⚠️ 0 / ${calcEffStats(p)?.maxHp || 10} HP</span>
+          <span style="font-size: 0.8rem; color: #fca5a5;">⏳ 自然恢復中...</span>
           <button class="ctrl-btn" style="background: ${canAfford ? '#10b981' : '#4b5563'}; color: white; font-weight:bold; border-radius:4px; cursor: ${canAfford ? 'pointer' : 'not-allowed'};" 
             onclick="reviveHero('${p.id}')" ${canAfford ? '' : 'disabled'}>
             💖 付費急救 (💰${reviveCost})
@@ -1403,7 +1617,7 @@ function renderPopulationRoster() {
         </div>
       `;
     } else {
-      // NORMAL RENDER LOGIC
+      // NORMAL RENDER LOGIC (WITH FATIGUE & EXILE CAPABILITIES)
       let assignOptions = `<option value="idle" ${p.assignment === 'idle' ? 'selected' : ''}>閒置</option>`;
       if (p.jobClass === "novice") {
         assignOptions += `
@@ -1422,7 +1636,9 @@ function renderPopulationRoster() {
             <span class="job-title" style="font-size: 1.1rem; color: #e2e8f0;">${p.name} (Lv.${p.level})</span>
             ${promoteHTML}
           </div>
+          ${exileBtnHtml}
         </div>
+        ${hpBarHtml}
         <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px;">
           <span style="font-size: 0.8rem; color: #94a3b8;">當前指派：</span>
           <select onchange="changeResidentAssignment('${p.id}', this.value)" class="job-select" style="padding: 0.2rem; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px;">
@@ -1435,6 +1651,18 @@ function renderPopulationRoster() {
     populationRoster.appendChild(row);
   });
 }
+
+window.exileResident = function(id) {
+  const idx = state.population.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  const p = state.population[idx];
+  if (confirm(`😱 您確定要「流放」居民 ${p.name} 嗎？\n他將被放逐至荒野，且再也無法歸來！`)) {
+    state.population.splice(idx, 1);
+    state.party = state.party.filter(memberId => memberId !== id);
+    showToast(`🥾 ${p.name} 已被流放出城...`, "warning");
+    updateUI();
+  }
+};
 
 window.reviveHero = function(id) {
   const p = state.population.find(r => r.id === id);
@@ -2852,6 +3080,21 @@ btnTechHero?.addEventListener("click", () => {
     updateUI();
   } else {
     showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechAutomation?.addEventListener("click", () => {
+  if (state.tech.automation) return;
+  if (state.knowledge >= 1000 && state.money >= 1500 && state.energy >= 200) {
+    state.knowledge -= 1000;
+    state.money -= 1500;
+    state.energy -= 200;
+    state.tech.automation = true;
+    spawnFloatingText("🎓 自動化機械已研發!", "#34d399");
+    showToast("⚙️ 解鎖【自動化機械】！可在建地建立高效耗電自動採集器！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
   }
 });
 
