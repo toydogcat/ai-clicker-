@@ -453,6 +453,14 @@
             <span class="build-btn-count" id="techHeroStatus">未解鎖</span>
           </button>
 
+          <button class="build-btn" id="btnTechAppraisal" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">🔮 研發【鑑定水晶球】(屬性解鎖)</span>
+              <span class="build-btn-cost">📚 250 知識 | 🪙 150 金</span>
+            </div>
+            <span class="build-btn-count" id="techAppraisalStatus">未解鎖</span>
+          </button>
+
           <button class="build-btn" id="btnTechHuntLv4" style="width: 100%;" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">⚙️ 研發【蒸汽齒輪革命】(討伐 4-6)</span>
@@ -467,6 +475,14 @@
               <span class="build-btn-cost">📚 1000 知識 | 🪙 1500 金 | ⚡ 200 電</span>
             </div>
             <span class="build-btn-count" id="techAutomationStatus">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechTemple" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">🏛️ 研發【古老轉職神殿】(解鎖神殿分頁)</span>
+              <span class="build-btn-cost">📚 1500 知識 | 🪙 2500 金 | ⚡ 100 電</span>
+            </div>
+            <span class="build-btn-count" id="techTempleStatus">未解鎖</span>
           </button>
 
           <!-- 第二階段：人工智慧與量子時代 -->
@@ -694,6 +710,22 @@
         </div>
       </div>
     </aside>
+
+    <!-- Page 5: tab-temple (轉職神殿) -->
+    <aside class="panel-column side-panel tab-column" id="tab-temple" aria-label="轉職神殿">
+      <div class="glass-card temple-card" style="display: flex; flex-direction: column; max-height: 80vh;">
+        <div class="card-header">
+          <h2>🏛️ 轉職與晉升神殿</h2>
+        </div>
+        <p class="card-desc">在此沐浴聖光，突破等級界限或覺醒高等職業！<br><span style="color:#e2e8f0; font-weight:bold;">* 未滿 Lv.5 的流浪者無法開啟轉職。</span></p>
+        
+        <div class="temple-roster-container" id="templeRoster" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem; padding-right: 4px;">
+          <div class="empty-inv" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 1rem;">
+            神殿中目前沒有等待轉職的冒險者。
+          </div>
+        </div>
+      </div>
+    </aside>
   </main>
 
   <!-- Mobile Navigation Bar -->
@@ -713,6 +745,10 @@
     <button class="nav-item" data-target="tab-hero">
       <span class="nav-icon">👥</span>
       <span class="nav-label">英雄</span>
+    </button>
+    <button class="nav-item" id="nav-temple" data-target="tab-temple" style="display: none;">
+      <span class="nav-icon">🏛️</span>
+      <span class="nav-label">神殿</span>
     </button>
   </nav>
 

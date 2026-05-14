@@ -29,11 +29,13 @@ const DEFAULT_STATE = {
   }, 
   tech: {
     heroLicense: false,
+    appraisalTech: false,
     huntLv4: false,
     huntLv7: false,
     secretLv4: false,
     secretLv7: false,
     automation: false,
+    templeTech: false,
     autoStudyTech: false
   },
   party: [],
@@ -276,7 +278,9 @@ const DIFFICULTY_MULTIPLIERS = {
     gather: 2.0,
     enemyHp: 0.5,
     enemyAtk: 0.5,
-    expMoneyMod: 1.5
+    expMoneyMod: 1.5,
+    faithChance: 0.75,            // 75% chance
+    nonFaithGiantDmgMod: 0.50    // 2x weaker (0.5)
   },
   normal: {
     label: "⚔️ 一般",
@@ -284,7 +288,9 @@ const DIFFICULTY_MULTIPLIERS = {
     gather: 1.0,
     enemyHp: 1.0,
     enemyAtk: 1.0,
-    expMoneyMod: 1.0
+    expMoneyMod: 1.0,
+    faithChance: 0.50,            // 50% chance
+    nonFaithGiantDmgMod: 0.33    // 3x weaker (0.33)
   },
   hard: {
     label: "🔥 困難",
@@ -292,7 +298,9 @@ const DIFFICULTY_MULTIPLIERS = {
     gather: 0.7,
     enemyHp: 1.5,
     enemyAtk: 1.4,
-    expMoneyMod: 0.8
+    expMoneyMod: 0.8,
+    faithChance: 0.20,            // 20% chance
+    nonFaithGiantDmgMod: 0.20    // 5x weaker (0.2)
   },
   nightmare: {
     label: "💀 惡夢",
@@ -300,7 +308,9 @@ const DIFFICULTY_MULTIPLIERS = {
     gather: 0.4,
     enemyHp: 2.5,
     enemyAtk: 2.0,
-    expMoneyMod: 0.5
+    expMoneyMod: 0.5,
+    faithChance: 0.05,            // 5% chance
+    nonFaithGiantDmgMod: 0.10    // 10x weaker (0.1)
   },
   test: {
     label: "🧪 測試",
@@ -308,7 +318,9 @@ const DIFFICULTY_MULTIPLIERS = {
     gather: 10.0,
     enemyHp: 0.1,
     enemyAtk: 0.1,
-    expMoneyMod: 10.0
+    expMoneyMod: 10.0,
+    faithChance: 1.00,            // 100% chance
+    nonFaithGiantDmgMod: 1.00    // No weakness (1.0)
   }
 };
 
@@ -317,6 +329,21 @@ window.state = state;
 
 window.setDifficulty = function(key) {
   if (!DIFFICULTY_MULTIPLIERS[key]) return;
+  
+  if (key === 'test') {
+    const pw = prompt("🔒 請輸入管理員驗證碼：");
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayCode = `${y}${m}${d}`;
+    
+    if (pw !== todayCode) {
+      showToast("❌ 權限不足，無法切換至測試模式！", "error");
+      return;
+    }
+  }
+
   state.difficulty = key;
   
   const modal = document.getElementById("difficultyModal");
@@ -421,6 +448,8 @@ const rpgLockOverlay = document.getElementById("rpgLockOverlay");
 const rpgUnlockedContent = document.querySelector(".rpg-unlocked-content");
 const btnTechHero = document.getElementById("btnTechHero");
 const techHeroStatusEl = document.getElementById("techHeroStatus");
+const btnTechAppraisal = document.getElementById("btnTechAppraisal");
+const techAppraisalStatusEl = document.getElementById("techAppraisalStatus");
 
 const btnTechHuntLv4 = document.getElementById("btnTechHuntLv4");
 const techHuntLv4StatusEl = document.getElementById("techHuntLv4Status");
@@ -432,6 +461,8 @@ const btnTechSecretLv7 = document.getElementById("btnTechSecretLv7");
 const techSecretLv7StatusEl = document.getElementById("techSecretLv7Status");
 const btnTechAutomation = document.getElementById("btnTechAutomation");
 const techAutomationStatusEl = document.getElementById("techAutomationStatus");
+const btnTechTemple = document.getElementById("btnTechTemple");
+const techTempleStatusEl = document.getElementById("techTempleStatus");
 const btnTechAutoStudy = document.getElementById("btnTechAutoStudy");
 const techAutoStudyStatusEl = document.getElementById("techAutoStudyStatus");
 
@@ -562,6 +593,10 @@ function applySaveData(rawString) {
         if (!p.baseStats) {
           p.baseStats = { hp: 100, mp: 20, atk: 10, def: 5, matk: 5, spd: 10 };
         }
+        if (p.gender === undefined) p.gender = Math.random() > 0.5 ? 'male' : 'female';
+        if (p.faith === undefined) p.faith = Math.random() > 0.5;
+        if (p.baseStats.lucky === undefined) p.baseStats.lucky = Math.floor(Math.random() * 21);
+        if (p.baseStats.critRate === undefined) p.baseStats.critRate = +(Math.random() * 0.11).toFixed(2);
         // Ensure dynamic parameters exist
         if (p.hp === undefined) p.hp = p.baseStats.hp;
         if (p.mp === undefined) p.mp = p.baseStats.mp;
@@ -1198,6 +1233,16 @@ function updateUI() {
       if (techHeroStatusEl) techHeroStatusEl.textContent = "未研發";
     }
 
+    // Appraisal Tech
+    const appCfg = gameConfig.combat.tech.appraisalTech;
+    if (state.tech.appraisalTech) {
+      if (btnTechAppraisal) btnTechAppraisal.disabled = true;
+      if (techAppraisalStatusEl) techAppraisalStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechAppraisal) btnTechAppraisal.disabled = (!state.tech.heroLicense || state.knowledge < appCfg.reqKnowledge || state.money < appCfg.reqMoney);
+      if (techAppraisalStatusEl) techAppraisalStatusEl.textContent = !state.tech.heroLicense ? "🔒 需前置" : "未研發";
+    }
+
     // Hunt Lv4
     const hunt4Cfg = gameConfig.combat.tech.huntLv4;
     if (state.tech.huntLv4) {
@@ -1248,6 +1293,18 @@ function updateUI() {
         btnTechAutomation.disabled = (state.knowledge < autoCfg.reqKnowledge || state.money < autoCfg.reqMoney || state.energy < (autoCfg.reqEnergy || 0));
       }
       if (techAutomationStatusEl) techAutomationStatusEl.textContent = "未研發";
+    }
+
+    // Tech Temple
+    const templeCfg = gameConfig.combat.tech.templeTech;
+    if (state.tech.templeTech) {
+      if (btnTechTemple) btnTechTemple.disabled = true;
+      if (techTempleStatusEl) techTempleStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechTemple) {
+        btnTechTemple.disabled = (!state.tech.automation || state.knowledge < templeCfg.reqKnowledge || state.money < templeCfg.reqMoney || state.energy < (templeCfg.reqEnergy || 0));
+      }
+      if (techTempleStatusEl) techTempleStatusEl.textContent = !state.tech.automation ? "🔒 需前置" : "未研發";
     }
 
     // Tech AutoStudy
@@ -1314,6 +1371,14 @@ function updateUI() {
     if (rpgLockOverlay) rpgLockOverlay.style.display = "flex";
     if (rpgUnlockedContent) rpgUnlockedContent.style.display = "none";
     if (dispatchRpgCard) dispatchRpgCard.style.display = "none";
+  }
+
+  const navTemple = document.getElementById("nav-temple");
+  if (navTemple) {
+    navTemple.style.display = state.tech.templeTech ? "flex" : "none";
+  }
+  if (state.tech.templeTech) {
+    renderTempleRoster();
   }
 
   renderPopulationRoster();
@@ -1454,21 +1519,35 @@ function gameTick() {
   let netWood = 0, netStone = 0, netFood = 0, netMoney = 0, netKnowledge = 0, netMithril = 0;
   
   state.population.forEach(p => {
+    // Calculate dynamic limits
+    const eff = window.calcEffStats ? window.calcEffStats(p) : null;
+    const curMaxHp = eff ? eff.maxHp : 100;
+    p.maxHp = curMaxHp; // Dynamically sync to object for compatibility
+
     // Initialize HP stats if missing
-    if (p.hp === undefined) p.hp = 100;
-    if (p.maxHp === undefined) p.maxHp = 100;
+    if (p.hp === undefined) p.hp = curMaxHp;
 
     // Fatigue & Recovery Logic
     if (p.assignment === 'hospital') {
-      p.hp = Math.min(p.maxHp, p.hp + 5);
-      if (p.hp >= p.maxHp) {
-        p.hp = p.maxHp;
+      p.hp = Math.min(curMaxHp, p.hp + 5);
+      if (p.hp >= curMaxHp) {
+        p.hp = curMaxHp;
         p.assignment = 'idle';
         showToast(`🏥 ${p.name} 已在醫院完全康復！`, "success");
       }
-    } else if (p.assignment !== 'idle') {
-      // Only working humans get fatigued. (Exclude auto machines? We only have humans in population array, machines are buildings)
-      p.hp -= 1;
+    } else if (p.assignment !== 'idle' && p.assignment !== 'combat') {
+      // Different jobs drain different stamina
+      const fatigueMap = {
+        woodcutter: 2,
+        miner: 2,
+        farmer: 1,
+        merchant: 1,
+        scholar: 3,
+        mithrilSmith: 3
+      };
+      const drain = fatigueMap[p.assignment] || 1;
+      
+      p.hp -= drain;
       if (p.hp <= 1) {
         p.hp = 1;
         p.assignment = 'hospital';
@@ -1620,8 +1699,9 @@ window.gameState = state;
 window.gameConfig = gameConfig;
 window.updateUI = updateUI;
 
-const NAME_PREFIXES = ["老", "大", "阿", "小", "鐵", "狂", "神", "暗"];
-const NAME_SUFFIXES = ["王", "明", "華", "狗", "柱", "強", "花", "風"];
+const NAME_PREFIXES = ["老", "大", "阿", "小", "鐵", "狂", "神", "暗", "玄", "孤"];
+const MALE_SUFFIXES = ["強", "柱", "明", "風", "豪", "剛", "峰", "傑", "成", "德"];
+const FEMALE_SUFFIXES = ["華", "花", "婷", "雅", "莉", "晴", "美", "玲", "雪", "薇"];
 
 function hireResident() {
   if (state.population.length >= state.workerLimit) return;
@@ -1635,8 +1715,13 @@ function hireResident() {
 
   const slaveRange = gameConfig.economy.slaveRange || [0.8, 2.5];
   const slaveStat = (Math.random() * (slaveRange[1] - slaveRange[0]) + slaveRange[0]).toFixed(2);
-  const faith = Math.random() > 0.5;
-  const name = NAME_PREFIXES[Math.floor(Math.random() * NAME_PREFIXES.length)] + NAME_SUFFIXES[Math.floor(Math.random() * NAME_SUFFIXES.length)];
+  const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+  const faith = Math.random() < (diffCfg.faithChance || 0.5);
+  
+  const isMale = Math.random() > 0.5;
+  const gender = isMale ? 'male' : 'female';
+  const suffixPool = isMale ? MALE_SUFFIXES : FEMALE_SUFFIXES;
+  const name = NAME_PREFIXES[Math.floor(Math.random() * NAME_PREFIXES.length)] + suffixPool[Math.floor(Math.random() * suffixPool.length)];
 
   const resident = {
     id: "res_" + Date.now() + "_" + Math.floor(Math.random()*1000),
@@ -1645,22 +1730,26 @@ function hireResident() {
     exp: 0,
     jobClass: "novice",
     faith: faith,
+    gender: gender,
     slaveStat: parseFloat(slaveStat),
     baseStats: {
-      hp: Math.floor(Math.random() * 20) + 10,
-      mp: Math.floor(Math.random() * 10) + 5,
-      atk: Math.floor(Math.random() * 5) + 1,
-      def: Math.floor(Math.random() * 5) + 1,
-      matk: Math.floor(Math.random() * 5),
-      mdef: Math.floor(Math.random() * 5),
-      spd: +(Math.random() * 0.3).toFixed(2)
+      hp: Math.floor(Math.random() * 91) + 10, // 10 ~ 100
+      mp: Math.floor(Math.random() * 46) + 5,  // 5 ~ 50
+      atk: Math.floor(Math.random() * 10) + 1, // 1 ~ 10
+      def: Math.floor(Math.random() * 10) + 1, // 1 ~ 10
+      matk: Math.floor(Math.random() * 10),    // 0 ~ 9
+      mdef: Math.floor(Math.random() * 10),    // 0 ~ 9
+      spd: +(Math.random() * 1.01).toFixed(2), // 0.00 ~ 1.00
+      lucky: Math.floor(Math.random() * 21),    // 0 ~ 20
+      critRate: +(Math.random() * 0.11).toFixed(2) // 0.00 ~ 0.10
     },
     assignment: "idle",
     eq: { rhand: null, lhand: null, helm: null, body: null, pants: null, shoes: null }
   };
 
   state.population.push(resident);
-  showToast(`🍻 歡迎 ${name} 加入城鎮！`, "success");
+  const genderIcon = gender === 'female' ? '👩' : '👨';
+  showToast(`🍻 歡迎 ${genderIcon} ${name} 加入城鎮！`, "success");
   updateUI();
 }
 
@@ -1671,7 +1760,6 @@ if (btnHireResident) {
 function renderPopulationRoster() {
   if (!populationRoster) return;
 
-  // Prevent wiping roster DOM if the user is currently interacting with a dropdown
   const active = document.activeElement;
   if (active && active.tagName === "SELECT" && populationRoster.contains(active)) {
     return;
@@ -1686,23 +1774,20 @@ function renderPopulationRoster() {
   }
   
   state.population.forEach((p, index) => {
-    const canPromote = p.level >= 5 && p.jobClass === "novice";
-    const needsExam = p.level === 9 && p.exp >= window.getReqExp(9);
+    const genderSym = p.gender === 'female' ? '♀️' : '♂️';
+    const faithSym = p.faith ? '✨' : '🪐';
     
-    // Calculate Dynamic Stats for HP displays
     const eff = calcEffStats(p);
     const maxHp = eff?.maxHp || 100;
     const currentHp = p.hp !== undefined ? p.hp : maxHp;
     const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
 
-    // Exile Button Definition
     const exileBtnHtml = `
       <button class="roster-action-btn btn-exile" onclick="exileResident('${p.id}')" title="流放出城，釋放床位與人口數">
         🥾 流放
       </button>
     `;
 
-    // HP / Fatigue Bar HTML
     const hpBarHtml = `
       <div>
         <div class="hp-bar-wrapper">
@@ -1715,52 +1800,19 @@ function renderPopulationRoster() {
       </div>
     `;
 
-    // Determine available classes for promotion based on faith and base stats
-    const allHeroKeys = Object.keys(gameConfig.heroes).filter(k => k !== "novice");
-    const faithClasses = ["priest", "paladin", "taoist", "monk"];
-    
-    const availableClasses = allHeroKeys.filter(k => {
-      if (p.faith && !faithClasses.includes(k)) return false;
-      if (!p.faith && faithClasses.includes(k)) return false;
-      if (k === "warrior" && p.baseStats.atk < 3) return false;
-      if (k === "mage" && p.baseStats.matk < 2) return false;
-      if (k === "shieldWarrior" && p.baseStats.def < 3) return false;
-      if (k === "rogue" && p.baseStats.spd < 0.1) return false;
-      return true;
-    });
-
-    let promoteHTML = "";
-    if (canPromote) {
-      const optionsHTML = availableClasses.map(k => `<option value="${k}">${gameConfig.heroes[k].name}</option>`).join("");
-      promoteHTML = `
-        <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
-          <select id="promote_${p.id}" class="roster-assign-select" style="font-size: 0.8rem; padding: 0.25rem 0.5rem !important;">
-            <option value="">選擇職業...</option>
-            ${optionsHTML}
-          </select>
-          <button class="roster-action-btn btn-promote" style="padding: 0.25rem 0.6rem !important; font-size: 0.8rem !important;" onclick="promoteResident('${p.id}')">轉職</button>
-        </div>
-      `;
-    } else if (p.jobClass !== "novice") {
-      promoteHTML = `<span class="roster-badge-class">${gameConfig.heroes[p.jobClass].name}</span>`;
-    }
-
-    if (needsExam) {
-      promoteHTML += `<button class="roster-action-btn btn-exam" style="margin-left:0.4rem; padding: 0.25rem 0.6rem !important; font-size: 0.8rem !important;" onclick="openExamModal('${p.id}')">📖 升級考</button>`;
-    }
-
     const row = document.createElement("div");
     row.className = "roster-card";
     
     if (p.assignment === "hospital") {
-      // HOSPITAL RENDER LOGIC (WITH FREE NATURAL HEALING PROGRESS)
       const reviveCost = p.level * 10;
       const canAfford = state.money >= reviveCost;
       
       row.innerHTML = `
         <div class="roster-header">
           <div class="roster-name-block">
-            <span class="roster-name" style="color: #94a3b8; text-decoration: line-through; opacity: 0.7;">${p.name} (Lv.${p.level})</span>
+            <span class="roster-name" style="color: #94a3b8; text-decoration: line-through; opacity: 0.7;">
+              ${p.name} <span style="font-size:0.75rem; font-style:normal;">${genderSym}${faithSym}</span> (Lv.${p.level})
+            </span>
             <span style="background: rgba(239,68,68,0.15); color:#ef4444; font-weight:bold; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); display: inline-flex; align-items: center; gap: 4px;">🏥 療養中(+5/s)</span>
           </div>
           ${exileBtnHtml}
@@ -1777,25 +1829,26 @@ function renderPopulationRoster() {
         </div>
       `;
     } else {
-      // NORMAL RENDER LOGIC (WITH FATIGUE & EXILE CAPABILITIES)
       let assignOptions = `<option value="idle" ${p.assignment === 'idle' ? 'selected' : ''}>閒置</option>`;
       if (p.jobClass === "novice") {
         assignOptions += `
-          <option value="woodcutter" ${p.assignment === 'woodcutter' ? 'selected' : ''}>伐木</option>
-          <option value="miner" ${p.assignment === 'miner' ? 'selected' : ''}>採礦</option>
-          <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕</option>
-          <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商</option>
-          ${stats.schoolMult > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者</option>` : ''}
-          ${stats.autoMithrilGen > 0 ? `<option value="mithrilSmith" ${p.assignment === 'mithrilSmith' ? 'selected' : ''}>秘銀鑄工</option>` : ''}
+          <option value="woodcutter" ${p.assignment === 'woodcutter' ? 'selected' : ''}>伐木 (⚡-2/秒)</option>
+          <option value="miner" ${p.assignment === 'miner' ? 'selected' : ''}>採礦 (⚡-2/秒)</option>
+          <option value="farmer" ${p.assignment === 'farmer' ? 'selected' : ''}>農耕 (⚡-1/秒)</option>
+          <option value="merchant" ${p.assignment === 'merchant' ? 'selected' : ''}>經商 (⚡-1/秒)</option>
+          ${stats.schoolMult > 0 ? `<option value="scholar" ${p.assignment === 'scholar' ? 'selected' : ''}>學者 (⚡-3/秒)</option>` : ''}
+          ${stats.autoMithrilGen > 0 ? `<option value="mithrilSmith" ${p.assignment === 'mithrilSmith' ? 'selected' : ''}>秘銀鑄工 (⚡-3/秒)</option>` : ''}
         `;
       }
-      assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (編入隊伍)</option>`;
+      assignOptions += `<option value="combat" ${p.assignment === 'combat' ? 'selected' : ''}>出征 (🛡️無疲勞)</option>`;
+
+      const jobBadge = p.jobClass !== "novice" ? `<span class="roster-badge-class">${gameConfig.heroes[p.jobClass].name}</span>` : "";
 
       row.innerHTML = `
         <div class="roster-header">
           <div class="roster-name-block">
-            <span class="roster-name">${p.name} (Lv.${p.level})</span>
-            ${promoteHTML}
+            <span class="roster-name">${p.name} <span style="font-size:0.75rem; opacity:0.75;">${genderSym}${faithSym}</span> (Lv.${p.level})</span>
+            ${jobBadge}
           </div>
           ${exileBtnHtml}
         </div>
@@ -1814,6 +1867,111 @@ function renderPopulationRoster() {
     populationRoster.appendChild(row);
   });
 }
+
+function renderTempleRoster() {
+  const templeRoster = document.getElementById("templeRoster");
+  if (!templeRoster) return;
+
+  const active = document.activeElement;
+  if (active && active.tagName === "SELECT" && templeRoster.contains(active)) {
+    return;
+  }
+
+  templeRoster.innerHTML = "";
+
+  const eligibleHeroes = state.population.filter(p => 
+    (p.level >= 5 && p.jobClass === "novice") || 
+    (p.level === 9 && p.exp >= window.getReqExp(9))
+  );
+
+  if (eligibleHeroes.length === 0) {
+    templeRoster.innerHTML = `
+      <div class="empty-inv" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.05);">
+        👼 神殿光芒閃耀，目前沒有滿足條件的冒險者。<br>
+        <span style="font-size:0.7rem; opacity:0.8;">(需 Lv.5 以上流浪者，或 Lv.9 等待升級考考驗)</span>
+      </div>
+    `;
+    return;
+  }
+
+  eligibleHeroes.forEach(p => {
+    const canPromote = p.level >= 5 && p.jobClass === "novice";
+    const needsExam = p.level === 9 && p.exp >= window.getReqExp(9);
+    
+    const genderSym = p.gender === 'female' ? '♀️' : '♂️';
+    const faithSym = p.faith ? '✨' : '🪐';
+    
+    const availableClasses = window.checkEligibleClasses(p);
+
+    let actionHTML = "";
+    if (canPromote) {
+      const optionsHTML = availableClasses.map(k => `<option value="${k}">${gameConfig.heroes[k].name}</option>`).join("");
+      actionHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.6rem; border-radius: 6px;">
+          <span style="font-size: 0.75rem; color: #fcd34d; font-weight:bold;">💡 覺醒轉職選擇 (Lv.${p.level})：</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <select id="temple_promote_${p.id}" class="roster-assign-select" style="flex: 1; font-size: 0.85rem;">
+              <option value="">-- 選擇新職業 --</option>
+              ${optionsHTML}
+            </select>
+            <button class="roster-action-btn btn-promote" style="white-space: nowrap; padding: 0.4rem 0.75rem;" onclick="window.templePromoteResident('${p.id}')">✨ 轉職</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (needsExam) {
+      actionHTML += `
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.3); padding: 0.6rem; border-radius: 6px;">
+          <span style="font-size: 0.75rem; color: #93c5fd; font-weight:bold;">🎓 微積分極限考驗 (等級上限突破)：</span>
+          <button class="roster-action-btn btn-exam" style="width: 100%; padding: 0.45rem !important; font-size: 0.85rem !important; font-weight:bold;" onclick="openExamModal('${p.id}')">📖 進入考場挑戰</button>
+        </div>
+      `;
+    }
+
+    const card = document.createElement("div");
+    card.className = "roster-card";
+    card.style.border = "1px solid rgba(244, 114, 182, 0.25)";
+    card.style.background = "linear-gradient(135deg, rgba(244,114,182,0.05) 0%, rgba(0,0,0,0.25) 100%)";
+    
+    card.innerHTML = `
+      <div class="roster-header" style="border-bottom: 1px solid rgba(244,114,182,0.1); padding-bottom: 0.4rem;">
+        <div class="roster-name-block" style="display:flex; flex-direction:column; gap:0.2rem; width: 100%;">
+          <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+            <span class="roster-name" style="color: #fdf2f8; font-weight:bold; font-size:0.95rem;">
+              ${getHeroIcon(p.jobClass)} ${p.name} <span style="font-size:0.75rem; opacity:0.8; font-weight:normal;">${genderSym}${faithSym}</span>
+            </span>
+            <span class="roster-badge-class" style="background: rgba(244,114,182,0.2); border:1px solid rgba(244,114,182,0.4); color:#f9a8d4; font-weight:bold; padding: 0.15rem 0.4rem; font-size: 0.7rem;">Lv.${p.level} ${gameConfig.heroes[p.jobClass].name}</span>
+          </div>
+        </div>
+      </div>
+      <div class="roster-body-box" style="padding-top: 0.25rem;">
+        ${actionHTML}
+      </div>
+    `;
+    templeRoster.appendChild(card);
+  });
+}
+
+window.templePromoteResident = function(id) {
+  const select = document.getElementById(`temple_promote_${id}`);
+  if (!select || !select.value) {
+    showToast("請先選擇職業！", "error");
+    return;
+  }
+  const p = state.population.find(r => r.id === id);
+  if (p) {
+    p.jobClass = select.value;
+    p.level = 5;
+    p.exp = 0;
+    p.assignment = 'idle'; 
+    
+    if (select) select.blur();
+    
+    showToast(`🎉 恭喜！${p.name} 於神殿成功轉職為 ${gameConfig.heroes[p.jobClass].name}！已重置為 Lv.5 從新覺醒出發！`, "success");
+    updateUI();
+  }
+};
 
 window.exileResident = function(id) {
   const idx = state.population.findIndex(r => r.id === id);
@@ -1900,26 +2058,7 @@ window.changeResidentAssignment = function(id, newAssignment) {
   }
 };
 
-window.promoteResident = function(id) {
-  const select = document.getElementById(`promote_${id}`);
-  if (!select || !select.value) {
-    showToast("請先選擇職業！", "error");
-    return;
-  }
-  const p = state.population.find(r => r.id === id);
-  if (p) {
-    p.jobClass = select.value;
-    // Reset to level 5 as per design (class starts fresh at lv5)
-    p.level = 5;
-    p.exp = 0;
-    p.assignment = 'idle'; // Heroes can no longer labor
-    
-    if (select) select.blur();
-    
-    showToast(`🎉 ${p.name} 成功轉職為 ${gameConfig.heroes[p.jobClass].name}！從 Lv.5 重新出發！`, "success");
-    updateUI();
-  }
-};
+
 
 let currentExamResidentId = null;
 
@@ -1946,6 +2085,58 @@ window.submitExam = function(answer) {
   currentExamResidentId = null;
 };
 
+// Check eligible job classes based on docs/fight_rule.md guidelines
+window.checkEligibleClasses = function(p) {
+  if (!p) return [];
+  const eligible = [];
+  const b = p.baseStats || {};
+  const isMale = p.gender === 'male';
+  const isFemale = p.gender === 'female';
+  const hasFaith = p.faith === true;
+
+  // 1. 勇者 (Warrior): 男，ATK > 5, DEF > 5
+  if (isMale && (b.atk || 0) > 5 && (b.def || 0) > 5) eligible.push("warrior");
+
+  // 2. 野蠻人 (Barbarian): 男，ATK > 7, HP > 70
+  if (isMale && (b.atk || 0) > 7 && (b.hp || 0) > 70) eligible.push("barbarian");
+
+  // 3. 盾戰士 (Shield Warrior): 男，DEF > 7, HP > 70
+  if (isMale && (b.def || 0) > 7 && (b.hp || 0) > 70) eligible.push("shieldWarrior");
+
+  // 4. 盜賊 (Rogue): 幸運 > 15, 暴擊率 > 7% (0.07)
+  if ((b.lucky || 0) > 15 && (b.critRate || 0) > 0.07) eligible.push("rogue");
+
+  // 5. 弓箭手 (Archer): ATK > 7, 暴擊率 > 7%
+  if ((b.atk || 0) > 7 && (b.critRate || 0) > 0.07) eligible.push("archer");
+
+  // 6. 槍手 (Gunner): ATK > 7, 暴擊率 > 7%
+  if ((b.atk || 0) > 7 && (b.critRate || 0) > 0.07) eligible.push("gunner");
+
+  // 7. 拳擊手 (Fighter): ATK > 7, 攻速 > 0.7
+  if ((b.atk || 0) > 7 && (b.spd || 0) > 0.7) eligible.push("fighter");
+
+  // 8. 法師 (Mage): MP > 30, 魔攻 > 7
+  if ((b.mp || 0) > 30 && (b.matk || 0) > 7) eligible.push("mage");
+
+  // 9. 巫師 (Wizard): MP > 30, 魔攻 > 7
+  if ((b.mp || 0) > 30 && (b.matk || 0) > 7) eligible.push("wizard");
+
+  // 🌟 Late Game Late-Game Holy Classes (Require strict Faith and high stats)
+  // 10. 牧師 (Priest): 女，MP > 40, MDEF > 8, 幸運 > 15, 信仰
+  if (hasFaith && isFemale && (b.mp || 0) > 40 && (b.mdef || 0) > 8 && (b.lucky || 0) > 15) eligible.push("priest");
+
+  // 11. 聖騎士 (Paladin): 男，ATK > 7, DEF > 7, MATK > 6, MDEF > 6, 信仰
+  if (hasFaith && isMale && (b.atk || 0) > 7 && (b.def || 0) > 7 && (b.matk || 0) > 6 && (b.mdef || 0) > 6) eligible.push("paladin");
+
+  // 12. 道士 (Taoist): ATK > 7, DEF > 7, MATK > 6, MDEF > 6, 信仰
+  if (hasFaith && (b.atk || 0) > 7 && (b.def || 0) > 7 && (b.matk || 0) > 6 && (b.mdef || 0) > 6) eligible.push("taoist");
+
+  // 13. 和尚 (Monk): 男，ATK > 7, DEF > 7, MATK > 6, MDEF > 6, 信仰
+  if (hasFaith && isMale && (b.atk || 0) > 7 && (b.def || 0) > 7 && (b.matk || 0) > 6 && (b.mdef || 0) > 6) eligible.push("monk");
+
+  return eligible;
+};
+
 // Calculate effective stats (base + equipment + hidden stats)
 window.calcEffStats = function(person) {
   if (!person) return null;
@@ -1965,8 +2156,9 @@ window.calcEffStats = function(person) {
     spd: baseConfig.spd + (person.baseStats ? person.baseStats.spd : 0),
     lifesteal: baseConfig.lifesteal, mlifesteal: baseConfig.mlifesteal,
     hit: baseConfig.hit || 0.9, evasion: baseConfig.evasion || 0.05, 
-    critRate: baseConfig.critRate || 0.05, critDmg: baseConfig.critDmg || 1.5, 
-    lucky: baseConfig.lucky || 5
+    critRate: baseConfig.critRate + (person.baseStats ? (person.baseStats.critRate || 0) : 0), 
+    critDmg: baseConfig.critDmg || 1.5, 
+    lucky: baseConfig.lucky + (person.baseStats ? (person.baseStats.lucky || 0) : 0)
   };
   
   // Stat scaling based on level
@@ -2024,6 +2216,9 @@ window.calcEffStats = function(person) {
     });
   }
   
+  // Calculate dynamic Crit Damage based on lucky (2x to 10x, base 2.0, +0.1 per point)
+  eff.critDmg = Math.max(2, Math.min(10, 2 + (eff.lucky / 10)));
+
   // Normalize
   eff.spd = Math.max(0.2, eff.spd);
   eff.hit = Math.min(1.0, eff.hit); // Max 100%
@@ -2601,12 +2796,14 @@ function updateHeroSheets() {
     card.id = `prof-${p.id}`;
     
     const eff = calcEffStats(p);
+    const genderSym = p.gender === 'female' ? '♀️' : '♂️';
+    const faithSym = p.faith ? '✨' : '🪐';
     
     let html = `
       <div class="prof-top">
         <div class="prof-avatar">${getHeroIcon(p.jobClass)}</div>
         <div class="prof-meta">
-          <h4>${p.name} (${gameConfig.heroes[p.jobClass].name})${p.assignment === 'combat' ? ' ⚔️' : ''}</h4>
+          <h4>${p.name} <span style="font-size:0.7rem; opacity:0.7;">${genderSym}${faithSym}</span> (${gameConfig.heroes[p.jobClass].name})${p.assignment === 'combat' ? ' ⚔️' : ''}</h4>
           <div class="lv-exp">Lv.<span>${p.level}</span> | Exp <span>${p.exp}</span>/<span>${window.getReqExp(p.level)}</span></div>
     `;
     
@@ -2661,22 +2858,48 @@ function updateHeroSheets() {
     `;
     
     if (eff) {
-      html += `
-        <div class="prof-stats" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.25rem;">
-          <span>⚔️ 物攻: <span style="float:right">${eff.atk}</span></span>
-          <span>🛡️ 物防: <span style="float:right">${eff.def}</span></span>
-          <span>🪄 魔攻: <span style="float:right">${eff.matk}</span></span>
-          <span>🔮 魔防: <span style="float:right">${eff.mdef}</span></span>
-          <span>⚡ 速度: <span style="float:right">${eff.spd.toFixed(1)}</span></span>
-          <span>🎯 命中: <span style="float:right">${(eff.hit * 100).toFixed(0)}%</span></span>
-          <span>💨 閃避: <span style="float:right">${(eff.evasion * 100).toFixed(0)}%</span></span>
-          <span>💥 暴擊: <span style="float:right">${(eff.critRate * 100).toFixed(0)}%</span></span>
-          <span>🍀 幸運: <span style="float:right">${eff.lucky}</span></span>
-        </div>
-        <div class="paperdoll" style="display:grid;">
-          ${['rhand','lhand','helm','body','pants','shoes'].map(slot => `<div class="eq-slot" data-hero="${p.id}" data-slot="${slot}" title="${gameConfig.eqSpecs.slots[slot].name}">${getSlotIcon(slot)}</div>`).join('')}
-        </div>
-      `;
+      if (state.tech.appraisalTech) {
+        html += `
+          <div class="prof-stats" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.25rem;">
+            <span>⚔️ 物攻: <span style="float:right">${eff.atk}</span></span>
+            <span>🛡️ 物防: <span style="float:right">${eff.def}</span></span>
+            <span>🪄 魔攻: <span style="float:right">${eff.matk}</span></span>
+            <span>🔮 魔防: <span style="float:right">${eff.mdef}</span></span>
+            <span>⚡ 速度: <span style="float:right">${eff.spd.toFixed(1)}</span></span>
+            <span>🎯 命中: <span style="float:right">${(eff.hit * 100).toFixed(0)}%</span></span>
+            <span>💨 閃避: <span style="float:right">${(eff.evasion * 100).toFixed(0)}%</span></span>
+            <span>💥 暴擊: <span style="float:right">${(eff.critRate * 100).toFixed(0)}%</span></span>
+            <span>🍀 幸運: <span style="float:right">${eff.lucky}</span></span>
+          </div>
+          ${(() => {
+            if (p.jobClass === "novice") {
+              const poss = window.checkEligibleClasses(p);
+              const possNames = poss.map(k => gameConfig.heroes[k].name);
+              return `
+                <div style="grid-column: 1 / span 2; margin-top: 0.5rem; background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                  <div style="font-size: 0.7rem; color: #fbbf24; font-weight: bold; margin-bottom: 0.25rem;">🔮 潛能覺醒方向：</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 0.25rem; font-size: 0.65rem;">
+                    ${possNames.length > 0 
+                      ? possNames.map(n => `<span style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(59,130,246,0.2);">${n}</span>`).join("") 
+                      : '<span style="color: #94a3b8; opacity: 0.8; font-style: italic;">⚠️ 暫無適應資質</span>'}
+                  </div>
+                </div>
+              `;
+            }
+            return "";
+          })()}
+          <div class="paperdoll" style="display:grid;">
+            ${['rhand','lhand','helm','body','pants','shoes'].map(slot => `<div class="eq-slot" data-hero="${p.id}" data-slot="${slot}" title="${gameConfig.eqSpecs.slots[slot].name}">${getSlotIcon(slot)}</div>`).join('')}
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="prof-stats locked-stats" style="grid-column: 1 / span 2; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); padding: 1.5rem; color: #94a3b8; flex-direction: column; gap: 0.5rem; min-height: 100px; margin-top: 0.5rem;">
+            <span style="font-size: 1.1rem;">🔮 未鑑定屬性</span>
+            <span style="font-size: 0.75rem; opacity:0.8; text-align: center;">請至研究所研發【鑑定水晶球】<br>以解鎖詳細屬性與裝備格！</span>
+          </div>
+        `;
+      }
     }
     card.innerHTML = html;
     guildRoster.appendChild(card);
@@ -3052,9 +3275,17 @@ function heroExecuteAttack(pid) {
       dmg = Math.floor(dmg * mult);
       logBattle(`✨ 聖光照耀！對巨獸傷害特攻倍率 x${mult.toFixed(1)}！`, "log-item-buff");
     }
+    
+    // Non-Faith Penalty (Any non-faith character attacking a boss is severely suppressed based on difficulty)
+    if (!p.faith) {
+      const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+      const penalty = diffCfg.nonFaithGiantDmgMod || 0.33;
+      dmg = Math.max(1, Math.floor(dmg * penalty));
+    }
   }
 
-  logBattle(`${p.name} 揮擊 ${enemy.name}，造成 ${isCrit?'<b style="color:red; font-size:1.2em;">CRIT!</b> ':''}<span class="log-item-dmg">${dmg}</span> 傷害。`);
+  const nonFaithTag = (enemy.isBoss && !p.faith) ? '<span style="color:#fca5a5; font-size:0.75rem;"> (無信仰衰減)</span>' : '';
+  logBattle(`${p.name} 揮擊 ${enemy.name}，造成 ${isCrit?'<b style="color:red; font-size:1.2em;">CRIT! </b>':''}<span class="log-item-dmg">${dmg}</span> 傷害${nonFaithTag}。`);
   
   enemy.hp -= dmg;
   
@@ -3342,6 +3573,38 @@ btnTechHero?.addEventListener("click", () => {
     updateUI();
   } else {
     showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechAppraisal?.addEventListener("click", () => {
+  if (state.tech.appraisalTech || !state.tech.heroLicense) return;
+  const tCfg = gameConfig.combat.tech.appraisalTech;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.appraisalTech = true;
+    spawnFloatingText("🔮 鑑定水晶球已研發!", "#c084fc");
+    showToast("🔍 解鎖【鑑定水晶球】！現在可以看到探險者的真實能力數值了！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechTemple?.addEventListener("click", () => {
+  if (state.tech.templeTech || !state.tech.automation) return;
+  const tCfg = gameConfig.combat.tech.templeTech;
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
+    state.tech.templeTech = true;
+    spawnFloatingText("🎓 轉職神殿已修復!", "#f472b6");
+    showToast("🏛️ 解鎖【古老轉職神殿】！開啟神殿分頁，助英雄晉升更高階級！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
   }
 });
 

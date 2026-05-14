@@ -151,6 +151,10 @@
         "reqKnowledge": 100,
         "reqMoney": 50
       },
+      "appraisalTech": {
+        "reqKnowledge": 250,
+        "reqMoney": 150
+      },
       "huntLv4": {
         "reqKnowledge": 400,
         "reqMoney": 600
@@ -159,6 +163,11 @@
         "reqKnowledge": 1000,
         "reqMoney": 1500,
         "reqEnergy": 200
+      },
+      "templeTech": {
+        "reqKnowledge": 1500,
+        "reqMoney": 2500,
+        "reqEnergy": 100
       },
       "autoStudyTech": {
         "reqKnowledge": 2500,
