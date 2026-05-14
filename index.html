@@ -258,74 +258,97 @@
         </div>
       </div>
 
-      <div class="glass-card build-card">
-        <div class="card-header">
-          <h2>🏗️ 建設發展</h2>
+      <div class="glass-card build-card city-base-card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>🗺️ 城市領土規劃</h2>
+          <div class="city-stats-badge">
+            <span id="cityUsedSlots">0</span> / <span id="cityMaxSlots">6</span> 建地
+          </div>
         </div>
-        <div class="build-actions">
-          <button class="build-btn" id="btn-build-cabin" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">搭建木屋 (+5 上限)</span>
-              <span class="build-btn-cost">🪵 25 木頭</span>
-            </div>
-            <span class="build-btn-count" id="cabinCount">0</span>
-          </button>
 
-          <button class="build-btn" id="btn-build-farm" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">開墾農田 (+1 🍞/s)</span>
-              <span class="build-btn-cost">🪵 30 木 | 🪨 15 石</span>
-            </div>
-            <span class="build-btn-count" id="farmCount">0</span>
-          </button>
+        <!-- City grid for dynamic rendering -->
+        <div class="city-grid-container" id="cityGridContainer"></div>
 
-          <button class="build-btn" id="btn-build-smelter" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">建造熔爐 (+0.3 🪙/s)</span>
-              <span class="build-btn-cost">🪵 40 木 | 🪨 50 石</span>
-            </div>
-            <span class="build-btn-count" id="smelterCount">0</span>
+        <!-- Expand Button Row -->
+        <div class="city-footer-actions">
+          <button class="action-btn expand-city-btn" id="btnExpandCity" disabled>
+            🚜 擴建土地 (<span id="expandCityCost">🪵 100 | 🪨 50</span>)
           </button>
+        </div>
 
-          <button class="build-btn" id="btn-build-power" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">建造發電廠 (+1.0 ⚡/s)</span>
-              <span class="build-btn-cost">🪨 80 石 | 🪙 20 金</span>
-            </div>
-            <span class="build-btn-count" id="powerCount">0</span>
-          </button>
+        <!-- Dynamic Context-based Detail Interaction Panel -->
+        <div class="slot-detail-panel" id="citySlotDetailPanel">
+          <div class="slot-empty-message" id="slotWelcomeMsg">
+            💡 請點擊上方的建地網格，開始建造或管理建物！
+          </div>
 
-          <button class="build-btn" id="btn-build-warehouse" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">建造倉庫 (四資源 +100)</span>
-              <span class="build-btn-cost">🪵 50 木 | 🪨 30 石</span>
+          <!-- Construct options (visible when empty slot clicked) -->
+          <div class="slot-construct-list" id="slotConstructList" style="display: none;">
+            <h3 style="margin-bottom: 0.5rem; font-size: 0.95rem;">🔨 在該建地建造新建築：</h3>
+            <div class="build-options-grid">
+              <button class="opt-build-btn" data-type="cabin">
+                <span class="opt-icon">🛖</span>
+                <span class="opt-title">小木屋</span>
+                <span class="opt-cost">🪵 25</span>
+              </button>
+              <button class="opt-build-btn" data-type="farm">
+                <span class="opt-icon">🌾</span>
+                <span class="opt-title">菜園</span>
+                <span class="opt-cost">🪵 30 | 🪨 15</span>
+              </button>
+              <button class="opt-build-btn" data-type="smelter">
+                <span class="opt-icon">🪙</span>
+                <span class="opt-title">簡易熔爐</span>
+                <span class="opt-cost">🪵 40 | 🪨 50</span>
+              </button>
+              <button class="opt-build-btn" data-type="powerPlant">
+                <span class="opt-icon">⚡</span>
+                <span class="opt-title">發電機</span>
+                <span class="opt-cost">🪨 80 | 🪙 20</span>
+              </button>
+              <button class="opt-build-btn" data-type="warehouse">
+                <span class="opt-icon">📦</span>
+                <span class="opt-title">臨時儲藏</span>
+                <span class="opt-cost">🪵 50 | 🪨 30</span>
+              </button>
+              <button class="opt-build-btn" data-type="battery">
+                <span class="opt-icon">🔋</span>
+                <span class="opt-title">蓄電池組</span>
+                <span class="opt-cost">🪨 60 | 🪙 40</span>
+              </button>
+              <button class="opt-build-btn" data-type="bank">
+                <span class="opt-icon">🏦</span>
+                <span class="opt-title">城鎮金庫</span>
+                <span class="opt-cost">🪨 60 | 🪙 30</span>
+              </button>
+              <button class="opt-build-btn" data-type="school">
+                <span class="opt-icon">📚</span>
+                <span class="opt-title">地方學堂</span>
+                <span class="opt-cost">🪵 80 | 🪨 60</span>
+              </button>
             </div>
-            <span class="build-btn-count" id="warehouseCount">0</span>
-          </button>
+          </div>
 
-          <button class="build-btn" id="btn-build-battery" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">蓄電池組 (能源 +100)</span>
-              <span class="build-btn-cost">🪨 60 石 | 🪙 40 金</span>
+          <!-- Upgrade/Demolish options (visible when occupied slot clicked) -->
+          <div class="slot-manage-ui" id="slotManageUi" style="display: none;">
+            <div class="building-header-row">
+              <div>
+                <h3 id="manageBuildingName" style="font-size: 1.1rem; font-weight: 800; color: #ffffff; margin-bottom: 0;">🛖 [Lv.1] 小木屋</h3>
+                <p id="manageBuildingDesc" style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; margin-bottom: 0;">提供 3 人口上限</p>
+              </div>
+              <div id="manageBuildingEffect" style="font-size: 0.85rem; font-weight: bold; color: #34d399; background: rgba(52, 211, 153, 0.1); padding: 0.3rem 0.6rem; border-radius: 6px;">
+                +3 人口
+              </div>
             </div>
-            <span class="build-btn-count" id="batteryCount">0</span>
-          </button>
-
-          <button class="build-btn btn-bank" id="btn-build-bank" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">建造銀行 (+1 💰/s)</span>
-              <span class="build-btn-cost">🪨 60 石 | 🪙 30 金</span>
+            <div class="building-actions-row">
+              <button class="manage-action-btn upgrade-btn" id="btnUpgradeBuilding">
+                🔼 升級 (<span id="upgradeCostText">🪵 50</span>)
+              </button>
+              <button class="manage-action-btn demolish-btn" id="btnDemolishBuilding">
+                🗑️ 拆除
+              </button>
             </div>
-            <span class="build-btn-count" id="bankCount">0</span>
-          </button>
-
-          <button class="build-btn btn-school" id="btn-build-school" disabled>
-            <div class="build-btn-info">
-              <span class="build-btn-title">建造學院 (解鎖研究)</span>
-              <span class="build-btn-cost">🪵 80 木 | 🪨 60 石 | ⚡ 20 能</span>
-            </div>
-            <span class="build-btn-count" id="schoolCount">0</span>
-          </button>
+          </div>
         </div>
       </div>
 

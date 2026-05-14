@@ -15,15 +15,9 @@ const DEFAULT_STATE = {
   workerLimit: 5,
   gatherFocus: 'wood',
   difficulty: 'normal', // easy, normal, hard, nightmare
-  buildings: {
-    cabins: 0,
-    farms: 0,
-    smelter: 0,
-    powerPlant: 0,
-    warehouse: 0,
-    battery: 0,
-    bank: 0,
-    school: 0
+  cityLayout: {
+    maxSlots: 6,
+    slots: Array.from({ length: 24 }, () => ({ type: null, level: 1 }))
   },
   population: [], // Array of individual resident objects
   bossInvasions: {}, // { greed: timestamp, anger: timestamp, ignorance: timestamp }
@@ -40,6 +34,91 @@ const DEFAULT_STATE = {
   secretShop: {
     items: [], // Stores current rack of secret items { item, cost, soldOut }
     lastLevel: 1
+  }
+};
+
+const BUILDING_DATA = {
+  cabin: {
+    name: "居住房屋",
+    desc: "提升可容納工人的上限",
+    icon: "🛖",
+    levels: [
+      { label: "🛖 小木屋", pop: 3, cost: { wood: 25 } },
+      { label: "🏡 舒適木房", pop: 8, cost: { wood: 100, stone: 30 } },
+      { label: "🏢 現代公寓", pop: 20, cost: { wood: 400, stone: 200, metal: 50 } },
+      { label: "🏙️ 高級大樓", pop: 50, cost: { wood: 1200, stone: 600, metal: 200 } }
+    ]
+  },
+  farm: {
+    name: "糧食產地",
+    desc: "每秒被動生產食物",
+    icon: "🌾",
+    levels: [
+      { label: "🌾 菜園", gen: 0.5, cost: { wood: 30, stone: 15 } },
+      { label: "🚜 大型農場", gen: 2.0, cost: { wood: 150, stone: 80 } },
+      { label: "🏭 自動水耕艙", gen: 6.0, cost: { stone: 300, metal: 100 } },
+      { label: "🌽 生物農場巨蛋", gen: 20.0, cost: { metal: 500, energy: 200 } }
+    ]
+  },
+  smelter: {
+    name: "礦物熔爐",
+    desc: "每秒被動產出金屬材料",
+    icon: "🪙",
+    levels: [
+      { label: "🪙 簡易熔爐", gen: 0.2, cost: { wood: 40, stone: 50 } },
+      { label: "🏭 工業煉鐵廠", gen: 0.8, cost: { stone: 200, metal: 50 } },
+      { label: "⚡ 高溫等離子爐", gen: 3.0, cost: { metal: 400, energy: 150 } }
+    ]
+  },
+  powerPlant: {
+    name: "發電廠",
+    desc: "每秒被動產生城市運作能源",
+    icon: "⚡",
+    levels: [
+      { label: "⚡ 蒸汽發電機", gen: 0.5, cost: { stone: 80, metal: 20 } },
+      { label: "☢️ 風力發電機組", gen: 2.0, cost: { stone: 300, metal: 150 } },
+      { label: "⚛️ 核能發電廠", gen: 8.0, cost: { metal: 600, energy: 100 } }
+    ]
+  },
+  warehouse: {
+    name: "資源倉庫",
+    desc: "提升 木/石/食/金屬 的最大儲存量",
+    icon: "📦",
+    levels: [
+      { label: "📦 臨時儲藏點", cap: 100, cost: { wood: 50, stone: 30 } },
+      { label: "🏭 鋼鐵貨倉", cap: 400, cost: { wood: 200, stone: 150, metal: 50 } },
+      { label: "🏦 自動化物流中心", cap: 1500, cost: { stone: 600, metal: 300 } }
+    ]
+  },
+  battery: {
+    name: "能源電網",
+    desc: "提升 能源 的最大儲備量",
+    icon: "🔋",
+    levels: [
+      { label: "🔋 小型蓄電池組", cap: 50, cost: { stone: 60, metal: 40 } },
+      { label: "📡 電流控制中心", cap: 200, cost: { stone: 200, metal: 150 } },
+      { label: "🛰️ 超導網格節點", cap: 800, cost: { metal: 500, energy: 200 } }
+    ]
+  },
+  bank: {
+    name: "城鎮銀行",
+    desc: "擴大金幣儲存上限，並產生利息收入",
+    icon: "🏦",
+    levels: [
+      { label: "🏦 城鎮金庫", cap: 1000, gen: 0.5, cost: { stone: 60, metal: 30 } },
+      { label: "🏛️ 中央銀行", cap: 8000, gen: 3.0, cost: { stone: 300, metal: 150 } },
+      { label: "💎 皇家金融總部", cap: 50000, gen: 15.0, cost: { metal: 600, energy: 100 } }
+    ]
+  },
+  school: {
+    name: "學術機構",
+    desc: "解鎖更高等的學院研究科技",
+    icon: "📚",
+    levels: [
+      { label: "📚 地方學堂", mult: 1, cost: { wood: 80, stone: 60, energy: 20 } },
+      { label: "🏛️ 綜合學院", mult: 2, cost: { wood: 300, stone: 200, metal: 100 } },
+      { label: "🎓 國立研究大學", mult: 3, cost: { stone: 800, metal: 400, energy: 200 } }
+    ]
   }
 };
 
@@ -158,25 +237,25 @@ const nodeWood = document.getElementById("node-wood");
 const nodeStone = document.getElementById("node-stone");
 const focusBadgeText = document.getElementById("activeFocusText");
 
-// Build Panel DOM
-const cabinCountEl = document.getElementById("cabinCount");
-const farmCountEl = document.getElementById("farmCount");
-const smelterCountEl = document.getElementById("smelterCount");
-const powerCountEl = document.getElementById("powerCount");
-const warehouseCountEl = document.getElementById("warehouseCount");
-const batteryCountEl = document.getElementById("batteryCount");
+// City Base Grid DOM & Selection Variable
+let selectedSlotIdx = null;
+const cityGridContainer = document.getElementById("cityGridContainer");
+const cityUsedSlotsEl = document.getElementById("cityUsedSlots");
+const cityMaxSlotsEl = document.getElementById("cityMaxSlots");
+const btnExpandCity = document.getElementById("btnExpandCity");
+const expandCityCostEl = document.getElementById("expandCityCost");
 
-const bankCountEl = document.getElementById("bankCount");
-const schoolCountEl = document.getElementById("schoolCount");
+const citySlotDetailPanel = document.getElementById("citySlotDetailPanel");
+const slotWelcomeMsg = document.getElementById("slotWelcomeMsg");
+const slotConstructList = document.getElementById("slotConstructList");
+const slotManageUi = document.getElementById("slotManageUi");
 
-const btnBuildCabin = document.getElementById("btn-build-cabin");
-const btnBuildFarm = document.getElementById("btn-build-farm");
-const btnBuildSmelter = document.getElementById("btn-build-smelter");
-const btnBuildPower = document.getElementById("btn-build-power");
-const btnBuildWarehouse = document.getElementById("btn-build-warehouse");
-const btnBuildBattery = document.getElementById("btn-build-battery");
-const btnBuildBank = document.getElementById("btn-build-bank");
-const btnBuildSchool = document.getElementById("btn-build-school");
+const manageBuildingName = document.getElementById("manageBuildingName");
+const manageBuildingDesc = document.getElementById("manageBuildingDesc");
+const manageBuildingEffect = document.getElementById("manageBuildingEffect");
+const btnUpgradeBuilding = document.getElementById("btnUpgradeBuilding");
+const upgradeCostTextEl = document.getElementById("upgradeCostText");
+const btnDemolishBuilding = document.getElementById("btnDemolishBuilding");
 
 // Dispatch Panel DOM
 const btnHireResident = document.getElementById("btn-hire-resident");
@@ -334,6 +413,36 @@ function applySaveData(rawString) {
       });
     }
 
+    // Migrate legacy building tallies into the grid slots if they exist
+    if (saved.buildings && (!saved.cityLayout || !saved.cityLayout.slots || saved.cityLayout.slots.every(s => !s.type))) {
+      let slotIndex = 0;
+      const slotMapping = {
+        cabins: 'cabin',
+        farms: 'farm',
+        smelter: 'smelter',
+        powerPlant: 'powerPlant',
+        warehouse: 'warehouse',
+        battery: 'battery',
+        bank: 'bank',
+        school: 'school'
+      };
+
+      for (let legacyKey in slotMapping) {
+        const count = saved.buildings[legacyKey] || 0;
+        const newType = slotMapping[legacyKey];
+        for (let i = 0; i < count; i++) {
+          if (slotIndex < 24) {
+            state.cityLayout.slots[slotIndex] = { type: newType, level: 1 };
+            slotIndex++;
+          }
+        }
+      }
+      
+      if (slotIndex > state.cityLayout.maxSlots) {
+        state.cityLayout.maxSlots = Math.min(24, Math.max(6, Math.ceil(slotIndex / 3) * 3));
+      }
+    }
+
     // Restore UI from loaded state
     setGatherFocus(state.gatherFocus || 'wood');
     updateUI();
@@ -422,22 +531,305 @@ function setGatherFocus(resource) {
   }
 }
 
+
+// ==========================================
+// 3.1 City Layout & Grid Functions
+// ==========================================
+function renderCityGrid() {
+  if (!cityGridContainer) return;
+  cityGridContainer.innerHTML = "";
+
+  const maxSlots = state.cityLayout.maxSlots;
+  state.cityLayout.slots.forEach((slot, idx) => {
+    const tile = document.createElement("div");
+    tile.className = "city-slot-tile";
+    
+    const isLocked = idx >= maxSlots;
+    const isSelected = selectedSlotIdx === idx;
+
+    if (isLocked) {
+      tile.classList.add("locked");
+      tile.innerHTML = `
+        <div class="city-slot-icon">🔒</div>
+        <div class="city-slot-label" style="color: #94a3b8;">未開墾</div>
+      `;
+    } else {
+      if (isSelected) {
+        tile.classList.add("active-selection");
+      }
+      
+      if (slot && slot.type) {
+        tile.classList.add("occupied");
+        const db = BUILDING_DATA[slot.type];
+        if (db) {
+          const levelData = db.levels[slot.level - 1] || db.levels[0];
+          tile.innerHTML = `
+            <div class="city-slot-icon">${db.icon}</div>
+            <div class="city-slot-label">${db.name}</div>
+            <div class="city-slot-level">Lv.${slot.level}</div>
+          `;
+        }
+      } else {
+        tile.innerHTML = `
+          <div class="city-slot-icon" style="color: rgba(255,255,255,0.15);">➕</div>
+          <div class="city-slot-label" style="color: var(--text-muted); font-size:0.7rem;">點擊建造</div>
+        `;
+      }
+
+      tile.addEventListener("click", () => {
+        selectCitySlot(idx);
+      });
+    }
+    cityGridContainer.appendChild(tile);
+  });
+
+  refreshCityDetailPanel();
+}
+
+function selectCitySlot(idx) {
+  selectedSlotIdx = selectedSlotIdx === idx ? null : idx;
+  updateUI(); 
+}
+
+function checkCostAffordable(cost) {
+  if (!cost) return true;
+  for (let res in cost) {
+    if ((state[res] || 0) < cost[res]) return false;
+  }
+  return true;
+}
+
+function formatCostString(cost) {
+  if (!cost) return "免費";
+  const mapping = { wood: '🪵', stone: '🪨', food: '🍞', metal: '🪙', energy: '⚡', money: '💰' };
+  return Object.entries(cost).map(([res, val]) => `${mapping[res]} ${val}`).join(" | ");
+}
+
+function refreshCityDetailPanel() {
+  if (!citySlotDetailPanel) return;
+
+  if (selectedSlotIdx === null) {
+    slotWelcomeMsg.style.display = "block";
+    slotConstructList.style.display = "none";
+    slotManageUi.style.display = "none";
+    return;
+  }
+
+  const slot = state.cityLayout.slots[selectedSlotIdx];
+  slotWelcomeMsg.style.display = "none";
+
+  if (!slot || !slot.type) {
+    slotConstructList.style.display = "block";
+    slotManageUi.style.display = "none";
+
+    const optButtons = slotConstructList.querySelectorAll(".opt-build-btn");
+    optButtons.forEach(btn => {
+      const type = btn.getAttribute("data-type");
+      const db = BUILDING_DATA[type];
+      if (db && db.levels && db.levels[0]) {
+        const firstLv = db.levels[0];
+        const cost = firstLv.cost;
+        btn.disabled = !checkCostAffordable(cost);
+        
+        const costEl = btn.querySelector(".opt-cost");
+        if (costEl) {
+          costEl.textContent = formatCostString(cost);
+        }
+      }
+    });
+  } else {
+    slotConstructList.style.display = "none";
+    slotManageUi.style.display = "block";
+
+    const db = BUILDING_DATA[slot.type];
+    if (!db) return;
+    const curLvl = slot.level;
+    const maxLvl = db.levels.length;
+    const curData = db.levels[curLvl - 1] || db.levels[0];
+    const nextData = db.levels[curLvl]; 
+
+    if (manageBuildingName) manageBuildingName.textContent = curData.label;
+    if (manageBuildingDesc) manageBuildingDesc.textContent = db.desc;
+
+    let effText = "";
+    if (slot.type === 'cabin') effText = `+${curData.pop} 人口`;
+    else if (slot.type === 'farm') effText = `+${curData.gen} 食/秒`;
+    else if (slot.type === 'smelter') effText = `+${curData.gen} 金屬/秒`;
+    else if (slot.type === 'powerPlant') effText = `+${curData.gen} 能/秒`;
+    else if (slot.type === 'warehouse') effText = `儲存 +${curData.cap}`;
+    else if (slot.type === 'battery') effText = `能源 +${curData.cap}`;
+    else if (slot.type === 'bank') effText = `利息+${curData.gen}, 上限+${curData.cap}`;
+    else if (slot.type === 'school') effText = `解鎖研究 (加成 x${curData.mult})`;
+    
+    if (manageBuildingEffect) manageBuildingEffect.textContent = effText;
+
+    if (btnUpgradeBuilding && upgradeCostTextEl) {
+      if (curLvl >= maxLvl) {
+        upgradeCostTextEl.textContent = "已達最高級";
+        btnUpgradeBuilding.disabled = true;
+      } else if (nextData) {
+        const upgradeCost = nextData.cost;
+        upgradeCostTextEl.textContent = formatCostString(upgradeCost);
+        btnUpgradeBuilding.disabled = !checkCostAffordable(upgradeCost);
+      }
+    }
+  }
+}
+
+function deductResources(cost) {
+  if (!cost) return;
+  for (let res in cost) {
+    state[res] -= cost[res];
+  }
+}
+
+function constructBuilding(type) {
+  if (selectedSlotIdx === null) return;
+  const slot = state.cityLayout.slots[selectedSlotIdx];
+  if (slot && slot.type) return; 
+
+  const db = BUILDING_DATA[type];
+  if (!db) return;
+  const cost = db.levels[0].cost;
+  if (!checkCostAffordable(cost)) {
+    showToast("❌ 資源不足，無法建造！", "error");
+    return;
+  }
+
+  deductResources(cost);
+  state.cityLayout.slots[selectedSlotIdx] = { type: type, level: 1 };
+  showToast(`🏗️ 成功建造 ${db.levels[0].label}！`, "info");
+  updateUI();
+}
+
+function upgradeBuilding() {
+  if (selectedSlotIdx === null) return;
+  const slot = state.cityLayout.slots[selectedSlotIdx];
+  if (!slot || !slot.type) return;
+
+  const db = BUILDING_DATA[slot.type];
+  if (!db) return;
+  const nextLvlData = db.levels[slot.level];
+  if (!nextLvlData) {
+    showToast("❌ 建物已達最高等級！", "error");
+    return;
+  }
+
+  const cost = nextLvlData.cost;
+  if (!checkCostAffordable(cost)) {
+    showToast("❌ 資源不足，無法升級！", "error");
+    return;
+  }
+
+  deductResources(cost);
+  slot.level += 1;
+  showToast(`🔼 成功將建物升級至 ${nextLvlData.label}！`, "info");
+  updateUI();
+}
+
+function demolishBuilding() {
+  if (selectedSlotIdx === null) return;
+  const slot = state.cityLayout.slots[selectedSlotIdx];
+  if (!slot || !slot.type) return;
+
+  if (confirm(`⚠️ 您確定要拆除 [Lv.${slot.level}] 建物嗎？（不會歸還資源！）`)) {
+    state.cityLayout.slots[selectedSlotIdx] = { type: null, level: 1 };
+    selectedSlotIdx = null; 
+    showToast(`🗑️ 建物已被拆除。`, "info");
+    updateUI();
+  }
+}
+
+function expandCityLand() {
+  if (state.cityLayout.maxSlots >= 24) {
+    showToast("❌ 已達最大土地擴張極限！", "error");
+    return;
+  }
+
+  const cost = getExpandCost();
+  if (!checkCostAffordable(cost)) {
+    showToast("❌ 資源不足，無法進行擴建開墾！", "error");
+    return;
+  }
+
+  deductResources(cost);
+  state.cityLayout.maxSlots += 3; 
+  if (state.cityLayout.maxSlots > 24) state.cityLayout.maxSlots = 24;
+
+  showToast(`🚜 成功開闢了新建地！當前可用：${state.cityLayout.maxSlots} 格`, "info");
+  updateUI();
+}
+
+// Calculate Dynamic Storage Limits based on Warehouses/Batteries
+function getCityStats() {
+  let warehouseCap = 0;
+  let batteryCap = 0;
+  let farmGen = 0;
+  let smelterGen = 0;
+  let powerGen = 0;
+  let bankGen = 0;
+  let bankMoneyCap = 0;
+  let schoolMult = 0;
+  let popLimit = 5; // 預設 5 人口上限
+  let usedSlots = 0;
+
+  if (state.cityLayout && state.cityLayout.slots) {
+    state.cityLayout.slots.forEach((slot, idx) => {
+      if (idx >= state.cityLayout.maxSlots) return;
+      if (!slot || !slot.type) return;
+      usedSlots++;
+      const type = slot.type;
+      const lvl = slot.level || 1;
+      const db = BUILDING_DATA[type];
+      if (!db || !db.levels) return;
+      
+      const data = db.levels[lvl - 1] || db.levels[0];
+      
+      switch (type) {
+        case 'cabin': popLimit += (data.pop || 0); break;
+        case 'farm': farmGen += (data.gen || 0); break;
+        case 'smelter': smelterGen += (data.gen || 0); break;
+        case 'powerPlant': powerGen += (data.gen || 0); break;
+        case 'warehouse': warehouseCap += (data.cap || 0); break;
+        case 'battery': batteryCap += (data.cap || 0); break;
+        case 'bank':
+          bankMoneyCap += (data.cap || 0);
+          bankGen += (data.gen || 0);
+          break;
+        case 'school':
+          schoolMult = Math.max(schoolMult, data.mult || 1);
+          break;
+      }
+    });
+  }
+  return { warehouseCap, batteryCap, farmGen, smelterGen, powerGen, bankGen, bankMoneyCap, schoolMult, popLimit, usedSlots };
+}
+
+function getExpandCost() {
+  const count = state.cityLayout.maxSlots;
+  const times = Math.floor((count - 6) / 3);
+  return {
+    wood: Math.floor(100 * Math.pow(3.2, times)),
+    stone: Math.floor(50 * Math.pow(3.2, times))
+  };
+}
+
 // Calculate Dynamic Storage Limits based on Warehouses/Batteries
 function getCapacities() {
-  const whBonus = state.buildings.warehouse * 100;
-  const batBonus = state.buildings.battery * 100;
+  const stats = getCityStats();
   return {
-    wood: 100 + whBonus,
-    stone: 100 + whBonus,
-    food: 100 + whBonus,
-    metal: 50 + whBonus,
-    energy: 50 + batBonus
+    wood: 100 + stats.warehouseCap,
+    stone: 100 + stats.warehouseCap,
+    food: 100 + stats.warehouseCap,
+    metal: 50 + stats.warehouseCap,
+    energy: 50 + stats.batteryCap
   };
 }
 
 // Update Display
 function updateUI() {
   const caps = getCapacities();
+  const stats = getCityStats();
 
   const diffBadgeVal = document.getElementById("diffBadgeVal");
   const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
@@ -473,11 +865,9 @@ function updateUI() {
   let populationKnowledgeGen = 0;
 
   state.population.forEach(p => {
-    // Food consumption (Novices and Heroes eat similarly, Heroes also eat since they level up)
     const baseCost = gameConfig.economy.popFoodCost * p.level;
     totalFoodCost += p.assignment !== 'idle' ? baseCost : (baseCost * 0.2);
 
-    // Job production efficiency
     const efficiency = 1.0 * p.level * p.slaveStat;
     if (p.assignment === 'farmer') {
       populationFoodGen += 0.5 * efficiency;
@@ -495,31 +885,31 @@ function updateUI() {
 
   // Calculate net food per second (scaling production by difficulty gather multiplier)
   const diffMult = diffCfg.gather;
-  const passiveGen = ((state.buildings.farms * 1.0) + populationFoodGen) * diffMult;
+  const passiveGen = (stats.farmGen + populationFoodGen) * diffMult;
   const netFoodRate = passiveGen - totalFoodCost;
   const sign = netFoodRate >= 0 ? "+" : "";
   setAllText(foodRateEls, `${sign}${netFoodRate.toFixed(1)}/秒`);
   toggleAllClass(foodRateEls, "alert-text", netFoodRate < 0);
 
-  // Update automated Metal rates (scaling production by difficulty gather multiplier)
-  const netMetalRate = (state.buildings.smelter * 0.3) * diffMult;
+  // Update automated Metal rates
+  const netMetalRate = stats.smelterGen * diffMult;
   setAllText(metalRateEls, `+${netMetalRate.toFixed(1)}/秒`);
 
-  // Update automated Energy rates (scaling production by difficulty gather multiplier)
-  const netEnergyRate = (state.buildings.powerPlant * 1.0) * diffMult;
+  // Update automated Energy rates
+  const netEnergyRate = stats.powerGen * diffMult;
   setAllText(energyRateEls, `+${netEnergyRate.toFixed(1)}/秒`);
   
   // Money display with dynamic scaling from banks (Config driven)
-  const moneyCap = gameConfig.economy.baseMoneyCap + (state.buildings.bank * gameConfig.economy.bankMoneyBonus);
+  const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
   setAllText(moneyEls, Math.floor(state.money));
   setAllText(moneyMaxEls, moneyCap >= 1000 ? (moneyCap >= 10000 ? (moneyCap/1000) + 'k' : moneyCap) : moneyCap);
   toggleAllClass(resMoneyItems, "res-full", Math.floor(state.money) >= moneyCap);
 
-  // Knowledge display (no cap, just count)
+  // Knowledge display
   setAllText(knowledgeEls, Math.floor(state.knowledge));
 
   // Money rate: bank passive + merchants active
-  const netMoneyRate = (state.buildings.bank * 1.0) + populationMoneyGen;
+  const netMoneyRate = stats.bankGen + populationMoneyGen;
   setAllText(moneyRateEls, `+${netMoneyRate.toFixed(1)}/秒`);
 
   // Knowledge rate: scholars only
@@ -528,7 +918,7 @@ function updateUI() {
 
   const currentPop = state.population.length;
   workerEl.textContent = currentPop;
-  state.workerLimit = 5 + (state.buildings.cabins * 5);
+  state.workerLimit = stats.popLimit;
   limitEl.textContent = state.workerLimit;
   if (popCountDisplay) popCountDisplay.textContent = currentPop;
   if (popLimitDisplay) popLimitDisplay.textContent = state.workerLimit;
@@ -536,36 +926,38 @@ function updateUI() {
   const percent = (currentPop / state.workerLimit) * 100;
   popBarEl.style.width = `${Math.min(percent, 100)}%`;
   
-  // Update Building level trackers
-  cabinCountEl.textContent = state.buildings.cabins;
-  farmCountEl.textContent = state.buildings.farms;
-  smelterCountEl.textContent = state.buildings.smelter;
-  powerCountEl.textContent = state.buildings.powerPlant;
-  warehouseCountEl.textContent = state.buildings.warehouse;
-  batteryCountEl.textContent = state.buildings.battery;
-  bankCountEl.textContent = state.buildings.bank;
-  schoolCountEl.textContent = state.buildings.school;
+  // Update City statistics in panel header
+  if (cityUsedSlotsEl) cityUsedSlotsEl.textContent = stats.usedSlots;
+  if (cityMaxSlotsEl) cityMaxSlotsEl.textContent = state.cityLayout.maxSlots;
 
-  // Enable/Disable buttons dynamically based on current funds
-  const workerMoneyCost = state.buildings.bank > 0 ? gameConfig.economy.recruitBaseCost : 0;
-  if (btnHireResident) {
-    btnHireResident.disabled = (state.food < gameConfig.costs.worker.food || state.money < workerMoneyCost || currentPop >= state.workerLimit);
-    if (state.buildings.bank > 0) {
-      btnHireResident.querySelector('.build-btn-cost').textContent = `🍞 ${gameConfig.costs.worker.food} 食 | 💰 ${gameConfig.economy.recruitBaseCost} 金`;
+  // Render dynamic expand cost and handle button enable/disable
+  if (expandCityCostEl && btnExpandCity) {
+    if (state.cityLayout.maxSlots >= 24) {
+      expandCityCostEl.textContent = "已達最大領土";
+      btnExpandCity.disabled = true;
+    } else {
+      const expCost = getExpandCost();
+      expandCityCostEl.textContent = `🪵 ${expCost.wood} | 🪨 ${expCost.stone}`;
+      btnExpandCity.disabled = (state.wood < expCost.wood || state.stone < expCost.stone);
     }
   }
 
-  btnBuildCabin.disabled = (state.wood < gameConfig.costs.cabin.wood);
-  btnBuildFarm.disabled = (state.wood < gameConfig.costs.farm.wood || state.stone < gameConfig.costs.farm.stone);
-  btnBuildSmelter.disabled = (state.wood < gameConfig.costs.smelter.wood || state.stone < gameConfig.costs.smelter.stone);
-  btnBuildPower.disabled = (state.stone < gameConfig.costs.powerPlant.stone || state.metal < gameConfig.costs.powerPlant.metal);
-  btnBuildWarehouse.disabled = (state.wood < gameConfig.costs.warehouse.wood || state.stone < gameConfig.costs.warehouse.stone);
-  btnBuildBattery.disabled = (state.stone < gameConfig.costs.battery.stone || state.metal < gameConfig.costs.battery.metal);
-  btnBuildBank.disabled = (state.stone < gameConfig.costs.bank.stone || state.metal < gameConfig.costs.bank.metal);
-  btnBuildSchool.disabled = (state.wood < gameConfig.costs.school.wood || state.stone < gameConfig.costs.school.stone || state.energy < gameConfig.costs.school.energy);
+  // Render City Grid to handle selections and tile visual rendering
+  renderCityGrid();
+
+  // Enable/Disable buttons dynamically based on current funds
+  const hasBank = stats.bankMoneyCap > 0 || stats.bankGen > 0;
+  const workerMoneyCost = hasBank ? gameConfig.economy.recruitBaseCost : 0;
+  if (btnHireResident) {
+    btnHireResident.disabled = (state.food < gameConfig.costs.worker.food || state.money < workerMoneyCost || currentPop >= state.workerLimit);
+    if (hasBank) {
+      const labelCost = btnHireResident.querySelector('.build-btn-cost');
+      if (labelCost) labelCost.textContent = `🍞 ${gameConfig.costs.worker.food} 食 | 💰 ${gameConfig.economy.recruitBaseCost} 金`;
+    }
+  }
 
   // --- RPG & Tech UI Sync ---
-  if (state.buildings.school > 0) {
+  if (stats.schoolMult > 0) {
     if (researchCard) researchCard.style.display = "block";
     if (knowledgeValEl) knowledgeValEl.textContent = Math.floor(state.knowledge);
     
@@ -2432,84 +2824,16 @@ bindResourceNode(nodeStone, 'stone');
 
 // Setup Building Card triggers
 
-btnBuildCabin.addEventListener("click", () => {
-  if (state.wood >= gameConfig.costs.cabin.wood) {
-    state.wood -= gameConfig.costs.cabin.wood;
-    state.buildings.cabins += 1;
-    spawnFloatingText("+1 木屋 🏚️", "#818cf8");
-    updateUI();
-  }
-});
+// Setup City Base system triggers
+btnExpandCity?.addEventListener("click", expandCityLand);
+btnUpgradeBuilding?.addEventListener("click", upgradeBuilding);
+btnDemolishBuilding?.addEventListener("click", demolishBuilding);
 
-btnBuildFarm.addEventListener("click", () => {
-  if (state.wood >= gameConfig.costs.farm.wood && state.stone >= gameConfig.costs.farm.stone) {
-    state.wood -= gameConfig.costs.farm.wood;
-    state.stone -= gameConfig.costs.farm.stone;
-    state.buildings.farms += 1;
-    spawnFloatingText("+1 農田 🌾", "#f59e0b");
-    updateUI();
-  }
-});
-
-btnBuildSmelter.addEventListener("click", () => {
-  if (state.wood >= gameConfig.costs.smelter.wood && state.stone >= gameConfig.costs.smelter.stone) {
-    state.wood -= gameConfig.costs.smelter.wood;
-    state.stone -= gameConfig.costs.smelter.stone;
-    state.buildings.smelter += 1;
-    spawnFloatingText("+1 熔爐 🪙", "#38bdf8");
-    updateUI();
-  }
-});
-
-btnBuildPower.addEventListener("click", () => {
-  if (state.stone >= gameConfig.costs.powerPlant.stone && state.metal >= gameConfig.costs.powerPlant.metal) {
-    state.stone -= gameConfig.costs.powerPlant.stone;
-    state.metal -= gameConfig.costs.powerPlant.metal;
-    state.buildings.powerPlant += 1;
-    spawnFloatingText("+1 電廠 ⚡", "#facc15");
-    updateUI();
-  }
-});
-
-btnBuildWarehouse.addEventListener("click", () => {
-  if (state.wood >= gameConfig.costs.warehouse.wood && state.stone >= gameConfig.costs.warehouse.stone) {
-    state.wood -= gameConfig.costs.warehouse.wood;
-    state.stone -= gameConfig.costs.warehouse.stone;
-    state.buildings.warehouse += 1;
-    spawnFloatingText("+1 倉庫 📦", "#10b981");
-    updateUI();
-  }
-});
-
-btnBuildBattery.addEventListener("click", () => {
-  if (state.stone >= gameConfig.costs.battery.stone && state.metal >= gameConfig.costs.battery.metal) {
-    state.stone -= gameConfig.costs.battery.stone;
-    state.metal -= gameConfig.costs.battery.metal;
-    state.buildings.battery += 1;
-    spawnFloatingText("+1 蓄電池 🔋", "#f59e0b");
-    updateUI();
-  }
-});
-
-btnBuildBank.addEventListener("click", () => {
-  if (state.stone >= gameConfig.costs.bank.stone && state.metal >= gameConfig.costs.bank.metal) {
-    state.stone -= gameConfig.costs.bank.stone;
-    state.metal -= gameConfig.costs.bank.metal;
-    state.buildings.bank += 1;
-    spawnFloatingText("+1 銀行 💰", "#facc15");
-    updateUI();
-  }
-});
-
-btnBuildSchool.addEventListener("click", () => {
-  if (state.wood >= gameConfig.costs.school.wood && state.stone >= gameConfig.costs.school.stone && state.energy >= gameConfig.costs.school.energy) {
-    state.wood -= gameConfig.costs.school.wood;
-    state.stone -= gameConfig.costs.school.stone;
-    state.energy -= gameConfig.costs.school.energy;
-    state.buildings.school += 1;
-    spawnFloatingText("+1 學院 📚", "#a78bfa");
-    updateUI();
-  }
+document.querySelectorAll(".opt-build-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const type = btn.getAttribute("data-type");
+    constructBuilding(type);
+  });
 });
 
 btnTechHero?.addEventListener("click", () => {
