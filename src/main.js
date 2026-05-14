@@ -480,19 +480,20 @@ function updateUI() {
     }
   });
 
-  // Calculate net food per second
-  const passiveGen = (state.buildings.farms * 1.0) + populationFoodGen;
+  // Calculate net food per second (scaling production by difficulty gather multiplier)
+  const diffMult = diffCfg.gather;
+  const passiveGen = ((state.buildings.farms * 1.0) + populationFoodGen) * diffMult;
   const netFoodRate = passiveGen - totalFoodCost;
   const sign = netFoodRate >= 0 ? "+" : "";
   foodRateEl.textContent = `${sign}${netFoodRate.toFixed(1)}/秒`;
   foodRateEl.className = netFoodRate < 0 ? "res-rate alert-text" : "res-rate";
 
-  // Update automated Metal rates
-  const netMetalRate = state.buildings.smelter * 0.3;
+  // Update automated Metal rates (scaling production by difficulty gather multiplier)
+  const netMetalRate = (state.buildings.smelter * 0.3) * diffMult;
   metalRateEl.textContent = `+${netMetalRate.toFixed(1)}/秒`;
 
-  // Update automated Energy rates
-  const netEnergyRate = state.buildings.powerPlant * 1.0;
+  // Update automated Energy rates (scaling production by difficulty gather multiplier)
+  const netEnergyRate = (state.buildings.powerPlant * 1.0) * diffMult;
   energyRateEl.textContent = `+${netEnergyRate.toFixed(1)}/秒`;
   
   // Money display with dynamic scaling from banks (Config driven)
@@ -646,12 +647,18 @@ function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
   let color = "";
 
   if (resource === "wood") {
-    if (Math.floor(state.wood) >= caps.wood) return; // Prevent gathering if full
+    if (Math.floor(state.wood) >= caps.wood) {
+      spawnFloatingText("⚠️ 倉庫已滿", "#ef4444", sourceX, sourceY);
+      return; // Prevent gathering if full
+    }
     state.wood = Math.min(state.wood + clickYield, caps.wood);
     text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 木頭`;
     color = "#818cf8"; // indigo
   } else if (resource === "stone") {
-    if (Math.floor(state.stone) >= caps.stone) return; // Prevent gathering if full
+    if (Math.floor(state.stone) >= caps.stone) {
+      spawnFloatingText("⚠️ 倉庫已滿", "#ef4444", sourceX, sourceY);
+      return; // Prevent gathering if full
+    }
     state.stone = Math.min(state.stone + clickYield, caps.stone);
     text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 石頭`;
     color = "#94a3b8"; // slate
