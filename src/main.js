@@ -1041,9 +1041,31 @@ window.reviveHero = function(id) {
   state.money -= reviveCost;
   p.assignment = 'idle'; // Rescued back to camp
   const eff = calcEffStats(p);
-  if (eff) p.hp = eff.maxHp; // Restore HP
+  if (eff) {
+    p.hp = eff.maxHp; // Restore HP
+    p.mp = eff.maxMp; // Restore MP
+  }
   
   showToast(`💖 聖光醫治成功！${p.name} 傷癒歸隊並返回營地！`, "success");
+  updateUI();
+};
+
+window.quickHealHero = function(personId, cost) {
+  if (state.money < cost) {
+    showToast("❌ 金錢不足，無法支付醫療費！", "error");
+    return;
+  }
+  const person = state.population.find(p => p.id === personId);
+  if (!person) return;
+  
+  const eff = calcEffStats(person);
+  if (!eff) return;
+  
+  state.money -= cost;
+  person.hp = eff.maxHp;
+  person.mp = eff.maxMp;
+  
+  showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
   updateUI();
 };
 
@@ -1576,14 +1598,14 @@ window.openEquipModal = function(invIndex) {
   const item = state.inventory[invIndex];
   if (!item) return;
   
-  const heroParty = state.population.filter(p => p.jobClass !== 'novice');
-  if (heroParty.length === 0) {
-    showToast("尚未有任何已轉職的英雄可以裝備！", "error");
+  const eligible = state.population.filter(p => p.assignment !== 'hospital');
+  if (eligible.length === 0) {
+    showToast("目前沒有健康的村民或英雄可以裝備！", "error");
     return;
   }
   
-  if (heroParty.length === 1) {
-    equipItem(invIndex, heroParty[0].id);
+  if (eligible.length === 1) {
+    equipItem(invIndex, eligible[0].id);
     return;
   }
   
@@ -1596,7 +1618,7 @@ window.openEquipModal = function(invIndex) {
   itemNameEl.textContent = `裝備：${item.name} (${gameConfig.eqSpecs.rarities[item.rarity].name})`;
   listEl.innerHTML = "";
   
-  heroParty.forEach(p => {
+  eligible.forEach(p => {
     const btn = document.createElement("button");
     btn.className = "build-btn";
     btn.style.display = "flex";
@@ -1693,6 +1715,54 @@ function updateHeroSheets() {
         <div class="prof-meta">
           <h4>${p.name} (${gameConfig.heroes[p.jobClass].name})${p.assignment === 'combat' ? ' ⚔️' : ''}</h4>
           <div class="lv-exp">Lv.<span>${p.level}</span> | Exp <span>${p.exp}</span>/<span>${window.getReqExp(p.level)}</span></div>
+    `;
+    
+    if (eff) {
+      const hpPct = Math.max(0, (p.hp / eff.maxHp) * 100);
+      const mpPct = Math.max(0, (p.mp / eff.maxMp) * 100);
+      const hpDeficit = Math.max(0, eff.maxHp - p.hp);
+      const mpDeficit = Math.max(0, eff.maxMp - p.mp);
+      const healCost = Math.ceil(hpDeficit * 0.5 + mpDeficit * 1.0); 
+      
+      let healBtnHtml = '';
+      if (p.assignment === 'hospital') {
+        healBtnHtml = `
+          <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: #374151; color: #94a3b8; cursor: default;" disabled>
+            🚑 重傷就醫中
+          </button>
+        `;
+      } else if (healCost > 0) {
+        const canPay = state.money >= healCost;
+        healBtnHtml = `
+          <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: ${canPay ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#4b5563'}; color: white; cursor: ${canPay ? 'pointer' : 'not-allowed'}; transition: opacity 0.2s;"
+            onclick="window.quickHealHero('${p.id}', ${healCost})" ${canPay ? '' : 'disabled'}>
+            💚 恢復狀態 (💰${healCost})
+          </button>
+        `;
+      } else {
+        healBtnHtml = `
+          <button class="ctrl-btn" style="margin-top: 0.4rem; width: 100%; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16,185,129,0.05); color: #10b981; cursor: default;" disabled>
+            ✅ 狀態全滿
+          </button>
+        `;
+      }
+
+      html += `
+          <div class="hp-mp-roster" style="margin-top: 0.4rem; display: flex; flex-direction: column; gap: 3px; width: 100%;">
+            <div class="bar-wrapper" style="height: 12px;">
+              <div class="bar-fill bg-hp" style="width: ${hpPct}%"></div>
+              <span class="bar-text" style="font-size: 0.65rem; line-height: 12px;">HP ${Math.floor(p.hp)}/${eff.maxHp}</span>
+            </div>
+            <div class="bar-wrapper" style="height: 12px;">
+              <div class="bar-fill bg-mp" style="width: ${mpPct}%"></div>
+              <span class="bar-text" style="font-size: 0.65rem; line-height: 12px;">MP ${Math.floor(p.mp)}/${eff.maxMp}</span>
+            </div>
+            ${healBtnHtml}
+          </div>
+      `;
+    }
+
+    html += `
         </div>
       </div>
     `;
