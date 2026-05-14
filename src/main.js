@@ -103,37 +103,50 @@ window.setDifficulty = function(key) {
 
 
 
-// DOM References
-const woodEl = document.getElementById("woodCount");
-const woodMaxEl = document.getElementById("woodMax");
-const resWoodItem = document.getElementById("res-wood");
+// Helper functions to update multiple elements simultaneously for sync UI
+function setAllText(nodeList, text) {
+  nodeList.forEach(el => { if (el) el.textContent = text; });
+}
 
-const stoneEl = document.getElementById("stoneCount");
-const stoneMaxEl = document.getElementById("stoneMax");
-const resStoneItem = document.getElementById("res-stone");
+function toggleAllClass(nodeList, className, condition) {
+  nodeList.forEach(el => { if (el) el.classList.toggle(className, condition); });
+}
 
-const foodEl = document.getElementById("foodCount");
-const foodMaxEl = document.getElementById("foodMax");
-const foodRateEl = document.getElementById("foodDrainRate");
-const resFoodItem = document.getElementById("res-food");
+function setAllClassName(nodeList, className) {
+  nodeList.forEach(el => { if (el) el.className = className; });
+}
 
-const metalEl = document.getElementById("metalCount");
-const metalMaxEl = document.getElementById("metalMax");
-const metalRateEl = document.getElementById("metalGenRate");
-const resMetalItem = document.getElementById("res-metal");
+// DOM References (changed to querySelectorAll to support duplicated resource cards)
+const woodEls = document.querySelectorAll(".woodCount");
+const woodMaxEls = document.querySelectorAll(".woodMax");
+const resWoodItems = document.querySelectorAll(".res-wood");
 
-const energyEl = document.getElementById("energyCount");
-const energyMaxEl = document.getElementById("energyMax");
-const energyRateEl = document.getElementById("energyGenRate");
-const resEnergyItem = document.getElementById("res-energy");
+const stoneEls = document.querySelectorAll(".stoneCount");
+const stoneMaxEls = document.querySelectorAll(".stoneMax");
+const resStoneItems = document.querySelectorAll(".res-stone");
 
-const moneyEl = document.getElementById("moneyCount");
-const moneyMaxEl = document.getElementById("moneyMax");
-const moneyRateEl = document.getElementById("moneyGenRate");
-const resMoneyItem = document.getElementById("res-money");
+const foodEls = document.querySelectorAll(".foodCount");
+const foodMaxEls = document.querySelectorAll(".foodMax");
+const foodRateEls = document.querySelectorAll(".foodDrainRate");
+const resFoodItems = document.querySelectorAll(".res-food");
 
-const knowledgeEl = document.getElementById("knowledgeCount");
-const knowledgeRateEl = document.getElementById("knowledgeGenRate");
+const metalEls = document.querySelectorAll(".metalCount");
+const metalMaxEls = document.querySelectorAll(".metalMax");
+const metalRateEls = document.querySelectorAll(".metalGenRate");
+const resMetalItems = document.querySelectorAll(".res-metal");
+
+const energyEls = document.querySelectorAll(".energyCount");
+const energyMaxEls = document.querySelectorAll(".energyMax");
+const energyRateEls = document.querySelectorAll(".energyGenRate");
+const resEnergyItems = document.querySelectorAll(".res-energy");
+
+const moneyEls = document.querySelectorAll(".moneyCount");
+const moneyMaxEls = document.querySelectorAll(".moneyMax");
+const moneyRateEls = document.querySelectorAll(".moneyGenRate");
+const resMoneyItems = document.querySelectorAll(".res-money");
+
+const knowledgeEls = document.querySelectorAll(".knowledgeCount");
+const knowledgeRateEls = document.querySelectorAll(".knowledgeGenRate");
 
 const workerEl = document.getElementById("workerCount");
 const limitEl = document.getElementById("workerLimit");
@@ -433,25 +446,25 @@ function updateUI() {
     diffBadgeVal.style.color = diffCfg.color;
   }
   
-  woodEl.textContent = Math.floor(state.wood);
-  woodMaxEl.textContent = caps.wood;
-  resWoodItem.classList.toggle("res-full", Math.floor(state.wood) >= caps.wood);
+  setAllText(woodEls, Math.floor(state.wood));
+  setAllText(woodMaxEls, caps.wood);
+  toggleAllClass(resWoodItems, "res-full", Math.floor(state.wood) >= caps.wood);
 
-  stoneEl.textContent = Math.floor(state.stone);
-  stoneMaxEl.textContent = caps.stone;
-  resStoneItem.classList.toggle("res-full", Math.floor(state.stone) >= caps.stone);
+  setAllText(stoneEls, Math.floor(state.stone));
+  setAllText(stoneMaxEls, caps.stone);
+  toggleAllClass(resStoneItems, "res-full", Math.floor(state.stone) >= caps.stone);
 
-  foodEl.textContent = Math.floor(state.food);
-  foodMaxEl.textContent = caps.food;
-  resFoodItem.classList.toggle("res-full", Math.floor(state.food) >= caps.food);
+  setAllText(foodEls, Math.floor(state.food));
+  setAllText(foodMaxEls, caps.food);
+  toggleAllClass(resFoodItems, "res-full", Math.floor(state.food) >= caps.food);
 
-  metalEl.textContent = Math.floor(state.metal);
-  metalMaxEl.textContent = caps.metal;
-  resMetalItem.classList.toggle("res-full", Math.floor(state.metal) >= caps.metal);
+  setAllText(metalEls, Math.floor(state.metal));
+  setAllText(metalMaxEls, caps.metal);
+  toggleAllClass(resMetalItems, "res-full", Math.floor(state.metal) >= caps.metal);
 
-  energyEl.textContent = Math.floor(state.energy);
-  energyMaxEl.textContent = caps.energy;
-  resEnergyItem.classList.toggle("res-full", Math.floor(state.energy) >= caps.energy);
+  setAllText(energyEls, Math.floor(state.energy));
+  setAllText(energyMaxEls, caps.energy);
+  toggleAllClass(resEnergyItems, "res-full", Math.floor(state.energy) >= caps.energy);
   
   // Calculate dynamic net rates based on active population assignments
   let totalFoodCost = 0;
@@ -485,33 +498,33 @@ function updateUI() {
   const passiveGen = ((state.buildings.farms * 1.0) + populationFoodGen) * diffMult;
   const netFoodRate = passiveGen - totalFoodCost;
   const sign = netFoodRate >= 0 ? "+" : "";
-  foodRateEl.textContent = `${sign}${netFoodRate.toFixed(1)}/秒`;
-  foodRateEl.className = netFoodRate < 0 ? "res-rate alert-text" : "res-rate";
+  setAllText(foodRateEls, `${sign}${netFoodRate.toFixed(1)}/秒`);
+  toggleAllClass(foodRateEls, "alert-text", netFoodRate < 0);
 
   // Update automated Metal rates (scaling production by difficulty gather multiplier)
   const netMetalRate = (state.buildings.smelter * 0.3) * diffMult;
-  metalRateEl.textContent = `+${netMetalRate.toFixed(1)}/秒`;
+  setAllText(metalRateEls, `+${netMetalRate.toFixed(1)}/秒`);
 
   // Update automated Energy rates (scaling production by difficulty gather multiplier)
   const netEnergyRate = (state.buildings.powerPlant * 1.0) * diffMult;
-  energyRateEl.textContent = `+${netEnergyRate.toFixed(1)}/秒`;
+  setAllText(energyRateEls, `+${netEnergyRate.toFixed(1)}/秒`);
   
   // Money display with dynamic scaling from banks (Config driven)
   const moneyCap = gameConfig.economy.baseMoneyCap + (state.buildings.bank * gameConfig.economy.bankMoneyBonus);
-  moneyEl.textContent = Math.floor(state.money);
-  moneyMaxEl.textContent = moneyCap >= 1000 ? (moneyCap >= 10000 ? (moneyCap/1000) + 'k' : moneyCap) : moneyCap;
-  resMoneyItem.classList.toggle("res-full", Math.floor(state.money) >= moneyCap);
+  setAllText(moneyEls, Math.floor(state.money));
+  setAllText(moneyMaxEls, moneyCap >= 1000 ? (moneyCap >= 10000 ? (moneyCap/1000) + 'k' : moneyCap) : moneyCap);
+  toggleAllClass(resMoneyItems, "res-full", Math.floor(state.money) >= moneyCap);
 
   // Knowledge display (no cap, just count)
-  knowledgeEl.textContent = Math.floor(state.knowledge);
+  setAllText(knowledgeEls, Math.floor(state.knowledge));
 
   // Money rate: bank passive + merchants active
   const netMoneyRate = (state.buildings.bank * 1.0) + populationMoneyGen;
-  moneyRateEl.textContent = `+${netMoneyRate.toFixed(1)}/秒`;
+  setAllText(moneyRateEls, `+${netMoneyRate.toFixed(1)}/秒`);
 
   // Knowledge rate: scholars only
   const netKnowledgeRate = populationKnowledgeGen;
-  knowledgeRateEl.textContent = `+${netKnowledgeRate.toFixed(1)}/秒`;
+  setAllText(knowledgeRateEls, `+${netKnowledgeRate.toFixed(1)}/秒`);
 
   const currentPop = state.population.length;
   workerEl.textContent = currentPop;

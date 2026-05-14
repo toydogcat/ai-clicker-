@@ -59,86 +59,185 @@
   </header>
 
   <main class="game-container">
-    <!-- Left Column: Resources & Population -->
-    <aside class="panel-column side-panel tab-column" id="tab-settlement" aria-label="資源與統計">
+    <!-- Page 1: tab-gather (採集 - 建設) -->
+    <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="採集操作">
       <div class="glass-card resource-card">
         <div class="card-header">
           <h2>📊 資源存量</h2>
         </div>
         <div class="resource-grid">
-          <div class="resource-item" id="res-wood">
+          <div class="resource-item res-wood">
             <span class="res-icon">🪵</span>
             <div class="res-details">
               <label>木頭 (Wood)</label>
               <span class="res-value">
-                <span id="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="woodMax">100</span>
+                <span class="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit woodMax">100</span>
               </span>
             </div>
           </div>
-          <div class="resource-item" id="res-stone">
+          <div class="resource-item res-stone">
             <span class="res-icon">🪨</span>
             <div class="res-details">
               <label>石頭 (Stone)</label>
               <span class="res-value">
-                <span id="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="stoneMax">100</span>
+                <span class="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit stoneMax">100</span>
               </span>
             </div>
           </div>
-          <div class="resource-item" id="res-food">
+          <div class="resource-item res-food">
             <span class="res-icon">🍞</span>
             <div class="res-details">
               <label>食物 (Food)</label>
               <span class="res-value">
-                <span id="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="foodMax">100</span>
+                <span class="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit foodMax">100</span>
               </span>
             </div>
-            <div class="res-rate alert-text" id="foodDrainRate">+0.0/秒</div>
+            <div class="res-rate foodDrainRate alert-text">+0.0/秒</div>
           </div>
-          <div class="resource-item" id="res-metal">
+          <div class="resource-item res-metal">
             <span class="res-icon">🪙</span>
             <div class="res-details">
               <label>金屬 (Metal)</label>
               <span class="res-value">
-                <span id="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="metalMax">50</span>
+                <span class="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit metalMax">50</span>
               </span>
             </div>
-            <div class="res-rate" id="metalGenRate">+0.0/秒</div>
+            <div class="res-rate metalGenRate">+0.0/秒</div>
           </div>
-          <div class="resource-item" id="res-energy">
+          <div class="resource-item res-energy">
             <span class="res-icon">⚡</span>
             <div class="res-details">
               <label>能源 (Energy)</label>
               <span class="res-value">
-                <span id="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="energyMax">50</span>
+                <span class="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit energyMax">50</span>
               </span>
             </div>
-            <div class="res-rate" id="energyGenRate">+0.0/秒</div>
+            <div class="res-rate energyGenRate">+0.0/秒</div>
           </div>
-          <div class="resource-item res-money" id="res-money">
+          <div class="resource-item res-money">
             <span class="res-icon">💰</span>
             <div class="res-details">
               <label>金錢 (Money)</label>
               <span class="res-value">
-                <span id="moneyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit"
-                  id="moneyMax">1000</span>
+                <span class="moneyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit moneyMax">1000</span>
               </span>
             </div>
-            <div class="res-rate" id="moneyGenRate">+0.0/秒</div>
+            <div class="res-rate moneyGenRate">+0.0/秒</div>
           </div>
-          <div class="resource-item res-knowledge" id="res-knowledge">
+          <div class="resource-item res-knowledge">
             <span class="res-icon">📚</span>
             <div class="res-details">
               <label>研究 (Knowledge)</label>
               <span class="res-value">
-                <span id="knowledgeCount">0</span>
+                <span class="knowledgeCount">0</span>
               </span>
             </div>
-            <div class="res-rate" id="knowledgeGenRate">+0.0/秒</div>
+            <div class="res-rate knowledgeGenRate">+0.0/秒</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-hub">
+        <div class="nodes-cluster" id="nodesContainer">
+          <div class="focus-badge">
+            <span class="pulse-ring-small"></span>
+            AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
+          </div>
+          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🌳</span>
+              <span class="node-title">採集木頭</span>
+            </div>
+          </div>
+          <div class="gather-node" id="node-stone" data-resource="stone" role="button" tabindex="0" aria-label="採集石頭">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🪨</span>
+              <span class="node-title">採集石頭</span>
+            </div>
+          </div>
+        </div>
+        <div id="clickEffectsLayer"></div>
+      </div>
+    </section>
+
+    <!-- Page 2: tab-settlement (城市 - 建設整備) -->
+    <aside class="panel-column side-panel tab-column" id="tab-settlement" aria-label="城市建設">
+      <div class="glass-card resource-card">
+        <div class="card-header">
+          <h2>📊 資源存量</h2>
+        </div>
+        <div class="resource-grid">
+          <div class="resource-item res-wood">
+            <span class="res-icon">🪵</span>
+            <div class="res-details">
+              <label>木頭 (Wood)</label>
+              <span class="res-value">
+                <span class="woodCount">0</span><span class="res-limit-sep">/</span><span class="res-limit woodMax">100</span>
+              </span>
+            </div>
+          </div>
+          <div class="resource-item res-stone">
+            <span class="res-icon">🪨</span>
+            <div class="res-details">
+              <label>石頭 (Stone)</label>
+              <span class="res-value">
+                <span class="stoneCount">0</span><span class="res-limit-sep">/</span><span class="res-limit stoneMax">100</span>
+              </span>
+            </div>
+          </div>
+          <div class="resource-item res-food">
+            <span class="res-icon">🍞</span>
+            <div class="res-details">
+              <label>食物 (Food)</label>
+              <span class="res-value">
+                <span class="foodCount">30</span><span class="res-limit-sep">/</span><span class="res-limit foodMax">100</span>
+              </span>
+            </div>
+            <div class="res-rate foodDrainRate alert-text">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-metal">
+            <span class="res-icon">🪙</span>
+            <div class="res-details">
+              <label>金屬 (Metal)</label>
+              <span class="res-value">
+                <span class="metalCount">0</span><span class="res-limit-sep">/</span><span class="res-limit metalMax">50</span>
+              </span>
+            </div>
+            <div class="res-rate metalGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-energy">
+            <span class="res-icon">⚡</span>
+            <div class="res-details">
+              <label>能源 (Energy)</label>
+              <span class="res-value">
+                <span class="energyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit energyMax">50</span>
+              </span>
+            </div>
+            <div class="res-rate energyGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-money">
+            <span class="res-icon">💰</span>
+            <div class="res-details">
+              <label>金錢 (Money)</label>
+              <span class="res-value">
+                <span class="moneyCount">0</span><span class="res-limit-sep">/</span><span class="res-limit moneyMax">1000</span>
+              </span>
+            </div>
+            <div class="res-rate moneyGenRate">+0.0/秒</div>
+          </div>
+          <div class="resource-item res-knowledge">
+            <span class="res-icon">📚</span>
+            <div class="res-details">
+              <label>研究 (Knowledge)</label>
+              <span class="res-value">
+                <span class="knowledgeCount">0</span>
+              </span>
+            </div>
+            <div class="res-rate knowledgeGenRate">+0.0/秒</div>
           </div>
         </div>
       </div>
@@ -164,8 +263,6 @@
           <h2>🏗️ 建設發展</h2>
         </div>
         <div class="build-actions">
-          <!-- hire worker button removed, moved to HR panel -->
-
           <button class="build-btn" id="btn-build-cabin" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">搭建木屋 (+5 上限)</span>
@@ -231,10 +328,7 @@
           </button>
         </div>
       </div>
-    </aside>
 
-    <!-- Dispatch Column: Roster + Heroes + Weapons + Inventory -->
-    <aside class="panel-column side-panel tab-column" id="tab-dispatch" aria-label="人力調度">
       <div class="glass-card dispatch-card" style="display: flex; flex-direction: column; max-height: 80vh;">
         <div class="card-header">
           <h2>👷 居民名冊與指派</h2>
@@ -253,7 +347,6 @@
           </div>
         </button>
 
-        <!-- Dynamic Table for Population -->
         <div class="roster-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;" id="populationRoster">
           <div class="empty-inv" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 1rem;">
             城鎮空無一人，請招募流浪者！
@@ -261,7 +354,6 @@
         </div>
       </div>
 
-      <!-- 🔬 Academy Research Card -->
       <div class="glass-card research-card" id="researchCard" style="display: none; margin-top: 1rem;">
         <div class="card-header">
           <h2>🔬 學院研究中心</h2>
@@ -313,92 +405,10 @@
           </button>
         </div>
       </div>
-
-      <!-- ⚔️ RPG Sub-Panels moved here: Heroes, Weapons, Inventory -->
-      <div class="glass-card" id="dispatchRpgCard" style="display: none; margin-top: 1rem;">
-        <div class="rpg-sub-tabs">
-          <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
-          <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
-          <button class="rpg-sub-tab" data-rpg-tab="secret-shop" style="color: #facc15; font-weight: bold;">✨ 神秘商店</button>
-          <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
-        </div>
-        <div class="rpg-panel-container">
-          <!-- SubTab: Hero Sheet -->
-          <div class="rpg-panel active" id="rpg-hero-sheet">
-            <div class="heroes-wrapper" id="guildRoster">
-              <!-- Dynamically populated by JS (12 classes) -->
-            </div>
-            <!-- Skills Casting Bar (Active during combat) -->
-            <div class="combat-skill-dock" id="skillDock" style="display:none;">
-              <div class="dock-title">🖐️ 手勢詠唱進度 (切換布/拳/指來施法)</div>
-              <div class="skills-grid" id="gestureSkillGrid">
-                <!-- Dynamically populated skill progress bars based on party members -->
-              </div>
-            </div>
-          </div>
-          <!-- SubTab: Gear Shop -->
-          <div class="rpg-panel" id="rpg-gear-shop">
-            <div class="shop-controls">
-              <label>選擇購買等級：</label>
-              <select id="shopLevelSelect">
-                <option value="1">Lv 1 (💰 100)</option>
-                <option value="2">Lv 2 (💰 500)</option>
-                <option value="3">Lv 3 (💰 2000)</option>
-                <option value="4">Lv 4 (💰 8000)</option>
-                <option value="5">Lv 5 (💰 25000)</option>
-                <option value="6">Lv 6 (💰 75000)</option>
-                <option value="7">Lv 7 (💰 250000)</option>
-              </select>
-            </div>
-            <div class="shop-items-grid">
-              <button class="buy-eq-btn" data-slot="rhand">🗡️ 買武器</button>
-              <button class="buy-eq-btn" data-slot="lhand">🛡️ 買副手</button>
-              <button class="buy-eq-btn" data-slot="helm">🪖 買頭盔</button>
-              <button class="buy-eq-btn" data-slot="body">🥋 買衣服</button>
-              <button class="buy-eq-btn" data-slot="pants">👖 買褲子</button>
-              <button class="buy-eq-btn" data-slot="shoes">👞 買鞋子</button>
-            </div>
-            <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
-          </div>
-          <!-- SubTab: Secret Shop -->
-          <div class="rpg-panel" id="rpg-secret-shop">
-            <div class="shop-controls" style="border-bottom: 1px solid rgba(234, 179, 8, 0.2); padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <label style="color: #facc15; font-weight: 600;">🔮 貨架裝備等級：</label>
-                <select id="secretShopLevelSelect" style="background: rgba(15, 23, 42, 0.8); border: 1.5px solid #eab308; color: #fff; padding: 0.3rem 0.6rem; border-radius: 6px;">
-                  <option value="1">Lv 1 等級貨架</option>
-                  <option value="2">Lv 2 等級貨架</option>
-                  <option value="3">Lv 3 等級貨架</option>
-                  <option value="4">Lv 4 等級貨架</option>
-                  <option value="5">Lv 5 等級貨架</option>
-                  <option value="6">Lv 6 等級貨架</option>
-                  <option value="7">Lv 7 等級貨架</option>
-                </select>
-              </div>
-              <button id="btnRefreshSecretShop" class="btn-danger" style="background: linear-gradient(135deg, #7e22ce, #b45309); border: 1px solid #eab308; color: #fff; font-weight: bold; box-shadow: 0 0 10px rgba(234,179,8,0.3);">
-                🔁 刷新貨架 (<span id="secretRefreshCostText">💰 200</span>)
-              </button>
-            </div>
-            <div class="secret-shop-grid" id="secretShopGrid">
-              <!-- Filled by JS -->
-            </div>
-            <p class="shop-note" style="color:#f59e0b;">* 神秘商店中機率出現「稀有、史詩、傳說」品質裝備，價格受品質倍率與等級雙重影響，且購買後該架位會完售！</p>
-          </div>
-
-          <!-- SubTab: Inventory Panel -->
-          <div class="rpg-panel" id="rpg-inventory-panel">
-            <div class="inv-grid" id="inventoryContainer">
-              <div class="empty-inv">背包是空的，快去打寶吧！</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
 
-    <!-- Center Column: Gather + Combat Zone -->
-    <section class="panel-column center-panel tab-column active" id="tab-gather" aria-label="操作區">
-
-      <!-- ⚔️ RPG Guild & Combat Zone (Locked by default) -->
+    <!-- Page 3: tab-combat (出征 - 戰鬥) -->
+    <aside class="panel-column side-panel tab-column" id="tab-combat" aria-label="出征戰鬥">
       <div class="glass-card rpg-guild-card locked" id="rpgGuildCard">
         <div class="rpg-lock-overlay" id="rpgLockOverlay">
           <span class="lock-icon">⚔️ 🔒</span>
@@ -407,7 +417,6 @@
         </div>
 
         <div class="rpg-unlocked-content" style="display: none;">
-          <!-- 1. Combat Viewport -->
           <div class="battle-viewport">
             <div class="battle-field">
               <div class="party-side" id="partyGroup"></div>
@@ -419,12 +428,10 @@
             </div>
           </div>
 
-          <!-- 2. Quest Sub-Tab only -->
           <div class="rpg-sub-tabs">
             <button class="rpg-sub-tab active" data-rpg-tab="quest-panel">🗺️ 出征任務</button>
           </div>
 
-          <!-- 3. Quest Panel -->
           <div class="rpg-panel-container">
             <div class="rpg-panel active" id="rpg-quest-panel">
               <div class="deploy-config">
@@ -455,42 +462,11 @@
                   <option value="10">👑 Lv.10 超巨型史萊姆王 (終極試煉)</option>
                 </select>
               </div>
-
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 採集節點 -->
-      <div class="action-hub">
-        <div class="nodes-cluster" id="nodesContainer">
-          <div class="focus-badge">
-            <span class="pulse-ring-small"></span>
-            AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
-          </div>
-          <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
-            <div class="node-ring"></div>
-            <div class="node-glow"></div>
-            <div class="node-body">
-              <span class="node-emoji">🌳</span>
-              <span class="node-title">採集木頭</span>
-            </div>
-          </div>
-          <div class="gather-node" id="node-stone" data-resource="stone" role="button" tabindex="0" aria-label="採集石頭">
-            <div class="node-ring"></div>
-            <div class="node-glow"></div>
-            <div class="node-body">
-              <span class="node-emoji">🪨</span>
-              <span class="node-title">採集石頭</span>
-            </div>
-          </div>
-        </div>
-        <div id="clickEffectsLayer"></div>
-      </div>
-    </section>
-
-    <!-- Right Column: Camera & Detection Panel -->
-    <aside class="panel-column side-panel tab-column" id="tab-ai" aria-label="AI 操控">
       <div class="glass-card tracking-card">
         <div class="card-header">
           <h2>📷 AI 手勢偵測</h2>
@@ -529,10 +505,88 @@
         <ul class="rules-list">
           <li>⚔️ **戰鬥手勢**：透過搖晃或交替「布/拳/剪/指」手勢進行詠唱，施放強大法術！</li>
           <li>🌳 **採集系統**：木頭與石頭純粹透過滑鼠或觸控點擊進行採集，回歸原始樂趣。</li>
-          <li>🏗️ **建設系統**：在「營地」頁面點擊建設按鈕，自動生產食物、金屬、能源等資源。</li>
-          <li>👥 **英雄調度**：在「調度」頁面管理英雄招募、裝備購買與背包管理。</li>
+          <li>🏗️ **建設系統**：在「城市」頁面點擊建設按鈕，自動生產食物、金屬、能源等資源。</li>
+          <li>👥 **英雄整備**：在「英雄」頁面管理英雄招募、裝備購買與背包管理。</li>
         </ul>
+      </div>
+    </aside>
 
+    <!-- Page 4: tab-hero (英雄 - 戰鬥整備) -->
+    <aside class="panel-column side-panel tab-column" id="tab-hero" aria-label="英雄整備">
+      <div class="glass-card" id="dispatchRpgCard" style="display: none;">
+        <div class="rpg-sub-tabs">
+          <button class="rpg-sub-tab active" data-rpg-tab="hero-sheet">👥 英雄/技能</button>
+          <button class="rpg-sub-tab" data-rpg-tab="gear-shop">🏪 武器商店</button>
+          <button class="rpg-sub-tab" data-rpg-tab="secret-shop" style="color: #facc15; font-weight: bold;">✨ 神秘商店</button>
+          <button class="rpg-sub-tab" data-rpg-tab="inventory-panel">🎒 背包 (<span id="invCount">0</span>)</button>
+        </div>
+        <div class="rpg-panel-container">
+          <div class="rpg-panel active" id="rpg-hero-sheet">
+            <div class="heroes-wrapper" id="guildRoster">
+              <!-- Dynamically populated by JS -->
+            </div>
+            <div class="combat-skill-dock" id="skillDock" style="display:none;">
+              <div class="dock-title">🖐️ 手勢詠唱進度 (切換布/拳/指來施法)</div>
+              <div class="skills-grid" id="gestureSkillGrid">
+                <!-- Dynamically populated skill progress bars based on party members -->
+              </div>
+            </div>
+          </div>
+
+          <div class="rpg-panel" id="rpg-gear-shop">
+            <div class="shop-controls">
+              <label>選擇購買等級：</label>
+              <select id="shopLevelSelect">
+                <option value="1">Lv 1 (💰 100)</option>
+                <option value="2">Lv 2 (💰 500)</option>
+                <option value="3">Lv 3 (💰 2000)</option>
+                <option value="4">Lv 4 (💰 8000)</option>
+                <option value="5">Lv 5 (💰 25000)</option>
+                <option value="6">Lv 6 (💰 75000)</option>
+                <option value="7">Lv 7 (💰 250000)</option>
+              </select>
+            </div>
+            <div class="shop-items-grid">
+              <button class="buy-eq-btn" data-slot="rhand">🗡️ 買武器</button>
+              <button class="buy-eq-btn" data-slot="lhand">🛡️ 買副手</button>
+              <button class="buy-eq-btn" data-slot="helm">🪖 買頭盔</button>
+              <button class="buy-eq-btn" data-slot="body">🥋 買衣服</button>
+              <button class="buy-eq-btn" data-slot="pants">👖 買褲子</button>
+              <button class="buy-eq-btn" data-slot="shoes">👞 買鞋子</button>
+            </div>
+            <p class="shop-note">* 商店僅販售純白板裝備。隨機附帶強大額外屬性的彩色神裝需透過擊殺怪物掉落！</p>
+          </div>
+
+          <div class="rpg-panel" id="rpg-secret-shop">
+            <div class="shop-controls" style="border-bottom: 1px solid rgba(234, 179, 8, 0.2); padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <label style="color: #facc15; font-weight: 600;">🔮 貨架裝備等級：</label>
+                <select id="secretShopLevelSelect" style="background: rgba(15, 23, 42, 0.8); border: 1.5px solid #eab308; color: #fff; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                  <option value="1">Lv 1 等級貨架</option>
+                  <option value="2">Lv 2 等級貨架</option>
+                  <option value="3">Lv 3 等級貨架</option>
+                  <option value="4">Lv 4 等級貨架</option>
+                  <option value="5">Lv 5 等級貨架</option>
+                  <option value="6">Lv 6 等級貨架</option>
+                  <option value="7">Lv 7 等級貨架</option>
+                </select>
+              </div>
+              <button id="btnRefreshSecretShop" class="btn-danger" style="background: linear-gradient(135deg, #7e22ce, #b45309); border: 1px solid #eab308; color: #fff; font-weight: bold; box-shadow: 0 0 10px rgba(234,179,8,0.3);">
+                🔁 刷新貨架 (<span id="secretRefreshCostText">💰 200</span>)
+              </button>
+            </div>
+            <div class="secret-shop-grid" id="secretShopGrid">
+              <!-- Filled by JS -->
+            </div>
+            <p class="shop-note" style="color:#f59e0b;">* 神秘商店中機率出現「稀有、史詩、傳說」品質裝備，價格受品質倍率與等級雙重影響，且購買後該架位會完售！</p>
+          </div>
+
+          <div class="rpg-panel" id="rpg-inventory-panel">
+            <div class="inv-grid" id="inventoryContainer">
+              <div class="empty-inv">背包是空的，快去打寶吧！</div>
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
   </main>
@@ -545,15 +599,15 @@
     </button>
     <button class="nav-item" data-target="tab-settlement">
       <span class="nav-icon">🏘️</span>
-      <span class="nav-label">營地</span>
+      <span class="nav-label">城市</span>
     </button>
-    <button class="nav-item" data-target="tab-dispatch">
-      <span class="nav-icon">👷</span>
-      <span class="nav-label">調度</span>
+    <button class="nav-item" data-target="tab-combat">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">出征</span>
     </button>
-    <button class="nav-item" data-target="tab-ai">
-      <span class="nav-icon">📷</span>
-      <span class="nav-label">AI 操控</span>
+    <button class="nav-item" data-target="tab-hero">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">英雄</span>
     </button>
   </nav>
 
