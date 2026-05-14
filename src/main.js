@@ -331,16 +331,20 @@ window.setDifficulty = function(key) {
   if (!DIFFICULTY_MULTIPLIERS[key]) return;
   
   if (key === 'test') {
-    const pw = prompt("🔒 請輸入管理員驗證碼：");
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
     const todayCode = `${y}${m}${d}`;
     
-    if (pw !== todayCode) {
-      showToast("❌ 權限不足，無法切換至測試模式！", "error");
-      return;
+    // Bypass prompt if already verified in this browser session
+    if (window.sessionStorage.getItem('gm_verified') !== todayCode) {
+      const pw = prompt("🔒 請輸入管理員驗證碼：");
+      if (pw !== todayCode) {
+        showToast("❌ 權限不足，無法切換至測試模式！", "error");
+        return;
+      }
+      window.sessionStorage.setItem('gm_verified', todayCode);
     }
   }
 
@@ -582,6 +586,25 @@ function applySaveData(rawString) {
 
     // Recursively merge loaded state into the fresh default state
     deepHydrate(state, saved);
+
+    // Secure 'test' difficulty upon loading
+    if (state.difficulty === 'test') {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const todayCode = `${y}${m}${d}`;
+      
+      if (window.sessionStorage.getItem('gm_verified') !== todayCode) {
+        const pw = prompt("🔒 偵測到【測試模式】存檔，請輸入管理員驗證碼進行授權：");
+        if (pw !== todayCode) {
+          alert("❌ 權限驗證失敗！存檔難度已強制降級為「一般模式」！");
+          state.difficulty = 'normal';
+        } else {
+          window.sessionStorage.setItem('gm_verified', todayCode);
+        }
+      }
+    }
 
     // Backfill any missing resident-level fields for robust backward compatibility
     if (Array.isArray(state.population)) {
@@ -1532,8 +1555,10 @@ function gameTick() {
       p.hp = Math.min(curMaxHp, p.hp + 5);
       if (p.hp >= curMaxHp) {
         p.hp = curMaxHp;
-        p.assignment = 'idle';
-        showToast(`🏥 ${p.name} 已在醫院完全康復！`, "success");
+        const nextJob = p.previousAssignment || 'idle';
+        p.assignment = nextJob;
+        delete p.previousAssignment;
+        showToast(`🏥 ${p.name} 已在醫院完全康復！已返回：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】`, "success");
       }
     } else if (p.assignment !== 'idle' && p.assignment !== 'combat') {
       // Different jobs drain different stamina
@@ -1550,6 +1575,7 @@ function gameTick() {
       p.hp -= drain;
       if (p.hp <= 1) {
         p.hp = 1;
+        p.previousAssignment = p.assignment; // Back up their job
         p.assignment = 'hospital';
         showToast(`👷 ${p.name} 勞累過度體力透支，已被送去醫院！`, "warning");
       }
@@ -1996,14 +2022,17 @@ window.reviveHero = function(id) {
   }
   
   state.money -= reviveCost;
-  p.assignment = 'idle'; // Rescued back to camp
+  const nextJob = p.previousAssignment || 'idle';
+  p.assignment = nextJob; // Restore previous job!
+  delete p.previousAssignment;
+  
   const eff = calcEffStats(p);
   if (eff) {
     p.hp = eff.maxHp; // Restore HP
     p.mp = eff.maxMp; // Restore MP
   }
   
-  showToast(`💖 聖光醫治成功！${p.name} 傷癒歸隊並返回營地！`, "success");
+  showToast(`💖 聖光醫治成功！${p.name} 已返回：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】`, "success");
   updateUI();
 };
 
@@ -2022,7 +2051,15 @@ window.quickHealHero = function(personId, cost) {
   person.hp = eff.maxHp;
   person.mp = eff.maxMp;
   
-  showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
+  // Restore duty if manually cured from hospital
+  if (person.assignment === 'hospital') {
+    const nextJob = person.previousAssignment || 'idle';
+    person.assignment = nextJob;
+    delete person.previousAssignment;
+    showToast(`💚 ${person.name} 已完全恢復健康並重返：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】！`, "success");
+  } else {
+    showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
+  }
   updateUI();
 };
 
@@ -3070,6 +3107,7 @@ function stopQuest() {
   const combatParty = state.population.filter(p => combatState.party.includes(p.id));
   combatParty.forEach(p => {
     if (p.hp <= 0) {
+      p.previousAssignment = p.assignment; // Store duty before sending to hospital!
       p.assignment = "hospital";
       logBattle(`🏥 急診警告：英雄【${p.name}】重傷倒地，已由野戰擔架送往醫院搶救！`, "log-item-dmg");
     }
