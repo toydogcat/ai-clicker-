@@ -276,92 +276,96 @@
           </button>
         </div>
 
-        <!-- Dynamic Context-based Detail Interaction Panel -->
-        <div class="slot-detail-panel" id="citySlotDetailPanel">
-          <div class="slot-empty-message" id="slotWelcomeMsg">
-            💡 請點擊上方的建地網格，開始建造或管理建物！
-          </div>
+        <!-- Dynamic Context-based Detail Interaction Modal Overlay -->
+        <div id="citySlotDetailOverlay" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1600; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+          <div class="slot-detail-panel" id="citySlotDetailPanel" style="position: relative; background: linear-gradient(145deg, #1e293b, #0f172a); border: 2px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 2.2rem 1.5rem 1.5rem 1.5rem; width: 92%; max-width: 460px; box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.85); animation: modalFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
+            
+            <!-- Close Button -->
+            <button id="closeCityDetailBtn" style="position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; font-size: 1.2rem; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
 
-          <!-- Construct options (visible when empty slot clicked) -->
-          <div class="slot-construct-list" id="slotConstructList" style="display: none;">
-            <h3 style="margin-bottom: 0.5rem; font-size: 0.95rem;">🔨 在該建地建造新建築：</h3>
-            <div class="build-options-grid">
-              <button class="opt-build-btn" data-type="cabin">
-                <span class="opt-icon">🛖</span>
-                <span class="opt-title">小木屋</span>
-                <span class="opt-cost">🪵 25</span>
-              </button>
-              <button class="opt-build-btn" data-type="farm">
-                <span class="opt-icon">🌾</span>
-                <span class="opt-title">菜園</span>
-                <span class="opt-cost">🪵 30 | 🪨 15</span>
-              </button>
-              <button class="opt-build-btn" data-type="smelter">
-                <span class="opt-icon">🪙</span>
-                <span class="opt-title">簡易熔爐</span>
-                <span class="opt-cost">🪵 40 | 🪨 50</span>
-              </button>
-              <button class="opt-build-btn" data-type="powerPlant">
-                <span class="opt-icon">⚡</span>
-                <span class="opt-title">發電機</span>
-                <span class="opt-cost">🪨 80 | 🪙 20</span>
-              </button>
-              <button class="opt-build-btn" data-type="warehouse">
-                <span class="opt-icon">📦</span>
-                <span class="opt-title">臨時儲藏</span>
-                <span class="opt-cost">🪵 50 | 🪨 30</span>
-              </button>
-              <button class="opt-build-btn" data-type="battery">
-                <span class="opt-icon">🔋</span>
-                <span class="opt-title">蓄電池組</span>
-                <span class="opt-cost">🪨 60 | 🪙 40</span>
-              </button>
-              <button class="opt-build-btn" data-type="bank">
-                <span class="opt-icon">🏦</span>
-                <span class="opt-title">城鎮金庫</span>
-                <span class="opt-cost">🪨 60 | 🪙 30</span>
-              </button>
-              <button class="opt-build-btn" data-type="school">
-                <span class="opt-icon">📚</span>
-                <span class="opt-title">地方學堂</span>
-                <span class="opt-cost">🪵 80 | 🪨 60</span>
-              </button>
-              <button class="opt-build-btn" data-type="autoWood" style="display: none;">
-                <span class="opt-icon">⚙️</span>
-                <span class="opt-title">自動伐木機</span>
-                <span class="opt-cost">🪙 100 | 🪵 100</span>
-              </button>
-              <button class="opt-build-btn" data-type="autoMine" style="display: none;">
-                <span class="opt-icon">⚙️</span>
-                <span class="opt-title">自動採礦機</span>
-                <span class="opt-cost">🪙 100 | 🪨 100</span>
-              </button>
-              <button class="opt-build-btn" data-type="autoHarvest" style="display: none;">
-                <span class="opt-icon">⚙️</span>
-                <span class="opt-title">智能農艙</span>
-                <span class="opt-cost">🪙 100 | 🍞 100</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Upgrade/Demolish options (visible when occupied slot clicked) -->
-          <div class="slot-manage-ui" id="slotManageUi" style="display: none;">
-            <div class="building-header-row">
-              <div>
-                <h3 id="manageBuildingName" style="font-size: 1.1rem; font-weight: 800; color: #ffffff; margin-bottom: 0;">🛖 [Lv.1] 小木屋</h3>
-                <p id="manageBuildingDesc" style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; margin-bottom: 0;">提供 3 人口上限</p>
-              </div>
-              <div id="manageBuildingEffect" style="font-size: 0.85rem; font-weight: bold; color: #34d399; background: rgba(52, 211, 153, 0.1); padding: 0.3rem 0.6rem; border-radius: 6px;">
-                +3 人口
+            <!-- Construct options (visible when empty slot clicked) -->
+            <div class="slot-construct-list" id="slotConstructList" style="display: none;">
+              <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 800; text-align: center; color: #f1f5f9; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">🔨 在該建地建造新設施</h3>
+              <div class="build-options-grid">
+                <button class="opt-build-btn" data-type="cabin">
+                  <span class="opt-icon">🛖</span>
+                  <span class="opt-title">小木屋</span>
+                  <span class="opt-cost">🪵 25</span>
+                </button>
+                <button class="opt-build-btn" data-type="farm">
+                  <span class="opt-icon">🌾</span>
+                  <span class="opt-title">菜園</span>
+                  <span class="opt-cost">🪵 30 | 🪨 15</span>
+                </button>
+                <button class="opt-build-btn" data-type="smelter">
+                  <span class="opt-icon">🪙</span>
+                  <span class="opt-title">簡易熔爐</span>
+                  <span class="opt-cost">🪵 40 | 🪨 50</span>
+                </button>
+                <button class="opt-build-btn" data-type="powerPlant">
+                  <span class="opt-icon">⚡</span>
+                  <span class="opt-title">發電機</span>
+                  <span class="opt-cost">🪨 80 | 🪙 20</span>
+                </button>
+                <button class="opt-build-btn" data-type="warehouse">
+                  <span class="opt-icon">📦</span>
+                  <span class="opt-title">臨時儲藏</span>
+                  <span class="opt-cost">🪵 50 | 🪨 30</span>
+                </button>
+                <button class="opt-build-btn" data-type="battery">
+                  <span class="opt-icon">🔋</span>
+                  <span class="opt-title">蓄電池組</span>
+                  <span class="opt-cost">🪨 60 | 🪙 40</span>
+                </button>
+                <button class="opt-build-btn" data-type="bank">
+                  <span class="opt-icon">🏦</span>
+                  <span class="opt-title">城鎮金庫</span>
+                  <span class="opt-cost">🪨 60 | 🪙 30</span>
+                </button>
+                <button class="opt-build-btn" data-type="school">
+                  <span class="opt-icon">📚</span>
+                  <span class="opt-title">地方學堂</span>
+                  <span class="opt-cost">🪵 80 | 🪨 60</span>
+                </button>
+                <button class="opt-build-btn" data-type="autoWood" style="display: none;">
+                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-title">自動伐木機</span>
+                  <span class="opt-cost">🪙 100 | 🪵 100</span>
+                </button>
+                <button class="opt-build-btn" data-type="autoMine" style="display: none;">
+                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-title">自動採礦機</span>
+                  <span class="opt-cost">🪙 100 | 🪨 100</span>
+                </button>
+                <button class="opt-build-btn" data-type="autoHarvest" style="display: none;">
+                  <span class="opt-icon">⚙️</span>
+                  <span class="opt-title">智能農艙</span>
+                  <span class="opt-cost">🪙 100 | 🍞 100</span>
+                </button>
               </div>
             </div>
-            <div class="building-actions-row">
-              <button class="manage-action-btn upgrade-btn" id="btnUpgradeBuilding">
-                🔼 升級 (<span id="upgradeCostText">🪵 50</span>)
-              </button>
-              <button class="manage-action-btn demolish-btn" id="btnDemolishBuilding">
-                🗑️ 拆除
-              </button>
+
+            <!-- Upgrade/Demolish options (visible when occupied slot clicked) -->
+            <div class="slot-manage-ui" id="slotManageUi" style="display: none;">
+              <h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 800; text-align: center; color: #fde047; opacity:0.9;">⚙️ 管理該區域設施</h3>
+              <div class="building-header-row" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 16px; margin-bottom: 1rem;">
+                <div>
+                  <h3 id="manageBuildingName" style="font-size: 1.2rem; font-weight: 800; color: #ffffff; margin-bottom: 0.2rem;">🛖 [Lv.1] 小木屋</h3>
+                  <p id="manageBuildingDesc" style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.2rem; margin-bottom: 0; line-height: 1.4;">提供 3 人口上限</p>
+                </div>
+                <div id="manageBuildingEffect" style="font-size: 0.85rem; font-weight: 800; color: #34d399; background: rgba(52, 211, 153, 0.15); padding: 0.4rem 0.8rem; border-radius: 8px; text-align:center; white-space:nowrap; align-self:center;">
+                  +3 人口
+                </div>
+              </div>
+              <div class="building-actions-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                <button class="manage-action-btn upgrade-btn" id="btnUpgradeBuilding" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.75rem; font-size: 1rem; height:auto;">
+                  <span style="font-weight:800;">🔼 點擊升級</span>
+                  <span id="upgradeCostText" style="font-size:0.75rem; font-weight:500; color: rgba(255,255,255,0.7); margin-top:2px;">🪵 50</span>
+                </button>
+                <button class="manage-action-btn demolish-btn" id="btnDemolishBuilding" style="display: flex; align-items: center; justify-content: center; padding: 0.75rem; font-size: 1rem; height:auto; font-weight:800;">
+                  🗑️ 拆除建築
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -369,9 +373,9 @@
 
       <div class="glass-card dispatch-card" style="display: flex; flex-direction: column; max-height: 80vh;">
         <div class="card-header">
-          <h2>👷 居民名冊與指派</h2>
+          <h2>👩‍💼 人力資源調度中心</h2>
         </div>
-        <p class="card-desc">管理城鎮居民。指派勞動以採集資源，或送往公會戰鬥以升級。</p>
+        <p class="card-desc">管理城鎮全體居民。在此進行人員招募、轉職考核、工作指派以及重傷人員療養調度。</p>
 
         <div class="dispatch-pool-bar">
           <span class="pool-label">城鎮人口：</span>

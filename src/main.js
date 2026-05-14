@@ -351,8 +351,9 @@ const cityMaxSlotsEl = document.getElementById("cityMaxSlots");
 const btnExpandCity = document.getElementById("btnExpandCity");
 const expandCityCostEl = document.getElementById("expandCityCost");
 
+const citySlotDetailOverlay = document.getElementById("citySlotDetailOverlay");
 const citySlotDetailPanel = document.getElementById("citySlotDetailPanel");
-const slotWelcomeMsg = document.getElementById("slotWelcomeMsg");
+const closeCityDetailBtn = document.getElementById("closeCityDetailBtn");
 const slotConstructList = document.getElementById("slotConstructList");
 const slotManageUi = document.getElementById("slotManageUi");
 
@@ -714,17 +715,17 @@ function formatCostString(cost) {
 }
 
 function refreshCityDetailPanel() {
-  if (!citySlotDetailPanel) return;
+  if (!citySlotDetailPanel || !citySlotDetailOverlay) return;
 
   if (selectedSlotIdx === null) {
-    slotWelcomeMsg.style.display = "block";
+    citySlotDetailOverlay.style.display = "none";
     slotConstructList.style.display = "none";
     slotManageUi.style.display = "none";
     return;
   }
 
+  citySlotDetailOverlay.style.display = "flex";
   const slot = state.cityLayout.slots[selectedSlotIdx];
-  slotWelcomeMsg.style.display = "none";
 
   if (!slot || !slot.type) {
     slotConstructList.style.display = "block";
@@ -816,6 +817,7 @@ function constructBuilding(type) {
 
   deductResources(cost);
   state.cityLayout.slots[selectedSlotIdx] = { type: type, level: 1 };
+  selectedSlotIdx = null; // Auto close modal on build
   showToast(`🏗️ 成功建造 ${db.levels[0].label}！`, "info");
   updateUI();
 }
@@ -3065,6 +3067,18 @@ bindResourceNode(nodeStone, 'stone');
 btnExpandCity?.addEventListener("click", expandCityLand);
 btnUpgradeBuilding?.addEventListener("click", upgradeBuilding);
 btnDemolishBuilding?.addEventListener("click", demolishBuilding);
+
+// Close Modal triggers for City slot details
+closeCityDetailBtn?.addEventListener("click", () => {
+  selectedSlotIdx = null;
+  updateUI();
+});
+citySlotDetailOverlay?.addEventListener("click", (e) => {
+  if (e.target === citySlotDetailOverlay) {
+    selectedSlotIdx = null;
+    updateUI();
+  }
+});
 
 document.querySelectorAll(".opt-build-btn").forEach(btn => {
   btn.addEventListener("click", () => {
