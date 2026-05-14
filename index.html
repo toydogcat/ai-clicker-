@@ -4,6 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/ai-clicker-/icons/icon-192x192.png">
   <title>Clicker: Settlement Pioneer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -460,6 +464,10 @@
       <!-- 採集節點 -->
       <div class="action-hub">
         <div class="nodes-cluster" id="nodesContainer">
+          <div class="focus-badge">
+            <span class="pulse-ring-small"></span>
+            AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
+          </div>
           <div class="gather-node active" id="node-wood" data-resource="wood" role="button" tabindex="0" aria-label="採集木頭">
             <div class="node-ring"></div>
             <div class="node-glow"></div>
@@ -476,10 +484,6 @@
               <span class="node-title">採集石頭</span>
             </div>
           </div>
-        </div>
-        <div class="focus-badge">
-          <span class="pulse-ring-small"></span>
-          AI 自動鎖定：<span id="activeFocusText" class="accent-text">🌳 採集木頭</span>
         </div>
         <div id="clickEffectsLayer"></div>
       </div>
@@ -573,6 +577,9 @@
       <p style="color: #94a3b8; margin-bottom: 2rem; font-size: 0.92rem; line-height: 1.5;">難度將決定基礎採集率、魔物的戰鬥數值與報酬。<br><span style="color: #fde047;">※ 此設定將鎖定在此存檔中，中途無法修改。</span></p>
       
       <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <button class="build-btn" onclick="setDifficulty('test')" style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border: none; padding: 0.9rem; font-weight: 700; color: white;">
+          🧪 測試模式 (資源 x10.0 / 魔物極弱 / 測試專用)
+        </button>
         <button class="build-btn" onclick="setDifficulty('easy')" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: none; padding: 0.9rem; font-weight: 700; color: white;">
           🌱 簡單模式 (資源 x2.0 / 魔物溫和 / 適合測試)
         </button>

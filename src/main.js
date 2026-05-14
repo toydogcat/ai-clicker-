@@ -75,6 +75,14 @@ const DIFFICULTY_MULTIPLIERS = {
     enemyHp: 2.5,
     enemyAtk: 2.0,
     expMoneyMod: 0.5
+  },
+  test: {
+    label: "🧪 測試",
+    color: "#a855f7",
+    gather: 10.0,
+    enemyHp: 0.1,
+    enemyAtk: 0.1,
+    expMoneyMod: 10.0
   }
 };
 

@@ -560,8 +560,8 @@ h1 {
 }
 
 .focus-badge {
-  position: absolute;
-  bottom: 2rem;
+  position: relative;
+  margin-bottom: 0.5rem;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-light);
@@ -570,7 +570,7 @@ h1 {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
