@@ -1,10 +1,12 @@
 import { HandLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import gameConfig from "./config.json";
+import { EXAM_BANKS } from "./examsConfig.js";
 
 // ==========================================
 // 1. Game State & Constants & DOM Management
 // ==========================================
 const DEFAULT_STATE = {
+  _dirtyFlags: { cityGrid: true, popRoster: true, templeRoster: true, heroSheets: true },
   wood: 0,
   stone: 0,
   food: 30,
@@ -336,6 +338,12 @@ const DIFFICULTY_MULTIPLIERS = {
 
 const state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 window.state = state;
+
+window.setDirty = function(key) {
+  if (state._dirtyFlags) {
+    state._dirtyFlags[key] = true;
+  }
+};
 
 window.setDifficulty = function(key) {
   if (!DIFFICULTY_MULTIPLIERS[key]) return;
@@ -680,7 +688,7 @@ function applySaveData(rawString) {
 
     // Restore UI from loaded state
     setGatherFocus(state.gatherFocus || 'wood');
-    updateUI();
+    updateUI(true);
     updateLevelSelectors();
 
     const date = new Date(saveData.timestamp);
@@ -700,7 +708,7 @@ function resetGame() {
   Object.assign(state, fresh);
   
   setGatherFocus('wood');
-  updateUI();
+  updateUI(true);
   updateLevelSelectors();
   showToast("🗑️ 已重置！重新開始！", "error");
   
@@ -835,6 +843,7 @@ function renderCityGrid() {
 
 function selectCitySlot(idx) {
   selectedSlotIdx = selectedSlotIdx === idx ? null : idx;
+  window.setDirty('cityGrid');
   updateUI(); 
 }
 
@@ -975,6 +984,11 @@ function constructBuilding(type) {
   state.cityLayout.slots[selectedSlotIdx] = { type: type, level: 1 };
   selectedSlotIdx = null; // Auto close modal on build
   showToast(`🏗️ 成功建造 ${db.levels[0].label}！`, "info");
+  
+  window.setDirty('cityGrid');
+  window.setDirty('popRoster');
+  window.setDirty('templeRoster');
+  window.setDirty('heroSheets');
   updateUI();
 }
 
@@ -1000,6 +1014,11 @@ function upgradeBuilding() {
   deductResources(cost);
   slot.level += 1;
   showToast(`🔼 成功將建物升級至 ${nextLvlData.label}！`, "info");
+  
+  window.setDirty('cityGrid');
+  window.setDirty('popRoster');
+  window.setDirty('templeRoster');
+  window.setDirty('heroSheets');
   updateUI();
 }
 
@@ -1012,6 +1031,11 @@ function demolishBuilding() {
     state.cityLayout.slots[selectedSlotIdx] = { type: null, level: 1 };
     selectedSlotIdx = null; 
     showToast(`🗑️ 建物已被拆除。`, "info");
+    
+    window.setDirty('cityGrid');
+    window.setDirty('popRoster');
+    window.setDirty('templeRoster');
+    window.setDirty('heroSheets');
     updateUI();
   }
 }
@@ -1033,6 +1057,8 @@ function expandCityLand() {
   if (state.cityLayout.maxSlots > 24) state.cityLayout.maxSlots = 24;
 
   showToast(`🚜 成功開闢了新建地！當前可用：${state.cityLayout.maxSlots} 格`, "info");
+  
+  window.setDirty('cityGrid');
   updateUI();
 }
 
@@ -1139,7 +1165,29 @@ function getCapacities() {
 }
 
 // Update Display
-function updateUI() {
+function updateUI(forceAll = false) {
+  if (forceAll) {
+    window.setDirty('cityGrid');
+    window.setDirty('popRoster');
+    window.setDirty('templeRoster');
+    window.setDirty('heroSheets');
+  }
+  
+  // Reactive Watch: If key techs just unlocked, schedule dynamic renders automatically
+  if (state.tech.heroLicense && !window._lastHeroLicense) {
+    window.setDirty('heroSheets');
+    window.setDirty('popRoster');
+    window._lastHeroLicense = true;
+  } else if (!state.tech.heroLicense) {
+    window._lastHeroLicense = false; // Reset for loading/imports
+  }
+
+  if (state.tech.templeTech && !window._lastTempleTech) {
+    window.setDirty('templeRoster');
+    window._lastTempleTech = true;
+  } else if (!state.tech.templeTech) {
+    window._lastTempleTech = false; // Reset for loading/imports
+  }
   const caps = getCapacities();
   const stats = getCityStats();
 
@@ -1270,7 +1318,10 @@ function updateUI() {
   }
 
   // Render City Grid to handle selections and tile visual rendering
-  renderCityGrid();
+  if (state._dirtyFlags.cityGrid) {
+    renderCityGrid();
+    state._dirtyFlags.cityGrid = false;
+  }
 
   // Enable/Disable buttons dynamically based on current funds
   const hasBank = stats.bankMoneyCap > 0 || stats.bankGen > 0;
@@ -1483,7 +1534,11 @@ function updateUI() {
     if (rpgLockOverlay) rpgLockOverlay.style.display = "none";
     if (rpgUnlockedContent) rpgUnlockedContent.style.display = "block";
     if (dispatchRpgCard) dispatchRpgCard.style.display = "block";
-    updateHeroSheets();
+    
+    if (state._dirtyFlags.heroSheets) {
+      updateHeroSheets();
+      state._dirtyFlags.heroSheets = false;
+    }
   } else {
     rpgGuildCard?.classList.add("locked");
     if (rpgLockOverlay) rpgLockOverlay.style.display = "flex";
@@ -1496,10 +1551,16 @@ function updateUI() {
     navTemple.style.display = state.tech.templeTech ? "flex" : "none";
   }
   if (state.tech.templeTech) {
-    renderTempleRoster();
+    if (state._dirtyFlags.templeRoster) {
+      renderTempleRoster();
+      state._dirtyFlags.templeRoster = false;
+    }
   }
 
-  renderPopulationRoster();
+  if (state._dirtyFlags.popRoster) {
+    renderPopulationRoster();
+    state._dirtyFlags.popRoster = false;
+  }
 
   // Sync auto-sell checkboxes values
   if (state.autoSell) {
@@ -1690,6 +1751,8 @@ function gameTick() {
     // Fatigue & Recovery Logic
     if (p.assignment === 'hospital') {
       p.hp = Math.min(curMaxHp, p.hp + 5);
+      window.setDirty('popRoster'); // Force redraw to animate healing progress
+      
       if (p.hp >= curMaxHp) {
         p.hp = curMaxHp;
         
@@ -1702,6 +1765,10 @@ function gameTick() {
         
         p.assignment = nextJob;
         delete p.previousAssignment;
+        
+        window.setDirty('popRoster');
+        window.setDirty('heroSheets');
+        window.setDirty('templeRoster');
         
         if (nextJob === 'idle') {
           showToast(`🏥 ${p.name} 已在醫院完全康復！已轉為【閒置】狀態。`, "success");
@@ -1733,6 +1800,9 @@ function gameTick() {
           p.hp = 1;
           p.previousAssignment = p.assignment; // Back up their job
           p.assignment = 'hospital';
+          window.setDirty('popRoster');
+          window.setDirty('heroSheets');
+          window.setDirty('templeRoster');
           showToast(`👷 ${p.name} 勞累過度體力透支，已被送去醫院！`, "warning");
         }
       }
@@ -1785,6 +1855,9 @@ function gameTick() {
   // Prune residents who died of fatigue this tick
   if (deadResidents.length > 0) {
     state.population = state.population.filter(p => !deadResidents.includes(p.id));
+    window.setDirty('popRoster');
+    window.setDirty('heroSheets');
+    window.setDirty('templeRoster');
   }
 
   state.wood += netWood * diffMult;
@@ -1961,6 +2034,10 @@ function hireResident() {
   state.population.push(resident);
   const genderIcon = gender === 'female' ? '👩' : '👨';
   showToast(`🍻 歡迎 ${genderIcon} ${name} 加入城鎮！`, "success");
+  
+  window.setDirty('popRoster');
+  window.setDirty('heroSheets');
+  window.setDirty('templeRoster');
   updateUI();
 }
 
@@ -2246,6 +2323,10 @@ window.exileResident = function(id) {
     state.population.splice(idx, 1);
     state.party = state.party.filter(memberId => memberId !== id);
     showToast(`🥾 ${p.name} 已被流放出城...`, "warning");
+    
+    window.setDirty('popRoster');
+    window.setDirty('heroSheets');
+    window.setDirty('templeRoster');
     updateUI();
   }
 };
@@ -2293,6 +2374,9 @@ window.infuseKnowledge = function(id) {
     showToast(`✨🆙 ${p.name} 的心靈開竅，等級提升至 Lv.${p.level}！`, "info");
   }
   
+  window.setDirty('popRoster');
+  window.setDirty('heroSheets');
+  window.setDirty('templeRoster');
   updateUI();
 };
 
@@ -2318,6 +2402,10 @@ window.reviveHero = function(id) {
   }
   
   showToast(`💖 聖光醫治成功！${p.name} 已返回：【${nextJob === 'idle' ? '閒置' : (nextJob === 'combat' ? '出征' : '工作岗位')}】`, "success");
+  
+  window.setDirty('popRoster');
+  window.setDirty('heroSheets');
+  window.setDirty('templeRoster');
   updateUI();
 };
 
@@ -2381,6 +2469,10 @@ window.quickHealHero = function(personId, cost, currencyType = 'gold') {
       showToast(`💚 ${person.name} 已完全恢復健康與魔力！`, "success");
     }
   }
+  
+  window.setDirty('popRoster');
+  window.setDirty('heroSheets');
+  window.setDirty('templeRoster');
   updateUI();
 };
 
@@ -2412,55 +2504,14 @@ window.changeResidentAssignment = function(id, newAssignment) {
       document.activeElement.blur();
     }
     
+    window.setDirty('popRoster');
+    window.setDirty('heroSheets');
     updateUI();
   }
 };
 
 
-
 // Dynamic Exam Pool System for "Educational Gamification"
-const EXAM_BANKS = {
-  mathPromote: [ // Lv.5 Job Change (Easy/Medium Math)
-    { q: "試問複數單位平方 $i^2$ 的值是多少？", opts: ["1", "-1", "0", "$i$"], ans: "-1" },
-    { q: "代數求解：$2x + 7 = 15$，請問 $x = $？", opts: ["3", "4", "5", "8"], ans: "4" },
-    { q: "對數計算：$\\log_{10}(1000)$ 等於？", opts: ["1", "2", "3", "4"], ans: "3" },
-    { q: "直角三角形兩股長度為 3 與 4，其斜邊長度為？", opts: ["4", "5", "6", "7"], ans: "5" },
-    { q: "平面直角座標系中，點 $(3, 4)$ 到原點的距離為？", opts: ["3", "4", "5", "7"], ans: "5" },
-    { q: "若一個圓的半徑為 $r$，其面積公式為？", opts: ["$2\\pi r$", "$\\pi r^2$", "$\\frac{4}{3}\\pi r^3$", "$\\pi r$"], ans: "$\\pi r^2$" }
-  ],
-  mathLevel10: [ // Lv.9 -> Lv.10 (Hard Math / Calculus)
-    { q: "求自然對數的導數：$\\frac{d}{dx} (\\ln x) = $？", opts: ["$\\frac{1}{x}$", "$e^x$", "$x$", "$\\frac{1}{x^2}$"], ans: "$\\frac{1}{x}$" },
-    { q: "計算定積分：$\\int_0^1 3x^2 dx = $？", opts: ["0.5", "1", "2", "3"], ans: "1" },
-    { q: "三角函數恆等式：$\\sin^2 \\theta + \\cos^2 \\theta = $？", opts: ["0", "1", "2", "不存在"], ans: "1" },
-    { q: "求極限值：$\\lim_{x \\to \\infty} \\frac{2x^2 + x}{x^2 - 1} = $？", opts: ["0", "1", "2", "$\\infty$"], ans: "2" },
-    { q: "求導數：$\\frac{d}{dx} (e^{2x}) = $？", opts: ["$e^{2x}$", "$2e^{2x}$", "$\\frac{1}{2}e^{2x}$", "$2x e^{2x-1}$"], ans: "$2e^{2x}$" }
-  ],
-  englishShop: [ // Dynamic Extra Shop Refresh Exam (English Practice)
-    { q: "下列英文單字何者是「形容詞 (Adjective)」？", opts: ["Beauty", "Beautiful", "Beautify", "Beautifully"], ans: "Beautiful" },
-    { q: "介係詞辨析：\"He is interested ____ music.\"", opts: ["in", "on", "at", "with"], ans: "in" },
-    { q: "英文單字填空：\"I need to ______ my homework.\"", opts: ["make", "do", "take", "have"], ans: "do" },
-    { q: "單字 \"Abundant\" 的最接近同義詞是？", opts: ["Scarce", "Rare", "Plentiful", "Hidden"], ans: "Plentiful" },
-    { q: "慣用語 \"A piece of cake\" 的含意是？", opts: ["一塊蛋糕", "奢侈享受", "非常簡單的事", "麻煩的開端"], ans: "非常簡單的事" },
-    { q: "英文單字 \"Generous\" (慷慨的) 其反義詞是？", opts: ["Kind", "Helpful", "Stingy", "Rich"], ans: "Stingy" },
-    { q: "動詞 \"write\" 的過去分詞 (Past Participle) 為何？", opts: ["wrote", "written", "writing", "writes"], ans: "written" },
-    { q: "單字 \"Incredible\" (不可思議的) 的同義詞是：", opts: ["Ordinary", "Boring", "Amazing", "Simple"], ans: "Amazing" },
-    { q: "慣用語 \"Break a leg\" 在口語中的含意是？", opts: ["祝你好運！", "折斷大腿", "遭遇不幸", "快點跑開"], ans: "祝你好運！" },
-    { q: "中翻英：「冒險」最對應的英文單字是？", opts: ["Advance", "Adventure", "Adversity", "Advice"], ans: "Adventure" }
-  ],
-  scienceHunt: [ // Dynamic High Level Hunt Interrupt (Science Trivia)
-    { q: "下列關於「光合作用」的敘述，何者正確？", opts: ["放出大量一氧化碳", "主要利用葉綠素將二氧化碳與水轉化為糖與氧", "主要在夜間進行", "這是動物獲取熱量的唯一途徑"], ans: "主要利用葉綠素將二氧化碳與水轉化為糖與氧" },
-    { q: "太陽系中，哪一顆行星因表面覆蓋大量氧化鐵而顯現紅色，被稱為「紅色星球」？", opts: ["水星", "金星", "火星", "土星"], ans: "火星" },
-    { q: "在標準一大氣壓下，純水的「沸點」為攝氏幾度？", opts: ["0度", "50度", "100度", "200度"], ans: "100度" },
-    { q: "人體血液中，主要負責輸送氧氣的「紅血球成分」是什麼？", opts: ["白血球", "血小板", "血紅素", "淋巴液"], ans: "血紅素" },
-    { q: "牛頓第二運動定律中，力與質量、加速度的關係式為何？", opts: ["$E = mc^2$", "$F = ma$", "$V = IR$", "$P = IV$"], ans: "$F = ma$" },
-    { q: "物質若不經過液態，由固體直接轉變為氣體的物理現象稱為？", opts: ["汽化", "昇華", "凝固", "熔化"], ans: "昇華" },
-    { q: "下列哪一項是目前科學界公認生物體的基本結構與功能單位？", opts: ["分子", "原子", "細胞", "器官"], ans: "細胞" },
-    { q: "地球的大氣層中，所佔體積比例「最高」的氣體是？", opts: ["氧氣", "二氧化碳", "氫氣", "氮氣"], ans: "氮氣" },
-    { q: "「酸雨」的主要形成原因，是因為空氣中含有過多的何種污染物？", opts: ["二氧化碳", "硫氧化物與氮氧化物", "惰性氣體", "水蒸氣"], ans: "硫氧化物與氮氧化物" },
-    { q: "在力學計算中，一個物體在地球表面受到的重力加速度 $g$ 大約是多少？", opts: ["$9.8 \\text{ m/s}^2$", "$1.6 \\text{ m/s}^2$", "$12.5 \\text{ m/s}^2$", "$3.6 \\text{ m/s}^2$"], ans: "$9.8 \\text{ m/s}^2$" }
-  ]
-};
-
 let currentExamContext = null;
 
 // Fisher-Yates algorithm to shuffle options and prevent position recall
@@ -2588,6 +2639,10 @@ window.submitExam = function(selectedIndex) {
         logBattle(`➡ 自然神殿護罩散去，出征隊伍再度遭遇下一波對手！`, "log-item-heal");
       }
     }
+    
+    window.setDirty('popRoster');
+    window.setDirty('heroSheets');
+    window.setDirty('templeRoster');
     updateUI();
   } else {
     if (currentExamContext.type === 'mathPromote') {
@@ -5696,7 +5751,7 @@ function initInventoryControls() {
 window.addEventListener("DOMContentLoaded", () => {
   initInventoryControls();
   updateAiModeUI();
-  updateUI();
+  updateUI(true);
   updateLevelSelectors();
   initSkillGrid();
   initMediaPipe();
