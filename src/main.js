@@ -2522,7 +2522,8 @@ window.calcEffStats = function(person) {
     hit: baseConfig.hit || 0.9, evasion: baseConfig.evasion || 0.05, 
     critRate: baseConfig.critRate + (person.baseStats ? (person.baseStats.critRate || 0) : 0), 
     critDmg: baseConfig.critDmg || 1.5, 
-    lucky: baseConfig.lucky + (person.baseStats ? (person.baseStats.lucky || 0) : 0)
+    lucky: baseConfig.lucky + (person.baseStats ? (person.baseStats.lucky || 0) : 0),
+    pdr: 0, mdr: 0, udr: 0
   };
   
   // Stat scaling based on level
@@ -2572,7 +2573,7 @@ window.calcEffStats = function(person) {
       Object.entries(item.extras).forEach(([stat, val]) => {
         if (eff[stat] !== undefined) {
           // Normal stats are whole numbers, percentages are stored as 1-100 integers but we need them as 0.01
-          if (["hit", "evasion", "critRate"].includes(stat)) {
+          if (["hit", "evasion", "critRate", "pdr", "mdr", "udr"].includes(stat)) {
             eff[stat] += val / 100;
           } else if (stat === "critDmg") {
             eff[stat] += val / 100; // e.g. +50 critDmg -> +0.5x
@@ -2596,6 +2597,10 @@ window.calcEffStats = function(person) {
   eff.hit = Math.min(1.0, eff.hit); // Max 100%
   eff.evasion = Math.min(0.9, eff.evasion); // Max 90%
   eff.critRate = Math.min(1.0, eff.critRate); // Max 100%
+  // Cap Damage Reduction to prevent total immortality (Max 75%)
+  eff.pdr = Math.min(0.75, eff.pdr);
+  eff.mdr = Math.min(0.75, eff.mdr);
+  eff.udr = Math.min(0.75, eff.udr);
   return eff;
 }
 
@@ -2637,6 +2642,11 @@ function generateItem(level, rarityKey = "normal", slot = null) {
         statVal = +(0.1 * levelScale * (Math.random() * 0.5 + 0.5)).toFixed(2);
       } else if (randomStat.includes("lifesteal")) {
         statVal = Math.ceil(2 * levelScale * (Math.random() * 0.5 + 0.5));
+      } else if (["pdr", "mdr", "udr"].includes(randomStat)) {
+        // DR scaling: milder curves to ensure late game feels impactful but doesn't break game limits
+        const baseFactor = randomStat === "udr" ? 1.0 : 1.5;
+        statVal = Math.ceil(baseFactor * Math.pow(1.25, level - 1) * (Math.random() * 0.5 + 0.5));
+        statVal = Math.min(randomStat === "udr" ? 12 : 18, statVal); // Safe limit cap per single piece roll
       } else {
         statVal = Math.ceil(3 * levelScale * (Math.random() * 0.5 + 0.5));
       }
@@ -2819,7 +2829,8 @@ window.renderSecretShop = function() {
     // Generate stats HTML strings
     let statsHtml = `<div class="secret-item-main-stat">+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}</div>`;
     Object.entries(item.extras).forEach(([key, val]) => {
-      statsHtml += `<div class="secret-item-extra-stat">+ ${gameConfig.eqSpecs.statNames[key]}: ${val}${key.includes('lifesteal') ? '%' : ''}</div>`;
+      const isPct = ['hit', 'evasion', 'critRate', 'critDmg', 'lifesteal', 'mlifesteal', 'pdr', 'mdr', 'udr'].includes(key);
+      statsHtml += `<div class="secret-item-extra-stat">+ ${gameConfig.eqSpecs.statNames[key]}: ${val}${isPct ? '%' : ''}</div>`;
     });
     
     let buyBtnHtml = `💰 ${cost.toLocaleString()}`;
@@ -2961,7 +2972,8 @@ window.renderInventory = function() {
     // Generate detail string
     let title = `${item.name}\n[${gameConfig.eqSpecs.slots[item.slot].name}]\n+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}`;
     Object.entries(item.extras).forEach(([k, v]) => {
-      title += `\n+ ${gameConfig.eqSpecs.statNames[k]}: ${v}${k.includes('lifesteal') ? '%' : ''}`;
+      const isPct = ['hit', 'evasion', 'critRate', 'critDmg', 'lifesteal', 'mlifesteal', 'pdr', 'mdr', 'udr'].includes(k);
+      title += `\n+ ${gameConfig.eqSpecs.statNames[k]}: ${v}${isPct ? '%' : ''}`;
     });
     title += "\n\n👉 點擊裝備 / 雙擊販售";
     
@@ -3356,6 +3368,9 @@ function updateHeroSheets() {
             <span>💨 閃避: <span style="float:right">${(eff.evasion * 100).toFixed(0)}%</span></span>
             <span>💥 暴擊: <span style="float:right">${(eff.critRate * 100).toFixed(0)}%</span></span>
             <span>🍀 幸運: <span style="float:right">${eff.lucky}</span></span>
+            ${eff.pdr > 0 ? `<span style="color:#10b981;">🛡️ 物理免傷: <span style="float:right">${(eff.pdr * 100).toFixed(0)}%</span></span>` : ''}
+            ${eff.mdr > 0 ? `<span style="color:#a855f7;">🔮 魔法免傷: <span style="float:right">${(eff.mdr * 100).toFixed(0)}%</span></span>` : ''}
+            ${eff.udr > 0 ? `<span style="color:#fbbf24; font-weight:bold;">🔰 全能免傷: <span style="float:right">${(eff.udr * 100).toFixed(0)}%</span></span>` : ''}
           </div>
           ${(() => {
             if (p.jobClass === "novice") {
@@ -3402,7 +3417,14 @@ function updateHeroSheets() {
       if (item) {
         slotEl.classList.add("equipped");
         slotEl.style.borderColor = gameConfig.eqSpecs.rarities[item.rarity].color;
-        slotEl.title = `${item.name}\n+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}`;
+        let paperdollTitle = `${item.name}\n+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}`;
+        if (item.extras) {
+          Object.entries(item.extras).forEach(([k, v]) => {
+            const isPct = ['hit', 'evasion', 'critRate', 'critDmg', 'lifesteal', 'mlifesteal', 'pdr', 'mdr', 'udr'].includes(k);
+            paperdollTitle += `\n+ ${gameConfig.eqSpecs.statNames[k]}: ${v}${isPct ? '%' : ''}`;
+          });
+        }
+        slotEl.title = paperdollTitle;
       }
       slotEl.onclick = () => {
         if (item) {
@@ -4287,7 +4309,8 @@ function enemyExecuteAttack(enemy) {
   // Boss Unique Skill Check (60% chance to execute signature skill for high-octane endgame)
   if (enemy.isBoss && Math.random() < 0.6) {
     if (enemy.id.includes("greed")) {
-      const dmg = Math.max(1, Math.floor((enemy.atk * 2.0) - eff.def));
+      const rawDmg = Math.max(1, Math.floor((enemy.atk * 2.0) - eff.def));
+      const dmg = Math.max(1, Math.floor(rawDmg * (1 - (eff.pdr || 0)) * (1 - (eff.udr || 0))));
       dealDmgToHero(target, dmg);
       // Self heal 100% of damage
       enemy.hp = Math.min(enemy.maxHp, enemy.hp + dmg);
@@ -4300,7 +4323,8 @@ function enemyExecuteAttack(enemy) {
       logBattle(`🔥【地獄業火】${enemy.name} 仰天怒吼，引導熔岩洪流向我方全軍全域傾瀉！`, "log-item-dmg");
       aliveHeroes.forEach(h => {
         const hEff = calcEffStats(h);
-        const mDmg = Math.max(1, Math.floor((enemy.matk * 1.2) - hEff.mdef));
+        const rawMDmg = Math.max(1, Math.floor((enemy.matk * 1.2) - hEff.mdef));
+        const mDmg = Math.max(1, Math.floor(rawMDmg * (1 - (hEff.mdr || 0)) * (1 - (hEff.udr || 0))));
         dealDmgToHero(h, mDmg);
         logBattle(`☄️ ${h.name} 遭受炙熱炎柱灼燒，受到 <b class="log-item-dmg">${mDmg}</b> 魔法傷害。`);
       });
@@ -4308,7 +4332,8 @@ function enemyExecuteAttack(enemy) {
       return;
     } 
     else if (enemy.id.includes("ignorance")) {
-      const mDmg = Math.max(1, Math.floor((enemy.matk * 1.5) - eff.mdef));
+      const rawMDmg = Math.max(1, Math.floor((enemy.matk * 1.5) - eff.mdef));
+      const mDmg = Math.max(1, Math.floor(rawMDmg * (1 - (eff.mdr || 0)) * (1 - (eff.udr || 0))));
       dealDmgToHero(target, mDmg);
       // ATB reduction mechanics
       const drainVal = 40;
@@ -4327,7 +4352,8 @@ function enemyExecuteAttack(enemy) {
   }
 
   // Standard attack - Execution
-  const dmg = Math.max(1, enemy.atk - eff.def);
+  const rawDmg = Math.max(1, enemy.atk - eff.def);
+  const dmg = Math.max(1, Math.floor(rawDmg * (1 - (eff.pdr || 0)) * (1 - (eff.udr || 0))));
   dealDmgToHero(target, dmg);
   
   logBattle(`👾 ${enemy.name} 發動物理打擊，${target.name} 受到 <b class="log-item-dmg">${dmg}</b> 傷害。`);

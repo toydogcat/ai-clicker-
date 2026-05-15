@@ -37,12 +37,13 @@
       "epic":   { "name": "史詩", "color": "#a855f7", "extraStats": 3, "mult": 2.0 },
       "legend": { "name": "傳說", "color": "#eab308", "extraStats": 4, "mult": 3.0 }
     },
-    "statList": ["hp", "mp", "atk", "def", "matk", "mdef", "spd", "lifesteal", "mlifesteal", "hit", "evasion", "critRate", "critDmg", "lucky"],
+    "statList": ["hp", "mp", "atk", "def", "matk", "mdef", "spd", "lifesteal", "mlifesteal", "hit", "evasion", "critRate", "critDmg", "lucky", "pdr", "mdr", "udr"],
     "statNames": {
       "hp": "生命值", "mp": "魔力值", "atk": "攻擊力", "def": "防禦力",
       "matk": "魔法攻擊", "mdef": "魔法防禦", "spd": "速度",
       "lifesteal": "物理吸血", "mlifesteal": "魔法吸血",
-      "hit": "命中", "evasion": "閃避", "critRate": "暴擊率", "critDmg": "暴擊傷害", "lucky": "幸運"
+      "hit": "命中", "evasion": "閃避", "critRate": "暴擊率", "critDmg": "暴擊傷害", "lucky": "幸運",
+      "pdr": "物理免傷", "mdr": "魔法免傷", "udr": "全能免傷"
     }
   },
   "heroes": {
