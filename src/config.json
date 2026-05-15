@@ -188,6 +188,23 @@
         "reqKnowledge": 50000,
         "reqMoney": 100000,
         "reqEnergy": 10000
+      },
+      "clickFoodTech": {
+        "reqKnowledge": 50,
+        "reqMoney": 30
+      },
+      "clickMetalTech": {
+        "reqKnowledge": 200,
+        "reqMoney": 150
+      },
+      "clickMoneyTech": {
+        "reqKnowledge": 500,
+        "reqMoney": 400
+      },
+      "doubleClickTech": {
+        "reqKnowledge": 1000,
+        "reqMoney": 800,
+        "reqEnergy": 100
       }
     },
     "mobs": {

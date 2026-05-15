@@ -36,7 +36,11 @@ const DEFAULT_STATE = {
     secretLv7: false,
     automation: false,
     templeTech: false,
-    autoStudyTech: false
+    autoStudyTech: false,
+    clickFoodTech: false,
+    clickMetalTech: false,
+    clickMoneyTech: false,
+    doubleClickTech: false
   },
   party: [],
   inventory: [],
@@ -422,6 +426,9 @@ const effectsLayer = document.getElementById("clickEffectsLayer");
 // Target Nodes DOM
 const nodeWood = document.getElementById("node-wood");
 const nodeStone = document.getElementById("node-stone");
+const nodeFood = document.getElementById("node-food");
+const nodeMetal = document.getElementById("node-metal");
+const nodeMoney = document.getElementById("node-money");
 const focusBadgeText = document.getElementById("activeFocusText");
 
 // City Base Grid DOM & Selection Variable
@@ -456,6 +463,15 @@ const rpgGuildCard = document.getElementById("rpgGuildCard");
 const dispatchRpgCard = document.getElementById("dispatchRpgCard");
 const rpgLockOverlay = document.getElementById("rpgLockOverlay");
 const rpgUnlockedContent = document.querySelector(".rpg-unlocked-content");
+const btnTechClickFood = document.getElementById("btnTechClickFood");
+const techClickFoodStatusEl = document.getElementById("techClickFoodStatus");
+const btnTechClickMetal = document.getElementById("btnTechClickMetal");
+const techClickMetalStatusEl = document.getElementById("techClickMetalStatus");
+const btnTechClickMoney = document.getElementById("btnTechClickMoney");
+const techClickMoneyStatusEl = document.getElementById("techClickMoneyStatus");
+const btnTechDoubleClick = document.getElementById("btnTechDoubleClick");
+const techDoubleClickStatusEl = document.getElementById("techDoubleClickStatus");
+
 const btnTechHero = document.getElementById("btnTechHero");
 const techHeroStatusEl = document.getElementById("techHeroStatus");
 const btnTechAppraisal = document.getElementById("btnTechAppraisal");
@@ -740,6 +756,9 @@ function setGatherFocus(resource) {
   // Update node highlights
   nodeWood.classList.remove("active");
   nodeStone.classList.remove("active");
+  if (nodeFood) nodeFood.classList.remove("active");
+  if (nodeMetal) nodeMetal.classList.remove("active");
+  if (nodeMoney) nodeMoney.classList.remove("active");
   
   if (resource === 'wood') {
     nodeWood.classList.add("active");
@@ -747,6 +766,15 @@ function setGatherFocus(resource) {
   } else if (resource === 'stone') {
     nodeStone.classList.add("active");
     focusBadgeText.innerHTML = `🪨 採集石頭`;
+  } else if (resource === 'food') {
+    if (nodeFood) nodeFood.classList.add("active");
+    focusBadgeText.innerHTML = `🍞 採集食物`;
+  } else if (resource === 'metal') {
+    if (nodeMetal) nodeMetal.classList.add("active");
+    focusBadgeText.innerHTML = `🪙 採集金屬`;
+  } else if (resource === 'money') {
+    if (nodeMoney) nodeMoney.classList.add("active");
+    focusBadgeText.innerHTML = `💰 賺取金錢`;
   }
 }
 
@@ -1104,7 +1132,8 @@ function getCapacities() {
     stone: 100 + stats.warehouseCap,
     food: 100 + stats.warehouseCap,
     metal: 50 + stats.warehouseCap,
-    energy: 50 + stats.batteryCap
+    energy: 50 + stats.batteryCap,
+    money: gameConfig.economy.baseMoneyCap + stats.bankMoneyCap
   };
 }
 
@@ -1112,6 +1141,11 @@ function getCapacities() {
 function updateUI() {
   const caps = getCapacities();
   const stats = getCityStats();
+
+  // Toggle visibility of resource nodes based on tech
+  if (nodeFood) nodeFood.style.display = state.tech.clickFoodTech ? "flex" : "none";
+  if (nodeMetal) nodeMetal.style.display = state.tech.clickMetalTech ? "flex" : "none";
+  if (nodeMoney) nodeMoney.style.display = state.tech.clickMoneyTech ? "flex" : "none";
 
   const diffBadgeVal = document.getElementById("diffBadgeVal");
   const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
@@ -1252,6 +1286,53 @@ function updateUI() {
   if (stats.schoolMult > 0) {
     if (researchCard) researchCard.style.display = "block";
     if (knowledgeValEl) knowledgeValEl.textContent = Math.floor(state.knowledge);
+
+    // Click Food Tech
+    const foodTCfg = gameConfig.combat.tech.clickFoodTech;
+    if (state.tech.clickFoodTech) {
+      if (btnTechClickFood) btnTechClickFood.disabled = true;
+      if (techClickFoodStatusEl) techClickFoodStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechClickFood) btnTechClickFood.disabled = (state.knowledge < foodTCfg.reqKnowledge || state.money < foodTCfg.reqMoney);
+      if (techClickFoodStatusEl) techClickFoodStatusEl.textContent = "未研發";
+    }
+
+    // Click Metal Tech
+    const metalTCfg = gameConfig.combat.tech.clickMetalTech;
+    if (state.tech.clickMetalTech) {
+      if (btnTechClickMetal) btnTechClickMetal.disabled = true;
+      if (techClickMetalStatusEl) techClickMetalStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechClickMetal) {
+        btnTechClickMetal.disabled = (!state.tech.clickFoodTech || state.knowledge < metalTCfg.reqKnowledge || state.money < metalTCfg.reqMoney);
+      }
+      if (techClickMetalStatusEl) techClickMetalStatusEl.textContent = !state.tech.clickFoodTech ? "🔒 需解鎖食物" : "未研發";
+    }
+
+    // Click Money Tech
+    const moneyTCfg = gameConfig.combat.tech.clickMoneyTech;
+    if (state.tech.clickMoneyTech) {
+      if (btnTechClickMoney) btnTechClickMoney.disabled = true;
+      if (techClickMoneyStatusEl) techClickMoneyStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechClickMoney) {
+        btnTechClickMoney.disabled = (!state.tech.clickMetalTech || state.knowledge < moneyTCfg.reqKnowledge || state.money < moneyTCfg.reqMoney);
+      }
+      if (techClickMoneyStatusEl) techClickMoneyStatusEl.textContent = !state.tech.clickMetalTech ? "🔒 需解鎖金屬" : "未研發";
+    }
+
+    // Double Click Tech
+    const dblTCfg = gameConfig.combat.tech.doubleClickTech;
+    if (state.tech.doubleClickTech) {
+      if (btnTechDoubleClick) btnTechDoubleClick.disabled = true;
+      if (techDoubleClickStatusEl) techDoubleClickStatusEl.textContent = "已研發 ✅";
+    } else {
+      if (btnTechDoubleClick) {
+        const reqE = dblTCfg.reqEnergy || 0;
+        btnTechDoubleClick.disabled = (!state.tech.clickMoneyTech || state.knowledge < dblTCfg.reqKnowledge || state.money < dblTCfg.reqMoney || state.energy < reqE);
+      }
+      if (techDoubleClickStatusEl) techDoubleClickStatusEl.textContent = !state.tech.clickMoneyTech ? "🔒 需解鎖金錢" : "未研發";
+    }
     
     const tCfg = gameConfig.combat.tech.heroLicense;
     if (state.tech.heroLicense) {
@@ -1432,7 +1513,11 @@ function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
   const caps = getCapacities();
   
   const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
-  const clickYield = 1 * diffCfg.gather;
+  let clickYield = 1 * diffCfg.gather;
+
+  if (state.tech && state.tech.doubleClickTech) {
+    clickYield *= 2;
+  }
   
   let text = "";
   let color = "";
@@ -1453,6 +1538,33 @@ function performClick(resourceOverride = null, sourceX = null, sourceY = null) {
     state.stone = Math.min(state.stone + clickYield, caps.stone);
     text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 石頭`;
     color = "#94a3b8"; // slate
+  } else if (resource === "food") {
+    if (!state.tech.clickFoodTech) return;
+    if (Math.floor(state.food) >= caps.food) {
+      spawnFloatingText("⚠️ 倉庫已滿", "#ef4444", sourceX, sourceY);
+      return;
+    }
+    state.food = Math.min(state.food + clickYield, caps.food);
+    text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 食物`;
+    color = "#f472b6";
+  } else if (resource === "metal") {
+    if (!state.tech.clickMetalTech) return;
+    if (Math.floor(state.metal) >= caps.metal) {
+      spawnFloatingText("⚠️ 倉庫已滿", "#ef4444", sourceX, sourceY);
+      return;
+    }
+    state.metal = Math.min(state.metal + clickYield, caps.metal);
+    text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 金屬`;
+    color = "#fbbf24";
+  } else if (resource === "money") {
+    if (!state.tech.clickMoneyTech) return;
+    if (Math.floor(state.money) >= caps.money) {
+      spawnFloatingText("⚠️ 錢包已滿", "#ef4444", sourceX, sourceY);
+      return;
+    }
+    state.money = Math.min(state.money + clickYield, caps.money);
+    text = `+${clickYield % 1 === 0 ? clickYield : clickYield.toFixed(1)} 金錢`;
+    color = "#eab308";
   } else {
     return; // Non-clickable resource
   }
@@ -3723,6 +3835,9 @@ function bindResourceNode(el, resourceType) {
 
 bindResourceNode(nodeWood, 'wood');
 bindResourceNode(nodeStone, 'stone');
+if (nodeFood) bindResourceNode(nodeFood, 'food');
+if (nodeMetal) bindResourceNode(nodeMetal, 'metal');
+if (nodeMoney) bindResourceNode(nodeMoney, 'money');
 
 // Setup Building Card triggers
 
@@ -3748,6 +3863,68 @@ document.querySelectorAll(".opt-build-btn").forEach(btn => {
     const type = btn.getAttribute("data-type");
     constructBuilding(type);
   });
+});
+
+btnTechClickFood?.addEventListener("click", () => {
+  if (state.tech.clickFoodTech) return;
+  const tCfg = gameConfig.combat.tech.clickFoodTech;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.clickFoodTech = true;
+    spawnFloatingText("🎓 採集生存術已研發!", "#f472b6");
+    showToast("🍞 解鎖【採集生存術】！現在可以手動採集食物資源了！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechClickMetal?.addEventListener("click", () => {
+  if (state.tech.clickMetalTech || !state.tech.clickFoodTech) return;
+  const tCfg = gameConfig.combat.tech.clickMetalTech;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.clickMetalTech = true;
+    spawnFloatingText("🎓 初級淘金法已研發!", "#fbbf24");
+    showToast("🪙 解鎖【初級淘金法】！現在可以手動採集金屬資源了！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechClickMoney?.addEventListener("click", () => {
+  if (state.tech.clickMoneyTech || !state.tech.clickMetalTech) return;
+  const tCfg = gameConfig.combat.tech.clickMoneyTech;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.tech.clickMoneyTech = true;
+    spawnFloatingText("🎓 鑄幣許可權已研發!", "#eab308");
+    showToast("💰 解鎖【鑄幣許可權】！現在可以手動賺取金幣了！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識或金幣不足！", "error");
+  }
+});
+
+btnTechDoubleClick?.addEventListener("click", () => {
+  if (state.tech.doubleClickTech || !state.tech.clickMoneyTech) return;
+  const tCfg = gameConfig.combat.tech.doubleClickTech;
+  const reqE = tCfg.reqEnergy || 0;
+  if (state.knowledge >= tCfg.reqKnowledge && state.money >= tCfg.reqMoney && state.energy >= reqE) {
+    state.knowledge -= tCfg.reqKnowledge;
+    state.money -= tCfg.reqMoney;
+    state.energy -= reqE;
+    state.tech.doubleClickTech = true;
+    spawnFloatingText("🎓 神經增幅模組已研發!", "#eab308");
+    showToast("⚡ 解鎖【神經增幅模組】！所有手動點擊資源的效率翻倍！", "success");
+    updateUI();
+  } else {
+    showToast("❌ 研究知識、金幣或電力不足！", "error");
+  }
 });
 
 btnTechHero?.addEventListener("click", () => {

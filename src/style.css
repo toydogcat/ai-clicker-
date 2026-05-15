@@ -539,6 +539,27 @@ h1 {
 #node-stone .node-glow { background: #94a3b8; }
 #node-stone.active .node-ring { border-color: #94a3b8; border-style: solid; }
 
+#node-food.active {
+  border-color: #f472b6;
+  box-shadow: 0 8px 25px rgba(244, 114, 182, 0.25);
+}
+#node-food .node-glow { background: #f472b6; }
+#node-food.active .node-ring { border-color: #f472b6; border-style: solid; }
+
+#node-metal.active {
+  border-color: #fbbf24;
+  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.25);
+}
+#node-metal .node-glow { background: #fbbf24; }
+#node-metal.active .node-ring { border-color: #fbbf24; border-style: solid; }
+
+#node-money.active {
+  border-color: #eab308;
+  box-shadow: 0 8px 25px rgba(234, 179, 8, 0.25);
+}
+#node-money .node-glow { background: #eab308; }
+#node-money.active .node-ring { border-color: #eab308; border-style: solid; }
+
 .node-body {
   display: flex;
   align-items: center;

@@ -169,6 +169,30 @@
               <span class="node-title">採集石頭</span>
             </div>
           </div>
+          <div class="gather-node" id="node-food" data-resource="food" role="button" tabindex="0" aria-label="採集食物" style="display: none;">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🍞</span>
+              <span class="node-title">採集食物</span>
+            </div>
+          </div>
+          <div class="gather-node" id="node-metal" data-resource="metal" role="button" tabindex="0" aria-label="採集金屬" style="display: none;">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">🪙</span>
+              <span class="node-title">採集金屬</span>
+            </div>
+          </div>
+          <div class="gather-node" id="node-money" data-resource="money" role="button" tabindex="0" aria-label="賺取金錢" style="display: none;">
+            <div class="node-ring"></div>
+            <div class="node-glow"></div>
+            <div class="node-body">
+              <span class="node-emoji">💰</span>
+              <span class="node-title">賺取金錢</span>
+            </div>
+          </div>
         </div>
         <div id="clickEffectsLayer"></div>
       </div>
@@ -445,6 +469,30 @@
         </div>
         <div class="dispatch-list" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
           <!-- 第一階段：基礎機制與蒸汽工業 -->
+          <button class="build-btn" id="btnTechClickFood" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">🍞 研發【採集生存術】(手動點擊食物)</span>
+              <span class="build-btn-cost">📚 50 知識 | 💰 30 金</span>
+            </div>
+            <span class="build-btn-count" id="techClickFoodStatus">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechClickMetal" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">🪙 研發【初級淘金法】(手動點擊金屬)</span>
+              <span class="build-btn-cost">📚 200 知識 | 💰 150 金</span>
+            </div>
+            <span class="build-btn-count" id="techClickMetalStatus">未解鎖</span>
+          </button>
+
+          <button class="build-btn" id="btnTechClickMoney" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">💰 研發【鑄幣許可權】(手動點擊金錢)</span>
+              <span class="build-btn-cost">📚 500 知識 | 💰 400 金</span>
+            </div>
+            <span class="build-btn-count" id="techClickMoneyStatus">未解鎖</span>
+          </button>
+
           <button class="build-btn" id="btnTechHero" style="width: 100%;" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">🛡️ 研發【冒險者特許證】(英雄開啟)</span>
@@ -486,6 +534,14 @@
           </button>
 
           <!-- 第二階段：人工智慧與量子時代 -->
+          <button class="build-btn" id="btnTechDoubleClick" style="width: 100%;" disabled>
+            <div class="build-btn-info">
+              <span class="build-btn-title">⚡ 研發【神經增幅模組】(手動點擊翻倍)</span>
+              <span class="build-btn-cost">📚 1000 知識 | 💰 800 金 | ⚡ 100 電</span>
+            </div>
+            <span class="build-btn-count" id="techDoubleClickStatus">未解鎖</span>
+          </button>
+
           <button class="build-btn" id="btnTechAutoStudy" style="width: 100%;" disabled>
             <div class="build-btn-info">
               <span class="build-btn-title">🧠 研發【自我迭代算法】(解鎖自動科研)</span>
