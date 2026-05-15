@@ -3033,20 +3033,6 @@ function assignCombatRows(combatParty) {
   return { frontList, backList };
 }
 
-function assignCombatRows(combatParty) {
-  const melee = combatParty.filter(p => !isRangedHero(p.jobClass));
-  const ranged = combatParty.filter(p => isRangedHero(p.jobClass));
-  
-  // Up to 3 melee units in front row, rest (other melee + all ranged) in back row
-  const frontList = melee.slice(0, 3);
-  const backList = [...melee.slice(3), ...ranged];
-  
-  frontList.forEach(p => p.isFrontRow = true);
-  backList.forEach(p => p.isFrontRow = false);
-  
-  return { frontList, backList };
-}
-
 // Render Hero sheets (updates stats & paperdoll display)
 function updateHeroSheets() {
   // Sort population descending by level globally so all displays align
