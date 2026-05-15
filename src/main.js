@@ -1980,6 +1980,28 @@ function renderPopulationRoster() {
       </div>
     `;
 
+    let statsHtml = "";
+    if (eff) {
+      if (state.tech.appraisalTech) {
+        statsHtml = `
+          <div class="roster-stats-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px; margin: 4px 0; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px; padding-right:4px;"><span>⚔️</span> <span>${eff.atk}</span></div>
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px; padding-right:4px;"><span>🛡️</span> <span>${eff.def}</span></div>
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px;"><span>⚡</span> <span>${eff.spd.toFixed(1)}</span></div>
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px; padding-right:4px;"><span>🪄</span> <span>${eff.matk}</span></div>
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px; padding-right:4px;"><span>🔮</span> <span>${eff.mdef}</span></div>
+            <div style="color: #e2e8f0; display:flex; justify-content:space-between; gap: 2px;"><span>💥</span> <span>${(eff.critRate * 100).toFixed(0)}%</span></div>
+          </div>
+        `;
+      } else {
+        statsHtml = `
+          <div style="text-align: center; font-size: 0.7rem; color: #64748b; background: rgba(0,0,0,0.15); padding: 0.3rem; border-radius: 6px; margin: 4px 0; font-style: italic;">
+            🔮 屬性待鑑定 (請研發水晶球)
+          </div>
+        `;
+      }
+    }
+
     const row = document.createElement("div");
     row.className = "roster-card";
     
@@ -1999,6 +2021,7 @@ function renderPopulationRoster() {
         </div>
         <div class="roster-body-box" style="border-color: rgba(239,68,68,0.15) !important;">
           ${hpBarHtml}
+          ${statsHtml}
           <div class="roster-assign-row">
             <span style="font-size: 0.8rem; color: #fca5a5; display: flex; align-items: center; gap: 4px; font-weight:500;">⏳ 正在醫院靜養康復</span>
             <button class="roster-action-btn btn-heal" 
@@ -2034,6 +2057,7 @@ function renderPopulationRoster() {
         </div>
         <div class="roster-body-box">
           ${hpBarHtml}
+          ${statsHtml}
           <div class="roster-assign-row">
             <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">當前指派任務</span>
             <select onchange="changeResidentAssignment('${p.id}', this.value)" class="roster-assign-select">
@@ -2669,7 +2693,7 @@ window.renderSecretShop = function() {
     card.style.borderColor = `${rColor}50`;
     
     // Icon and tags
-    const icon = getSlotIcon(item.slot);
+    const icon = getSlotIcon(item.slot, item.level);
     
     // Generate stats HTML strings
     let statsHtml = `<div class="secret-item-main-stat">+ ${gameConfig.eqSpecs.statNames[item.mainStat]}: ${item.mainStatVal}</div>`;
@@ -2777,9 +2801,18 @@ function getHeroIcon(k) {
   return icons[k] || '👤';
 }
 
-function getSlotIcon(s) {
-  const i = { rhand:'🗡️', lhand:'🛡️', helm:'🪖', body:'🥋', pants:'👖', shoes:'👞' };
-  return i[s] || '❓';
+function getSlotIcon(s, level = 1) {
+  const tier1 = { rhand:'🗡️', lhand:'🛡️', helm:'🪖', body:'🥋', pants:'👖', shoes:'👞' };
+  const tier2 = { rhand:'⚔️', lhand:'🪞', helm:'🥽', body:'🧥', pants:'🩳', shoes:'🥾' };
+  const tier3 = { rhand:'🔱', lhand:'🔮', helm:'👑', body:'🦸', pants:'🦿', shoes:'🚀' };
+  
+  let set = tier1;
+  if (level >= 8) {
+    set = tier3;
+  } else if (level >= 5) {
+    set = tier2;
+  }
+  return set[s] || '❓';
 }
 
 // Render inventory grid
@@ -2800,7 +2833,7 @@ window.renderInventory = function() {
     el.style.boxShadow = `inset 0 0 8px ${gameConfig.eqSpecs.rarities[item.rarity].color}40`;
     
     // Icon lookup
-    let icon = getSlotIcon(item.slot);
+    let icon = getSlotIcon(item.slot, item.level);
     
     el.innerHTML = `${icon}<span class="item-lv-tag">L${item.level}</span>`;
     
@@ -2957,7 +2990,7 @@ window.openUnequipModal = function(personId, slotKey) {
   const rarCfg = gameConfig.eqSpecs.rarities[item.rarity];
   card.style.borderColor = rarCfg.color;
   
-  icon.textContent = getSlotIcon(slotKey);
+  icon.textContent = getSlotIcon(slotKey, item.level);
   title.textContent = item.name;
   title.style.color = rarCfg.color;
   
@@ -2985,6 +3018,34 @@ window.openUnequipModal = function(personId, slotKey) {
   
   modal.style.display = "flex";
 };
+
+function assignCombatRows(combatParty) {
+  const melee = combatParty.filter(p => !isRangedHero(p.jobClass));
+  const ranged = combatParty.filter(p => isRangedHero(p.jobClass));
+  
+  // Up to 3 melee units in front row, rest (other melee + all ranged) in back row
+  const frontList = melee.slice(0, 3);
+  const backList = [...melee.slice(3), ...ranged];
+  
+  frontList.forEach(p => p.isFrontRow = true);
+  backList.forEach(p => p.isFrontRow = false);
+  
+  return { frontList, backList };
+}
+
+function assignCombatRows(combatParty) {
+  const melee = combatParty.filter(p => !isRangedHero(p.jobClass));
+  const ranged = combatParty.filter(p => isRangedHero(p.jobClass));
+  
+  // Up to 3 melee units in front row, rest (other melee + all ranged) in back row
+  const frontList = melee.slice(0, 3);
+  const backList = [...melee.slice(3), ...ranged];
+  
+  frontList.forEach(p => p.isFrontRow = true);
+  backList.forEach(p => p.isFrontRow = false);
+  
+  return { frontList, backList };
+}
 
 // Render Hero sheets (updates stats & paperdoll display)
 function updateHeroSheets() {
@@ -3126,6 +3187,13 @@ function updateHeroSheets() {
         `;
       }
 
+      const combatBtnHtml = p.assignment === 'hospital' ? '' : `
+        <button class="ctrl-btn" style="flex: 1; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: ${p.assignment === 'combat' ? '#4b5563' : '#3b82f6'}; color: white; cursor: pointer; transition: all 0.2s;" 
+          onclick="window.changeResidentAssignment('${p.id}', '${p.assignment === 'combat' ? 'idle' : 'combat'}')">
+          ${p.assignment === 'combat' ? '🛡️ 召回' : '⚔️ 出征'}
+        </button>
+      `;
+
       html += `
           <div class="hp-mp-roster" style="margin-top: 0.4rem; display: flex; flex-direction: column; gap: 3px; width: 100%;">
             <div class="bar-wrapper" style="height: 12px;">
@@ -3137,6 +3205,13 @@ function updateHeroSheets() {
               <span class="bar-text" style="font-size: 0.65rem; line-height: 12px;">MP ${Math.floor(p.mp)}/${eff.maxMp}</span>
             </div>
             ${healBtnHtml}
+            <div style="display: flex; gap: 4px; margin-top: 2px; width: 100%;">
+              ${combatBtnHtml}
+              <button class="ctrl-btn" style="flex: 1; padding: 0.25rem; font-size: 0.7rem; font-weight: bold; border-radius: 4px; border: none; background: #ef4444; color: white; cursor: pointer; transition: all 0.2s;"
+                onclick="window.exileResident('${p.id}')">
+                🥾 流放
+              </button>
+            </div>
           </div>
       `;
     }
@@ -3178,7 +3253,11 @@ function updateHeroSheets() {
             return "";
           })()}
           <div class="paperdoll" style="display:grid;">
-            ${['rhand','lhand','helm','body','pants','shoes'].map(slot => `<div class="eq-slot" data-hero="${p.id}" data-slot="${slot}" title="${gameConfig.eqSpecs.slots[slot].name}">${getSlotIcon(slot)}</div>`).join('')}
+            ${['rhand','lhand','helm','body','pants','shoes'].map(slot => {
+              const eqItem = p.eq[slot];
+              const icon = eqItem ? getSlotIcon(slot, eqItem.level) : getSlotIcon(slot);
+              return `<div class="eq-slot" data-hero="${p.id}" data-slot="${slot}" title="${gameConfig.eqSpecs.slots[slot].name}">${icon}</div>`;
+            }).join('')}
           </div>
         `;
       } else {
@@ -3210,50 +3289,83 @@ function updateHeroSheets() {
       };
     });
     
-    // 2. Render in Combat Party
-    if (partyGroup && p.assignment === 'combat') {
-      const effStats = calcEffStats(p);
-      const unit = document.createElement("div");
-      
-      const isFocused = combatState.focusedHeroId === p.id;
-      unit.className = `combat-unit ${isFocused ? 'focused-hero' : ''}`;
-      unit.id = `unit-${p.id}`;
-      unit.style.cursor = p.hp > 0 ? "pointer" : "not-allowed";
-      
-      // Initialize combat temp stats if not present
-      if (typeof p.hp === 'undefined') { p.hp = effStats.maxHp; }
-      if (typeof p.mp === 'undefined') { p.mp = effStats.maxMp; }
-      // Ensure HP isn't over max due to unequip
-      p.hp = Math.min(p.hp, effStats.maxHp);
-      p.mp = Math.min(p.mp, effStats.maxMp);
-
-      unit.innerHTML = `
-        ${isFocused ? '<span class="combat-focus-badge" title="正在控制此英雄施展手勢法術">🎯</span>' : ''}
-        <div class="unit-header">
-          <span class="unit-name" style="${isFocused ? 'color:#facc15; font-weight:bold;' : ''}">${p.name} Lv.<span id="b-${p.id}-lv">${p.level}</span></span>
-        </div>
-        <div class="stat-bars">
-          <div class="bar-wrapper"><div class="bar-fill bg-hp" id="b-${p.id}-hp-bar" style="width:${(p.hp/effStats.maxHp)*100}%"></div><span class="bar-text" id="b-${p.id}-hp-val">${Math.floor(p.hp)}/${effStats.maxHp}</span></div>
-          <div class="bar-wrapper"><div class="bar-fill bg-mp" id="b-${p.id}-mp-bar" style="width:${(p.mp/effStats.maxMp)*100}%"></div><span class="bar-text" id="b-${p.id}-mp-val">${Math.floor(p.mp)}/${effStats.maxMp}</span></div>
-          <div class="bar-wrapper atb-wrapper"><div class="bar-fill bg-atb" id="b-${p.id}-atb-bar" style="width:0%"></div></div>
-        </div>
-      `;
-      
-      // Handle clicking to focus this hero for spellcasting
-      unit.onclick = () => {
-        if (p.hp <= 0) {
-          showToast("❌ 無法控制已倒下的英雄！", "error");
-          return;
-        }
-        combatState.focusedHeroId = p.id;
-        showToast(`🎯 戰術指示：全力輔助【${p.name}】進行詠唱！`, "info");
-        updateHeroSheets(); // Redraw to reflect the focused ring immediately!
-      };
-
-      partyGroup.appendChild(unit);
-    }
-
   });
+
+  // 2. Render Combat Party
+  if (partyGroup) {
+    partyGroup.innerHTML = "";
+    
+    const backCol = document.createElement("div");
+    backCol.className = "battle-row-container";
+    backCol.id = "partyBackRow";
+    
+    const frontCol = document.createElement("div");
+    frontCol.className = "battle-row-container";
+    frontCol.id = "partyFrontRow";
+    
+    partyGroup.appendChild(backCol);
+    partyGroup.appendChild(frontCol);
+    
+    const combatParty = state.population.filter(p => p.assignment === 'combat');
+    const { frontList, backList } = assignCombatRows(combatParty);
+    
+    const renderToCol = (list, container) => {
+      list.forEach(p => {
+        const effStats = calcEffStats(p);
+        const unit = document.createElement("div");
+        
+        const isFocused = combatState.focusedHeroId === p.id;
+        unit.className = `combat-unit ${isFocused ? 'focused-hero' : ''}`;
+        unit.id = `unit-${p.id}`;
+        unit.style.cursor = p.hp > 0 ? "pointer" : "not-allowed";
+        unit.style.position = "relative";
+        
+        if (typeof p.hp === 'undefined') { p.hp = effStats.maxHp; }
+        if (typeof p.mp === 'undefined') { p.mp = effStats.maxMp; }
+        p.hp = Math.min(p.hp, effStats.maxHp);
+        p.mp = Math.min(p.mp, effStats.maxMp);
+
+        const rangeTag = isRangedHero(p.jobClass) ? '🏹' : '🛡️';
+        const rowTag = p.isFrontRow ? '前排' : '後排';
+
+        unit.innerHTML = `
+          ${isFocused ? '<span class="combat-focus-badge" title="正在控制此英雄施展手勢法術">🎯</span>' : ''}
+          <div class="unit-header">
+            <span class="unit-name" style="${isFocused ? 'color:#facc15; font-weight:bold;' : ''} font-size: 0.75rem; display:flex; justify-content:space-between; width:100%;">
+              <span>${rangeTag} ${p.name}</span>
+              <span style="opacity:0.7; font-size:0.65rem;">Lv.<span id="b-${p.id}-lv">${p.level}</span></span>
+            </span>
+          </div>
+          <div class="stat-bars">
+            <div class="bar-wrapper"><div class="bar-fill bg-hp" id="b-${p.id}-hp-bar" style="width:${(p.hp/effStats.maxHp)*100}%"></div><span class="bar-text" id="b-${p.id}-hp-val">${Math.floor(p.hp)}/${effStats.maxHp}</span></div>
+            <div class="bar-wrapper"><div class="bar-fill bg-mp" id="b-${p.id}-mp-bar" style="width:${(p.mp/effStats.maxMp)*100}%"></div><span class="bar-text" id="b-${p.id}-mp-val">${Math.floor(p.mp)}/${effStats.maxMp}</span></div>
+            <div class="bar-wrapper atb-wrapper"><div class="bar-fill bg-atb" id="b-${p.id}-atb-bar" style="width:0%"></div></div>
+          </div>
+          <div style="position:absolute; bottom:2px; right:6px; font-size: 0.55rem; color:#94a3b8; font-style:italic; opacity:0.8;">${rowTag}</div>
+        `;
+        
+        unit.onclick = () => {
+          if (p.hp <= 0) {
+            showToast("❌ 無法控制已倒下的英雄！", "error");
+            return;
+          }
+          combatState.focusedHeroId = p.id;
+          showToast(`🎯 戰術指示：全力輔助【${p.name}】進行詠唱！`, "info");
+          updateHeroSheets();
+        };
+
+        container.appendChild(unit);
+      });
+    };
+    
+    renderToCol(backList, backCol);
+    renderToCol(frontList, frontCol);
+  }
+}
+
+function isRangedHero(jobClass) {
+  const ranged = ['archer', 'gunner', 'mage', 'wizard', 'priest', 'taoist'];
+  return ranged.includes(jobClass);
 }
 
 // ==========================================
@@ -3266,7 +3378,8 @@ let combatState = {
   bossType: "greed",
   enemy: null, // currently fighting object
   party: [], // keys like "warrior", "mage"
-  focusedHeroId: null // UID of the hero targeted/controlled by user
+  focusedHeroId: null, // UID of the hero targeted/controlled by user
+  aiMode: 'basic' // 'basic' | 'balanced' | 'defensive' | 'offensive'
 };
 
 
@@ -3301,6 +3414,31 @@ document.getElementById("btnQuestBoss")?.addEventListener("click", () => {
 });
 document.getElementById("btnQuestRetreat")?.addEventListener("click", stopQuest);
 
+document.getElementById("devAiModeSelect")?.addEventListener("change", (e) => {
+  combatState.aiMode = e.target.value;
+  updateAiModeUI();
+  showToast(`🧠 戰術已手動調整為：${e.target.options[e.target.selectedIndex].text}`, "info");
+});
+
+function updateAiModeUI() {
+  const txtEl = document.getElementById("aiModeText");
+  if (!txtEl) return;
+  
+  const labelMap = {
+    basic: { text: "🛑 純普攻模式 (待結印)", color: "#a1a1aa" },
+    balanced: { text: "⚖️ 平衡戰術 AI (運作中)", color: "#60a5fa" },
+    defensive: { text: "🛡️ 守護防衛 AI (運作中)", color: "#34d399" },
+    offensive: { text: "⚔️ 強攻狂暴 AI (運作中)", color: "#f87171" }
+  };
+  
+  const mode = combatState.aiMode || 'basic';
+  txtEl.innerHTML = labelMap[mode].text;
+  txtEl.style.color = labelMap[mode].color;
+  
+  const selEl = document.getElementById("devAiModeSelect");
+  if (selEl && selEl.value !== mode) selEl.value = mode;
+}
+
 function startQuest(type) {
   if (combatState.active) return;
   
@@ -3320,6 +3458,9 @@ function startQuest(type) {
 
   combatState.party = combatParty.map(p => p.id);
   
+  // Define Front/Back rows before battle loop starts
+  assignCombatRows(combatParty);
+  
   // Reset dynamic fight parameters for the selected party
   combatParty.forEach(p => {
     const eff = calcEffStats(p);
@@ -3332,6 +3473,7 @@ function startQuest(type) {
   combatState.focusedHeroId = combatParty[0].id;
   
   spawnEnemy();
+  updateAiModeUI();
 
   
   const btnQuestHunt = document.getElementById("btnQuestHunt");
@@ -3388,6 +3530,33 @@ function stopQuest() {
 }
 
 
+function getValidTargets(attackerSide, isRanged) {
+  let candidates = [];
+  if (attackerSide === 'hero') {
+    candidates = combatState.enemies.filter(e => e.hp > 0);
+  } else {
+    const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+    candidates = combatParty.filter(p => p.hp > 0);
+  }
+  
+  if (candidates.length === 0) return [];
+  
+  if (isRanged) return candidates;
+  
+  const frontRowTargets = candidates.filter(u => u.isFrontRow);
+  if (frontRowTargets.length > 0) {
+    return frontRowTargets;
+  }
+  return candidates;
+}
+
+function pickBestTarget(candidates) {
+  if (!candidates || candidates.length === 0) return null;
+  const sorted = [...candidates].sort((a, b) => a.hp - b.hp);
+  return sorted[0];
+}
+
+
 function spawnEnemy() {
   let avgLvl = 1;
   if (combatState.target === "hunt") {
@@ -3433,7 +3602,9 @@ function spawnEnemy() {
         atb: 0,
         rewardExp: Math.floor((mobCfg.scaling.rewardExpBase * avgLvl / mobCount) * diffCfg.expMoneyMod),
         rewardMoney: Math.floor((mobCfg.scaling.rewardMoneyBase * avgLvl / mobCount) * diffCfg.expMoneyMod),
-        isBoss: false
+        isBoss: false,
+        isFrontRow: i < 3, // First 3 are Front Row, remaining are Back Row
+        isRanged: i >= 3 && Math.random() < 0.5
       });
     }
   } else {
@@ -3461,28 +3632,59 @@ function spawnEnemy() {
           ...finalBoss,
           id: roster[i].id,
           atb: 0,
-          isBoss: true
+          isBoss: true,
+          isFrontRow: true, // Bosses always Front Row for simpler visual stacking (max 3)
+          isRanged: true // Bosses are huge range sweeping units
         });
       }
     }
   }
   
-  // Render Enemies
-  combatState.enemies.forEach(e => {
-    if (!enemyGroup) return;
-    const unit = document.createElement("div");
-    unit.className = "combat-unit";
-    unit.id = e.id;
-    unit.innerHTML = `
-      <div class="unit-header"><span class="unit-name">${e.name}</span></div>
-      <div class="stat-bars" id="${e.id}-bars">
-        <div class="bar-wrapper"><div class="bar-fill bg-hp" id="${e.id}-hpBar" style="width:100%"></div><span class="bar-text" id="${e.id}-hpVal">${e.hp}/${e.maxHp}</span></div>
-        <div class="bar-wrapper atb-wrapper"><div class="bar-fill bg-atb" id="${e.id}-atbBar" style="width:0%"></div></div>
-      </div>
-      <div class="enemy-avatar" style="font-size:2rem; margin:0.2rem 0;">${e.avatar}</div>
-    `;
-    enemyGroup.appendChild(unit);
-  });
+  // Render Enemies to physical side columns
+  if (enemyGroup) {
+    enemyGroup.innerHTML = "";
+    
+    const frontCol = document.createElement("div");
+    frontCol.className = "battle-row-container";
+    frontCol.id = "enemyFrontRow";
+    
+    const backCol = document.createElement("div");
+    backCol.className = "battle-row-container";
+    backCol.id = "enemyBackRow";
+    
+    enemyGroup.appendChild(frontCol);
+    enemyGroup.appendChild(backCol);
+    
+    combatState.enemies.forEach(e => {
+      const unit = document.createElement("div");
+      unit.className = "combat-unit";
+      unit.id = e.id;
+      unit.style.position = "relative";
+      
+      const rowTag = e.isFrontRow ? '前排' : '後排';
+      const rangeTag = e.isRanged ? '🏹' : '🛡️';
+      
+      unit.innerHTML = `
+        <div class="unit-header">
+          <span class="unit-name" style="font-size: 0.75rem; display:flex; justify-content:space-between; width:100%;">
+            <span>${rangeTag} ${e.name}</span>
+          </span>
+        </div>
+        <div class="stat-bars" id="${e.id}-bars">
+          <div class="bar-wrapper"><div class="bar-fill bg-hp" id="${e.id}-hpBar" style="width:100%"></div><span class="bar-text" id="${e.id}-hpVal">${e.hp}/${e.maxHp}</span></div>
+          <div class="bar-wrapper atb-wrapper"><div class="bar-fill bg-atb" id="${e.id}-atbBar" style="width:0%"></div></div>
+        </div>
+        <div class="enemy-avatar" style="font-size:2rem; margin:0.1rem 0;">${e.avatar}</div>
+        <div style="position:absolute; bottom:2px; right:6px; font-size: 0.55rem; color:#94a3b8; font-style:italic; opacity:0.8;">${rowTag}</div>
+      `;
+      
+      if (e.isFrontRow) {
+        frontCol.appendChild(unit);
+      } else {
+        backCol.appendChild(unit);
+      }
+    });
+  }
 }
 
 // Main ATB Combat Engine Clock (Runs every 100ms)
@@ -3505,6 +3707,10 @@ function processCombatFrame() {
     if (!p || p.hp <= 0) return; // dead can't act
     const eff = calcEffStats(p);
     
+    // Passive combat MP regeneration (Runs every frame tick)
+    const mpRegen = 0.1 + (eff.matk * 0.01); // Scaled for approx 100ms clock interval
+    p.mp = Math.min(eff.maxMp, (p.mp || 0) + mpRegen);
+    
     if (p.atb === undefined) p.atb = 0;
     
     // Normal auto attacks execute at 100%
@@ -3522,15 +3728,298 @@ function processCombatFrame() {
   updateCombatBars();
 }
 
+function tryCastClassSkill(p, eff) {
+  if (combatState.aiMode === 'basic') return false; // In basic mode, heroes ONLY use normal attacks!
+  
+  // Find the lowest % HP ally for healing checks
+  const getLowestAlly = () => {
+    const party = state.population.filter(res => combatState.party.includes(res.id) && res.hp > 0);
+    if (party.length === 0) return null;
+    return party.sort((a, b) => {
+      const eA = calcEffStats(a);
+      const eB = calcEffStats(b);
+      return (a.hp / eA.maxHp) - (b.hp / eB.maxHp);
+    })[0];
+  };
+
+  // Unified helper to trigger damage flash animation
+  const flashEnemy = (eId) => {
+    const el = document.getElementById(eId);
+    if (el) {
+      el.classList.add("attack-anim");
+      setTimeout(() => el.classList.remove("attack-anim"), 150);
+    }
+  };
+
+  const job = p.jobClass || 'novice';
+  const isRanged = isRangedHero(job);
+  
+  // Boss scaling and non-faith suppression calculator helper
+  const calcBossAdjustments = (rawDmg, targetEnemy) => {
+    let finalDmg = rawDmg;
+    if (targetEnemy.isBoss) {
+      if (job === "monk") {
+        const mult = 3.0 + (p.level - 1) * 0.8;
+        finalDmg = Math.floor(finalDmg * mult);
+        logBattle(`💢 和尚爆發【降魔】真言！傷害加成 x${mult.toFixed(1)}！`, "log-item-buff");
+      } else if (job === "taoist") {
+        const mult = 2.0 + (p.level - 1) * 0.5;
+        finalDmg = Math.floor(finalDmg * mult);
+        logBattle(`☯️ 道士激發【天威】印記！傷害加成 x${mult.toFixed(1)}！`, "log-item-buff");
+      } else if (job === "paladin" || job === "priest") {
+        const mult = 2.5 + (p.level - 1) * 0.6;
+        finalDmg = Math.floor(finalDmg * mult);
+        logBattle(`✨ 聖光輝耀！傷害加成 x${mult.toFixed(1)}！`, "log-item-buff");
+      }
+      if (!p.faith) {
+        const diffCfg = DIFFICULTY_MULTIPLIERS[state.difficulty || 'normal'] || DIFFICULTY_MULTIPLIERS.normal;
+        finalDmg = Math.max(1, Math.floor(finalDmg * (diffCfg.nonFaithGiantDmgMod || 0.33)));
+      }
+    }
+    return finalDmg;
+  };
+
+  // Skill Dictionary
+  const skillMap = {
+    novice: { name: "初階斬擊", cost: 5, desc: "造成 1.2 倍物理傷害" },
+    warrior: { name: "勇者重斬", cost: 15, desc: "擊出 1.8 倍物理傷害" },
+    barbarian: { name: "狂暴旋風", cost: 12, desc: "橫掃所有可觸及敵人 1.2 倍物理傷害" },
+    shieldWarrior: { name: "盾牌猛擊", cost: 15, desc: "造成物攻 + 1.0x防禦的粉碎打擊" },
+    rogue: { name: "致命背刺", cost: 20, desc: "2.5 倍必中物理暴擊" },
+    archer: { name: "連環雙矢", cost: 15, desc: "隨機速射 2 名敵人，每箭 1.0 倍物攻 (遠程)" },
+    gunner: { name: "狙擊爆頭", cost: 20, desc: "精準轟擊最虛弱目標 2.2 倍物理傷害 (遠程)" },
+    fighter: { name: "百裂神拳", cost: 20, desc: "狂暴重擊單體目標 3 次，每次 0.6 倍物攻" },
+    mage: { name: "爆裂火球", cost: 25, desc: "轟擊最虛弱敵人 2.0 倍魔法傷害 (遠程)" },
+    wizard: { name: "連鎖雷爆", cost: 35, desc: "轟擊所有可觸及敵人 1.2 倍魔法傷害 (遠程)" },
+    priest: { name: "神聖治癒", cost: 30, desc: "救治最慘隊友，回復 2.0x魔攻 + 20%最大HP" },
+    paladin: { name: "十字裁決", cost: 25, desc: "造成 1.5x物攻 + 1.0x魔攻混和傷害，並治療自己 20% HP" },
+    taoist: { name: "符咒燃爆", cost: 30, desc: "引爆 2.5 倍魔攻傷害 (遠程)" },
+    monk: { name: "禪定一掌", cost: 25, desc: "2.0 倍物理傷害，無視敵方 50% 防禦" }
+  };
+
+  const skill = skillMap[job] || skillMap.novice;
+  if (p.mp < skill.cost) return false; // Not enough MP, execute normal attack
+
+  // 1. PRE-CHECK: Gather targets first
+  const validCandidates = getValidTargets('hero', isRanged);
+  const target = pickBestTarget(validCandidates); 
+
+  // 2. PRE-CHECK: Smart Priest Healing Logic
+  if (job === 'priest') {
+    const weakest = getLowestAlly();
+    if (!weakest) return false;
+    const wEff = calcEffStats(weakest);
+    const hpPct = weakest.hp / wEff.maxHp;
+    
+    let healThreshold = 0.85; // Balanced mode
+    if (combatState.aiMode === 'defensive') healThreshold = 0.95;
+    if (combatState.aiMode === 'offensive') healThreshold = 0.50;
+    
+    if (hpPct >= healThreshold) {
+      return false; // Skip healing to save MP and do normal attack instead
+    }
+  }
+
+  // 3. PRE-CHECK: Smart AOE Logic for Barbarian & Wizard
+  if (job === 'barbarian' || job === 'wizard') {
+    if (validCandidates.length < 2 && (combatState.aiMode === 'balanced' || combatState.aiMode === 'defensive')) {
+      return false; // Conserve MP by avoiding AOE on a single surviving target
+    }
+  }
+
+  // 4. PRE-CHECK: Edge case validation
+  if (!target && job !== "priest") {
+     return false;
+  }
+
+  // Validated! Execute Cast and deduct MP
+  p.mp -= skill.cost;
+  const logHeader = `<span style="color:#a855f7; font-weight:bold;">【${skill.name}】</span>`;
+
+  // Core branching logic for the skill actions
+  switch(job) {
+    case 'novice': {
+      let raw = Math.max(1, (eff.atk * 1.2) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`⚔️ ${p.name} 發動 ${logHeader}，重擊 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 傷害。`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'warrior': {
+      let raw = Math.max(1, (eff.atk * 1.8) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`🗡️ ${p.name} 蓄力施展 ${logHeader}，斬裂 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 傷害！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'barbarian': {
+      logBattle(`🪓 ${p.name} 咆哮著旋轉武器，施展 ${logHeader} 橫掃全場！`);
+      validCandidates.forEach(c => {
+        let raw = Math.max(1, (eff.atk * 1.2) - c.def);
+        let final = calcBossAdjustments(raw, c);
+        logBattle(`  ➡️ ${c.name} 受到 <span class="log-item-dmg">${Math.floor(final)}</span> 順劈傷害。`);
+        c.hp -= Math.floor(final);
+        flashEnemy(c.id);
+      });
+      break;
+    }
+    case 'shieldWarrior': {
+      let raw = Math.max(1, (eff.atk + eff.def) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`🛡️ ${p.name} 頂起重盾施展 ${logHeader}，痛擊 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 碎骨傷害。`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'rogue': {
+      // Rogue bypasses standard evasion entirely (Bypasses Miss roll entirely)
+      let raw = Math.max(1, (eff.atk * 2.5) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`👤 ${p.name} 閃身至死角施展 ${logHeader}，對 ${target.name} 造成致命必中的 <b style="color:#ef4444; font-size:1.2em;">CRIT!</b> <b class="log-item-dmg">${Math.floor(final)}</b> 傷害！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'archer': {
+      logBattle(`🏹 ${p.name} 拉開滿弓施展 ${logHeader} 連續狙殺！`);
+      for(let i = 0; i < 2; i++) {
+        if (validCandidates.length === 0) break;
+        const rnd = validCandidates[Math.floor(Math.random() * validCandidates.length)];
+        let raw = Math.max(1, eff.atk - rnd.def);
+        let final = calcBossAdjustments(raw, rnd);
+        logBattle(`  🎯 第 ${i+1} 矢正中 ${rnd.name}，造成 <span class="log-item-dmg">${Math.floor(final)}</span> 傷害。`);
+        rnd.hp -= Math.floor(final);
+        flashEnemy(rnd.id);
+        // In case target dies, remove it from candidate pool instantly for second arrow
+        if(rnd.hp <= 0) {
+           const idx = validCandidates.findIndex(c => c.id === rnd.id);
+           if(idx > -1) validCandidates.splice(idx, 1);
+        }
+      }
+      break;
+    }
+    case 'gunner': {
+      let raw = Math.max(1, (eff.atk * 2.2) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`💥 ${p.name} 扣下扳機施展 ${logHeader}，子彈爆頭擊穿 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 穿透傷害！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'fighter': {
+      logBattle(`👊 ${p.name} 氣勢如虹打出 ${logHeader}！`);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        if (count >= 3 || target.hp <= 0) {
+          clearInterval(intervalId);
+          return;
+        }
+        let raw = Math.max(1, (eff.atk * 0.6) - target.def);
+        let final = calcBossAdjustments(raw, target);
+        logBattle(`  🤛 歐拉！對 ${target.name} 造成 <span class="log-item-dmg">${Math.floor(final)}</span> 打擊！`);
+        target.hp -= Math.floor(final);
+        flashEnemy(target.id);
+        count++;
+        checkBattleResolution();
+      }, 80);
+      break;
+    }
+    case 'mage': {
+      // Magic vs M.Def
+      let raw = Math.max(1, (eff.matk * 2.0) - target.mdef);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`🔥 ${p.name} 頌念咒文施展 ${logHeader}，熊熊烈焰吞噬 ${target.name} 造成 <b style="color:#f97316;" class="log-item-dmg">${Math.floor(final)}</b> 魔法傷害！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'wizard': {
+      logBattle(`⚡ ${p.name} 高舉法杖召喚 ${logHeader} 覆蓋整個戰場！`);
+      validCandidates.forEach(c => {
+        let raw = Math.max(1, (eff.matk * 1.2) - c.mdef);
+        let final = calcBossAdjustments(raw, c);
+        logBattle(`  ⛈️ 狂雷轟炸 ${c.name} 造成 <span style="color:#3b82f6;" class="log-item-dmg">${Math.floor(final)}</span> 電擊傷害。`);
+        c.hp -= Math.floor(final);
+        flashEnemy(c.id);
+      });
+      break;
+    }
+    case 'priest': {
+      const weakest = getLowestAlly();
+      const wEff = calcEffStats(weakest);
+      const healAmt = Math.floor(eff.matk * 2.0 + wEff.maxHp * 0.20);
+      weakest.hp = Math.min(wEff.maxHp, weakest.hp + healAmt);
+      logBattle(`⛪ ${p.name} 祈禱聖母降臨 ${logHeader}，治癒了 【${weakest.name}】，恢復了 <b style="color:#22c55e;">+${healAmt}</b> HP！`);
+      
+      const card = document.getElementById(`prof-${weakest.id}`);
+      if(card) {
+        card.style.boxShadow = "0 0 15px #22c55e";
+        setTimeout(() => card.style.boxShadow = "", 300);
+      }
+      break;
+    }
+    case 'paladin': {
+      // Hybrid logic: Mixed Atk + Matk vs def
+      let raw = Math.max(1, (eff.atk * 1.5 + eff.matk * 1.0) - target.def);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`✨ ${p.name} 揮舞戰錘降下 ${logHeader}，粉碎 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 混和傷害！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      
+      // Heal self
+      const heal = Math.floor(eff.maxHp * 0.20);
+      p.hp = Math.min(eff.maxHp, p.hp + heal);
+      logBattle(`  ❤️ 聖騎士獲得信仰反饋，為自己治療 <b style="color:#22c55e;">+${heal}</b> HP。`);
+      break;
+    }
+    case 'taoist': {
+      // Magic vs Mdef
+      let raw = Math.max(1, (eff.matk * 2.5) - target.mdef);
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`☯️ ${p.name} 手拈黃符射出 ${logHeader}，符火在 ${target.name} 身上引爆，造成 <b style="color:#eab308;" class="log-item-dmg">${Math.floor(final)}</b> 魔法天罰！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+    case 'monk': {
+      // Piercing logic: enemy Def is halved
+      let raw = Math.max(1, (eff.atk * 2.0) - (target.def * 0.5));
+      let final = calcBossAdjustments(raw, target);
+      logBattle(`🧘 ${p.name} 氣聚丹田打出 ${logHeader}，穿透 ${target.name} 的護甲，造成 <b class="log-item-dmg">${Math.floor(final)}</b> 破防重創！`);
+      target.hp -= Math.floor(final);
+      flashEnemy(target.id);
+      break;
+    }
+  }
+
+  // Universal lifesteal applies to all skill hits that are directly targeted
+  if (eff.lifesteal > 0 && job !== "priest" && job !== "barbarian" && job !== "wizard") {
+     // approximate heal based on final hit if scalar
+     // for simplicity, standard 10% max logic or omit to avoid scaling bloat
+  }
+
+  checkBattleResolution();
+  return true;
+}
+
 function heroExecuteAttack(pid) {
   const p = state.population.find(res => res.id === pid);
   if (!p) return;
   const eff = calcEffStats(p);
   
-  // Find a random alive enemy
-  const aliveEnemies = combatState.enemies.filter(e => e.hp > 0);
-  if (aliveEnemies.length === 0) return;
-  const enemy = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+  // 1. Attempt Auto-Skill Casting (Consumes MP, performs effect, and aborts if successful)
+  if (tryCastClassSkill(p, eff)) {
+    return;
+  }
+  
+  // 2. Physical Standard Attack Targeting
+  const isRanged = isRangedHero(p.jobClass);
+  const candidates = getValidTargets('hero', isRanged);
+  const enemy = pickBestTarget(candidates);
+  
+  if (!enemy) return;
   
   // Calculate Hit / Miss
   const evasionChance = Math.max(0, (enemy.evasion||0.05) - (eff.hit - 1.0));
@@ -3596,12 +4085,11 @@ function heroExecuteAttack(pid) {
 }
 
 function enemyExecuteAttack(enemy) {
-  // Select random alive party member
-  const combatParty = state.population.filter(p => combatState.party.includes(p.id));
-  const alive = combatParty.filter(p => p.hp > 0);
-  if (alive.length === 0) return;
+  // Select smart target using range and Focus Fire AI
+  const candidates = getValidTargets('enemy', enemy.isRanged);
+  const target = pickBestTarget(candidates);
+  if (!target) return;
   
-  const target = alive[Math.floor(Math.random() * alive.length)];
   const eff = calcEffStats(target);
   
   // Evade?
@@ -3616,6 +4104,8 @@ function enemyExecuteAttack(enemy) {
   
   // If the user-focused hero died, automatically shift control to the next alive hero
   if (target.id === combatState.focusedHeroId && target.hp <= 0) {
+    const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+    const alive = combatParty.filter(p => p.hp > 0);
     const remainingAlive = alive.filter(p => p.id !== target.id);
     if (remainingAlive.length > 0) {
       combatState.focusedHeroId = remainingAlive[0].id;
@@ -3628,7 +4118,6 @@ function enemyExecuteAttack(enemy) {
   
   logBattle(`👾 ${enemy.name} 發動攻擊，${target.name} 受到 <b class="log-item-dmg">${dmg}</b> 傷害。`);
 
-  
   // Flash animation
   const pEl = document.getElementById(`prof-${target.id}`);
   pEl?.classList.add("attack-anim");
@@ -4199,182 +4688,144 @@ let lastVideoTime = -1;
 let results = undefined;
 
 let chantState = {
-  skill1: 0, // index shake
-  skill2: 0, // scissors shake
-  skill3: 0, // scissor-rock alternate
-  skill4: 0, // rock-paper alternate
+  currentSequence: [], // Array of recorded stable gestures (max 6)
+  lastAddedGesture: null, // Track previous committed gesture to enforce alternating transitions
   
-  s1LastX: null,
-  s1Direction: 0, // 0: idle, -1: left, 1: right
+  // Debouncer parameters to filter out single-frame flicker
+  lastFrameRawGesture: null, 
+  stableFramesCount: 0,
   
-  s2LastX: null,
-  s2Direction: 0,
-  
-  s3LastGesture: null,
-  s4LastGesture: null,
-  
+  lastGestureTime: Date.now(), // For idle inactivity timeout
   lastUpdateTime: Date.now()
 };
 
-const SHAKE_DIST_THRESHOLD = 0.04; // Normalized distance trigger (~25px on 640 width)
-
 function resetChantState() {
-  chantState.skill1 = 0;
-  chantState.skill2 = 0;
-  chantState.skill3 = 0;
-  chantState.skill4 = 0;
-  chantState.s1LastX = null;
-  chantState.s1Direction = 0;
-  chantState.s2LastX = null;
-  chantState.s2Direction = 0;
-  chantState.s3LastGesture = null;
-  chantState.s4LastGesture = null;
+  chantState.currentSequence = [];
+  chantState.lastAddedGesture = null;
+  chantState.lastFrameRawGesture = null;
+  chantState.stableFramesCount = 0;
+  chantState.lastGestureTime = Date.now();
+  chantState.lastUpdateTime = Date.now();
+}
+
+function getDistance(p1, p2) {
+  return Math.sqrt(
+    Math.pow(p1.x - p2.x, 2) + 
+    Math.pow(p1.y - p2.y, 2) + 
+    Math.pow(p1.z - p2.z, 2)
+  );
 }
 
 function classifyHand(landmarks) {
-  // Compare fingertips (Tip.y) to the knuckle joints (PIP.y)
-  // Image top is Y=0, bottom is Y=1. Finger extended = Tip.y < PIP.y.
-  const indexExtended = landmarks[8].y < landmarks[6].y;
-  const middleExtended = landmarks[12].y < landmarks[10].y;
-  const ringExtended = landmarks[16].y < landmarks[14].y;
-  const pinkyExtended = landmarks[20].y < landmarks[18].y;
+  const wrist = landmarks[0];
+  
+  // Distance comparison from finger tip to wrist VS knuckle base (MCP) to wrist
+  // If tip-to-wrist distance > knuckle-to-wrist * 1.23, the finger is extended
+  const isExtended = (tipIdx, mcpIdx) => {
+    const tipDist = getDistance(landmarks[tipIdx], wrist);
+    const mcpDist = getDistance(landmarks[mcpIdx], wrist);
+    return tipDist > (mcpDist * 1.23); // Ratio multiplier (~1.20 - 1.25) is highly stable
+  };
 
-  if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
-    return "INDEX";
-  } else if (indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
-    return "SCISSORS";
-  } else if (!indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+  const indexExtended = isExtended(8, 5);
+  const middleExtended = isExtended(12, 9);
+  const ringExtended = isExtended(16, 13);
+  const pinkyExtended = isExtended(20, 17);
+
+  // Determine Gesture
+  if (!indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
     return "ROCK";
   } else if (indexExtended && middleExtended && ringExtended && pinkyExtended) {
     return "PAPER";
+  } else if (indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+    return "SCISSORS";
+  } else if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+    return "INDEX";
   }
+  
   return "OTHER";
 }
 
 // Core Spell Chanting Processor
-function processHandSpell(landmarks) {
-  const gesture = classifyHand(landmarks);
-  const wristX = landmarks[0].x; // Track movement centering around the wrist x position
+function checkSequenceResult() {
+  const seq = chantState.currentSequence.join(",");
   
-  chantState.lastUpdateTime = Date.now();
+  const balancedSeq = "SCISSORS,ROCK,PAPER,SCISSORS,ROCK,PAPER";
+  const defensiveSeq = "ROCK,PAPER,ROCK,PAPER,ROCK,PAPER";
+  const offensiveSeq = "SCISSORS,PAPER,SCISSORS,PAPER,SCISSORS,PAPER";
+  
+  // Visual Flash Function
+  const flashBg = (color) => {
+    const view = document.getElementById("combatViewport");
+    if (view) {
+      const orig = view.style.boxShadow;
+      view.style.transition = "box-shadow 0.3s ease";
+      view.style.boxShadow = `inset 0 0 60px ${color}`;
+      setTimeout(() => { view.style.boxShadow = orig; }, 1000);
+    }
+  };
 
-  if (gesture === "INDEX") {
-    // 1. Track Index Shake
-    if (chantState.s1LastX === null) {
-      chantState.s1LastX = wristX;
-    } else {
-      const diff = wristX - chantState.s1LastX;
-      if (chantState.s1Direction === 0) {
-        if (Math.abs(diff) > SHAKE_DIST_THRESHOLD) {
-          chantState.s1Direction = diff > 0 ? 1 : -1;
-          chantState.skill1++;
-          chantState.s1LastX = wristX;
-        }
-      } else if (chantState.s1Direction === 1 && diff < -SHAKE_DIST_THRESHOLD) {
-        chantState.s1Direction = -1;
-        chantState.skill1++;
-        chantState.s1LastX = wristX;
-      } else if (chantState.s1Direction === -1 && diff > SHAKE_DIST_THRESHOLD) {
-        chantState.s1Direction = 1;
-        chantState.skill1++;
-        chantState.s1LastX = wristX;
-      }
-    }
-    
-    // Reset unrelated chanting processes
-    chantState.skill2 = 0; chantState.skill3 = 0; chantState.skill4 = 0;
-    chantState.s2LastX = null; chantState.s2Direction = 0;
-    chantState.s3LastGesture = null; chantState.s4LastGesture = null;
-    
-  } else if (gesture === "SCISSORS") {
-    // 2. Track Scissors Shake
-    if (chantState.s2LastX === null) {
-      chantState.s2LastX = wristX;
-    } else {
-      const diff = wristX - chantState.s2LastX;
-      if (chantState.s2Direction === 0) {
-        if (Math.abs(diff) > SHAKE_DIST_THRESHOLD) {
-          chantState.s2Direction = diff > 0 ? 1 : -1;
-          chantState.skill2++;
-          chantState.s2LastX = wristX;
-        }
-      } else if (chantState.s2Direction === 1 && diff < -SHAKE_DIST_THRESHOLD) {
-        chantState.s2Direction = -1;
-        chantState.skill2++;
-        chantState.s2LastX = wristX;
-      } else if (chantState.s2Direction === -1 && diff > SHAKE_DIST_THRESHOLD) {
-        chantState.s2Direction = 1;
-        chantState.skill2++;
-        chantState.s2LastX = wristX;
-      }
-    }
-    
-    // 3. Track Scissors ↔ Rock Alternate
-    if (chantState.s3LastGesture === null) {
-      chantState.s3LastGesture = "SCISSORS";
-    } else if (chantState.s3LastGesture === "ROCK") {
-      chantState.s3LastGesture = "SCISSORS";
-      chantState.skill3++;
-    }
-    
-    // Reset incompatible systems
-    chantState.skill1 = 0; chantState.skill4 = 0;
-    chantState.s1LastX = null; chantState.s1Direction = 0;
-    chantState.s4LastGesture = null;
-    
-  } else if (gesture === "ROCK") {
-    // 3. Track Scissors ↔ Rock Alternate
-    if (chantState.s3LastGesture === null) {
-      chantState.s3LastGesture = "ROCK";
-    } else if (chantState.s3LastGesture === "SCISSORS") {
-      chantState.s3LastGesture = "ROCK";
-      chantState.skill3++;
-    }
-    
-    // 4. Track Rock ↔ Paper Alternate
-    if (chantState.s4LastGesture === null) {
-      chantState.s4LastGesture = "ROCK";
-    } else if (chantState.s4LastGesture === "PAPER") {
-      chantState.s4LastGesture = "ROCK";
-      chantState.skill4++;
-    }
-    
-    // Reset incompatible
-    chantState.skill1 = 0; chantState.skill2 = 0;
-    chantState.s1LastX = null; chantState.s1Direction = 0;
-    chantState.s2LastX = null; chantState.s2Direction = 0;
-    
-  } else if (gesture === "PAPER") {
-    // 4. Track Rock ↔ Paper Alternate
-    if (chantState.s4LastGesture === null) {
-      chantState.s4LastGesture = "PAPER";
-    } else if (chantState.s4LastGesture === "ROCK") {
-      chantState.s4LastGesture = "PAPER";
-      chantState.skill4++;
-    }
-    
-    // Reset incompatible
-    chantState.skill1 = 0; chantState.skill2 = 0; chantState.skill3 = 0;
-    chantState.s1LastX = null; chantState.s1Direction = 0;
-    chantState.s2LastX = null; chantState.s2Direction = 0;
-    chantState.s3LastGesture = null;
+  if (seq === balancedSeq) {
+    combatState.aiMode = 'balanced';
+    logBattle(`✨⚖️ 結印成功！【平衡戰術 AI】引導充能完成！✨`, "log-item-buff");
+    showToast("⚖️ 手勢判定：啟動平衡智能模式！", "info");
+    spawnFloatingText("✨ AI BALANCED ✨", "#60a5fa");
+    flashBg("rgba(96, 165, 250, 0.6)");
+  } else if (seq === defensiveSeq) {
+    combatState.aiMode = 'defensive';
+    logBattle(`✨🛡️ 結印成功！【守護防衛 AI】堅實屏障構築！✨`, "log-item-buff");
+    showToast("🛡️ 手勢判定：啟動守護智能模式！", "info");
+    spawnFloatingText("🛡️ AI DEFENSIVE 🛡️", "#34d399");
+    flashBg("rgba(52, 211, 153, 0.6)");
+  } else if (seq === offensiveSeq) {
+    combatState.aiMode = 'offensive';
+    logBattle(`✨⚔️ 結印成功！【強攻狂暴 AI】狂熱怒火點燃！✨`, "log-item-buff");
+    showToast("⚔️ 手勢判定：啟動強攻智能模式！", "info");
+    spawnFloatingText("🔥 AI OFFENSIVE 🔥", "#f87171");
+    flashBg("rgba(248, 113, 113, 0.6)");
   } else {
-    // Unrecognized gesture (OTHER) - optionally slightly decays but we let the 2s stale timer handle full resets.
+    logBattle(`❌ 結印失敗：序列不符，凝結的魔力潰散。`, "log-item-dmg");
+    showToast("❌ 結印序列錯誤，請重新開始！", "error");
+    spawnFloatingText("❌ CHANT FAILED ❌", "#ef4444");
+    flashBg("rgba(239, 68, 68, 0.5)");
   }
   
-  // Spell Activation Phase!
-  if (chantState.skill1 >= 3) {
-    castSkill1();
-    resetChantState();
-  } else if (chantState.skill2 >= 4) {
-    castSkill2();
-    resetChantState();
-  } else if (chantState.skill3 >= 4) {
-    castSkill3();
-    resetChantState();
-  } else if (chantState.skill4 >= 6) {
-    castSkill4();
-    resetChantState();
+  updateAiModeUI();
+  resetChantState();
+}
+
+function processHandSpell(landmarks) {
+  const gesture = classifyHand(landmarks);
+  chantState.lastUpdateTime = Date.now();
+
+  // --- DEBOUNCING LAYER ---
+  if (gesture === chantState.lastFrameRawGesture) {
+    chantState.stableFramesCount++;
+  } else {
+    chantState.lastFrameRawGesture = gesture;
+    chantState.stableFramesCount = 1;
+  }
+
+  const DEBOUNCE_FRAMES = 4;
+  
+  if (chantState.stableFramesCount === DEBOUNCE_FRAMES) {
+    const stableGesture = gesture;
+    
+    if (stableGesture !== "OTHER" && stableGesture !== chantState.lastAddedGesture) {
+      chantState.currentSequence.push(stableGesture);
+      chantState.lastAddedGesture = stableGesture;
+      chantState.lastGestureTime = Date.now(); // Update inactivity timer!
+      
+      const len = chantState.currentSequence.length;
+      const emojiMap = { "ROCK":"✊", "PAPER":"✋", "SCISSORS":"✌️", "INDEX":"☝️" };
+      const icon = emojiMap[stableGesture] || "❔";
+      logBattle(`🔮 結印印記記錄：[ ${icon} ${stableGesture} ] (${len}/6)`);
+      spawnFloatingText(`${icon} ${len}/6`, "#c084fc");
+
+      if (len === 6) {
+        checkSequenceResult();
+      }
+    }
   }
 
   updateChantUI();
@@ -4513,82 +4964,91 @@ function castSkill4() {
 function initSkillGrid() {
   const grid = document.getElementById("gestureSkillGrid");
   if (!grid) return;
+  
   grid.innerHTML = `
-    <div class="skill-chant-item" id="chant-skill-1">
-      <div class="chant-info">
-        <span class="chant-name">🛡️ 回復 (食指晃x3)</span>
-        <span class="chant-count" id="chant-val-1">0/3</span>
+    <div style="background: rgba(15, 11, 28, 0.6); border: 1px solid rgba(168, 85, 247, 0.35); padding: 0.9rem; border-radius: 14px; width: 100%; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div style="font-weight: 800; font-size: 0.88rem; color: #c084fc; margin-bottom: 0.6rem; display:flex; justify-content:space-between; text-shadow: 0 0 8px rgba(168,85,247,0.4);">
+        <span style="display:flex; align-items:center; gap:5px;">🔮 元素結印軌跡 (Trajectory)</span>
+        <span id="chant-seq-len" style="font-family: monospace; color:#e9d5ff; background:rgba(168,85,247,0.2); padding: 1px 6px; border-radius:4px;">0 / 6</span>
       </div>
-      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-1" style="width:0%"></div></div>
-    </div>
-    <div class="skill-chant-item" id="chant-skill-2">
-      <div class="chant-info">
-        <span class="chant-name">⚡ 魔彈 (剪刀晃x4)</span>
-        <span class="chant-count" id="chant-val-2">0/4</span>
+      
+      <!-- Sequence Slot Array -->
+      <div id="gesture-slots-container" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-bottom: 1rem;">
+        <div class="gesture-slot" id="slot-0" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
+        <div class="gesture-slot" id="slot-1" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
+        <div class="gesture-slot" id="slot-2" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
+        <div class="gesture-slot" id="slot-3" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
+        <div class="gesture-slot" id="slot-4" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
+        <div class="gesture-slot" id="slot-5" style="aspect-ratio:1; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:rgba(255,255,255,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">❔</div>
       </div>
-      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-2" style="width:0%"></div></div>
-    </div>
-    <div class="skill-chant-item" id="chant-skill-3">
-      <div class="chant-info">
-        <span class="chant-name">🔥 烈焰 (剪刀↔拳x4)</span>
-        <span class="chant-count" id="chant-val-3">0/4</span>
+      
+      <!-- AI Recipe Cheatsheet -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.6rem;">
+        <div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem; text-transform:uppercase; font-weight:700; letter-spacing:0.05em;">📜 戰術法陣秘籍 (Recipes)</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; color: #cbd5e1;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:3px 6px; border-radius:4px;">
+            <span style="display:flex; align-items:center; gap:4px;">⚖️ <b style="color:#60a5fa;">平衡 AI</b></span>
+            <span style="font-size:0.85rem; letter-spacing:2px;">✌️✊✋✌️✊✋</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:3px 6px; border-radius:4px;">
+            <span style="display:flex; align-items:center; gap:4px;">🛡️ <b style="color:#34d399;">守護 AI</b></span>
+            <span style="font-size:0.85rem; letter-spacing:2px;">✊✋✊✋✊✋</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:3px 6px; border-radius:4px;">
+            <span style="display:flex; align-items:center; gap:4px;">⚔️ <b style="color:#f87171;">強攻 AI</b></span>
+            <span style="font-size:0.85rem; letter-spacing:2px;">✌️✋✌️✋✌️✋</span>
+          </div>
+        </div>
       </div>
-      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-3" style="width:0%"></div></div>
-    </div>
-    <div class="skill-chant-item" id="chant-skill-4">
-      <div class="chant-info">
-        <span class="chant-name">💥 天譴 (拳↔布x6)</span>
-        <span class="chant-count" id="chant-val-4">0/6</span>
-      </div>
-      <div class="chant-bar-wrapper"><div class="chant-bar-fill" id="chant-bar-4" style="width:0%"></div></div>
     </div>
   `;
 }
 
 function updateChantUI() {
-  const fill1 = document.getElementById("chant-bar-1");
-  const val1 = document.getElementById("chant-val-1");
-  const fill2 = document.getElementById("chant-bar-2");
-  const val2 = document.getElementById("chant-val-2");
-  const fill3 = document.getElementById("chant-bar-3");
-  const val3 = document.getElementById("chant-val-3");
-  const fill4 = document.getElementById("chant-bar-4");
-  const val4 = document.getElementById("chant-val-4");
+  const currentLen = chantState.currentSequence.length;
+  const lenDisplay = document.getElementById("chant-seq-len");
+  if (lenDisplay) lenDisplay.textContent = `${currentLen} / 6`;
 
-  if (fill1) fill1.style.width = `${(chantState.skill1 / 3) * 100}%`;
-  if (val1) val1.textContent = `${chantState.skill1}/3`;
-  const el1 = document.getElementById("chant-skill-1");
-  if (el1) el1.classList.toggle("active-chanting", chantState.skill1 > 0);
-
-  if (fill2) fill2.style.width = `${(chantState.skill2 / 4) * 100}%`;
-  if (val2) val2.textContent = `${chantState.skill2}/4`;
-  const el2 = document.getElementById("chant-skill-2");
-  if (el2) el2.classList.toggle("active-chanting", chantState.skill2 > 0);
-
-  if (fill3) fill3.style.width = `${(chantState.skill3 / 4) * 100}%`;
-  if (val3) val3.textContent = `${chantState.skill3}/4`;
-  const el3 = document.getElementById("chant-skill-3");
-  if (el3) el3.classList.toggle("active-chanting", chantState.skill3 > 0);
-
-  if (fill4) fill4.style.width = `${(chantState.skill4 / 6) * 100}%`;
-  if (val4) val4.textContent = `${chantState.skill4}/6`;
-  const el4 = document.getElementById("chant-skill-4");
-  if (el4) el4.classList.toggle("active-chanting", chantState.skill4 > 0);
-
-  // Find global peak progress for AI panel
-  const maxProgress = Math.max(
-    chantState.skill1 / 3,
-    chantState.skill2 / 4,
-    chantState.skill3 / 4,
-    chantState.skill4 / 6
-  );
+  const emojiMap = { "ROCK": "✊", "PAPER": "✋", "SCISSORS": "✌️", "INDEX": "☝️" };
   
-  if (velocityBar) {
-    velocityBar.style.width = `${maxProgress * 100}%`;
-    if (maxProgress >= 1.0) {
-      velocityBar.style.backgroundColor = "#ffffff";
-      setTimeout(() => velocityBar.style.backgroundColor = "", 150);
+  for (let i = 0; i < 6; i++) {
+    const slot = document.getElementById(`slot-${i}`);
+    if (!slot) continue;
+    
+    if (i < currentLen) {
+      const gesture = chantState.currentSequence[i];
+      const icon = emojiMap[gesture] || "❓";
+      
+      if (slot.textContent !== icon) {
+        slot.textContent = icon;
+        slot.style.background = "rgba(168, 85, 247, 0.28)";
+        slot.style.border = "1px solid rgba(192, 132, 252, 0.7)";
+        slot.style.color = "#ffffff";
+        slot.style.boxShadow = "0 0 12px rgba(168, 85, 247, 0.5)";
+        
+        // Fire an explosive elastic scale pop
+        slot.style.transform = "scale(1.25) rotate(6deg)";
+        setTimeout(() => {
+          slot.style.transform = "scale(1) rotate(0deg)";
+        }, 250);
+      }
+    } else {
+      // Empty slot
+      if (slot.textContent !== "❔") {
+        slot.textContent = "❔";
+        slot.style.background = "rgba(255, 255, 255, 0.04)";
+        slot.style.border = "1px dashed rgba(255, 255, 255, 0.15)";
+        slot.style.color = "rgba(255, 255, 255, 0.3)";
+        slot.style.boxShadow = "none";
+        slot.style.transform = "scale(1)";
+      }
     }
+  }
+
+  const velocityBar = document.getElementById("mediaVelocityBar");
+  if (velocityBar) {
+    const progress = currentLen / 6;
+    velocityBar.style.width = `${progress * 100}%`;
   }
 }
 
@@ -4670,11 +5130,18 @@ async function predictLoop() {
     processHandSpell(currentHand);
     drawOverlay(currentHand);
   } else {
-    // Stale reset: reset if no hands detected for 2 seconds
-    if (Date.now() - chantState.lastUpdateTime > 2000) {
+    // 1. Stale reset: reset if no hands are detected for 2 seconds
+    if (Date.now() - chantState.lastUpdateTime > 2000 && (chantState.currentSequence.length > 0 || chantState.lastAddedGesture)) {
       resetChantState();
       updateChantUI();
     }
+  }
+  
+  // 2. Inactivity timeout: if user stays idle on same gesture for 4 seconds, decay sequence
+  if (chantState.currentSequence.length > 0 && Date.now() - chantState.lastGestureTime > 4000) {
+    logBattle("🕯️ 結印中斷：凝聚的元素散佚，法印消散了。");
+    resetChantState();
+    updateChantUI();
   }
   
   requestAnimationFrame(predictLoop);
@@ -4734,6 +5201,7 @@ function initInventoryControls() {
 // Init on DOM load
 window.addEventListener("DOMContentLoaded", () => {
   initInventoryControls();
+  updateAiModeUI();
   updateUI();
   updateLevelSelectors();
   initSkillGrid();

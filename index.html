@@ -597,6 +597,18 @@
             <div class="battle-log" id="battleLog">
               <div>🚩 準備出征，打造裝備以提升屬性！</div>
             </div>
+            <!-- AI Tactic Ribbon -->
+            <div class="battle-ai-panel" style="margin-top: 0.6rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+              <span style="font-size: 0.8rem; font-weight: bold; color: #a855f7; display: flex; align-items: center; gap: 4px;">
+                🧠 AI 戰術狀態：<span id="aiModeText" style="color: #a1a1aa;">🛑 純普攻模式 (待結印)</span>
+              </span>
+              <select id="devAiModeSelect" style="background: rgba(0,0,0,0.6); border: 1px solid rgba(168, 85, 247, 0.5); color: #fff; font-size: 0.75rem; border-radius: 4px; padding: 2px 6px; cursor: pointer; transition: all 0.2s ease;">
+                <option value="basic">🛑 手動/純普攻 AI</option>
+                <option value="balanced">⚖️ 平衡戰術 AI</option>
+                <option value="defensive">🛡️ 守護防衛 AI</option>
+                <option value="offensive">⚔️ 強攻狂暴 AI</option>
+              </select>
+            </div>
           </div>
 
           <div class="rpg-sub-tabs">
