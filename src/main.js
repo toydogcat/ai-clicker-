@@ -849,7 +849,7 @@ function checkCostAffordable(cost) {
 function formatCostString(cost) {
   if (!cost) return "免費";
   const mapping = { wood: '🪵', stone: '🪨', food: '🍞', metal: '🪙', energy: '⚡', money: '💰' };
-  return Object.entries(cost).map(([res, val]) => `${mapping[res]} ${val}`).join(" | ");
+  return Object.entries(cost).map(([res, val]) => `${mapping[res]} ${window.formatNumberShort(val)}`).join(" | ");
 }
 
 function refreshCityDetailPanel() {
@@ -921,19 +921,20 @@ function refreshCityDetailPanel() {
     if (manageBuildingDesc) manageBuildingDesc.textContent = db.desc;
 
     let effText = "";
-    if (slot.type === 'cabin') effText = `+${curData.pop} 人口`;
-    else if (slot.type === 'farm') effText = `+${curData.gen} 食/秒`;
-    else if (slot.type === 'smelter') effText = `+${curData.gen} 金屬/秒`;
-    else if (slot.type === 'powerPlant') effText = `+${curData.gen} 能/秒`;
-    else if (slot.type === 'warehouse') effText = `儲存 +${curData.cap}`;
-    else if (slot.type === 'battery') effText = `能源 +${curData.cap}`;
-    else if (slot.type === 'bank') effText = `利息+${curData.gen}, 上限+${curData.cap}`;
-    else if (slot.type === 'school') effText = `+${curData.gen} 知識/秒`;
-    else if (slot.type === 'autoWood') effText = `+${curData.autoGen} 木/秒 (-${curData.energyCost}能)`;
-    else if (slot.type === 'autoMine') effText = `+${curData.autoGen} 石/秒 (-${curData.energyCost}能)`;
-    else if (slot.type === 'autoHarvest') effText = `+${curData.autoGen} 食/秒 (-${curData.energyCost}能)`;
-    else if (slot.type === 'autoStudy') effText = `+${curData.autoGen} 知識/秒 (-${curData.energyCost}能)`;
-    else if (slot.type === 'mithrilFactory') effText = `+${curData.autoGen} 秘銀/秒 (-${curData.metalCost}金屬 -${curData.stoneCost}礦石 -${curData.energyCost}能)`;
+    const fns = window.formatNumberShort;
+    if (slot.type === 'cabin') effText = `+${fns(curData.pop)} 人口`;
+    else if (slot.type === 'farm') effText = `+${fns(curData.gen)} 食/秒`;
+    else if (slot.type === 'smelter') effText = `+${fns(curData.gen)} 金屬/秒`;
+    else if (slot.type === 'powerPlant') effText = `+${fns(curData.gen)} 能/秒`;
+    else if (slot.type === 'warehouse') effText = `儲存 +${fns(curData.cap)}`;
+    else if (slot.type === 'battery') effText = `能源 +${fns(curData.cap)}`;
+    else if (slot.type === 'bank') effText = `利息+${fns(curData.gen)}, 上限+${fns(curData.cap)}`;
+    else if (slot.type === 'school') effText = `+${fns(curData.gen)} 知識/秒`;
+    else if (slot.type === 'autoWood') effText = `+${fns(curData.autoGen)} 木/秒 (-${fns(curData.energyCost)}能)`;
+    else if (slot.type === 'autoMine') effText = `+${fns(curData.autoGen)} 石/秒 (-${fns(curData.energyCost)}能)`;
+    else if (slot.type === 'autoHarvest') effText = `+${fns(curData.autoGen)} 食/秒 (-${fns(curData.energyCost)}能)`;
+    else if (slot.type === 'autoStudy') effText = `+${fns(curData.autoGen)} 知識/秒 (-${fns(curData.energyCost)}能)`;
+    else if (slot.type === 'mithrilFactory') effText = `+${fns(curData.autoGen)} 秘銀/秒 (-${fns(curData.metalCost)}金屬 -${fns(curData.stoneCost)}礦石 -${fns(curData.energyCost)}能)`;
     
     if (manageBuildingEffect) manageBuildingEffect.textContent = effText;
 
@@ -1154,24 +1155,24 @@ function updateUI() {
     diffBadgeVal.style.color = diffCfg.color;
   }
   
-  setAllText(woodEls, Math.floor(state.wood));
-  setAllText(woodMaxEls, caps.wood);
+  setAllText(woodEls, window.formatNumberShort(state.wood));
+  setAllText(woodMaxEls, window.formatNumberShort(caps.wood));
   toggleAllClass(resWoodItems, "res-full", Math.floor(state.wood) >= caps.wood);
 
-  setAllText(stoneEls, Math.floor(state.stone));
-  setAllText(stoneMaxEls, caps.stone);
+  setAllText(stoneEls, window.formatNumberShort(state.stone));
+  setAllText(stoneMaxEls, window.formatNumberShort(caps.stone));
   toggleAllClass(resStoneItems, "res-full", Math.floor(state.stone) >= caps.stone);
 
-  setAllText(foodEls, Math.floor(state.food));
-  setAllText(foodMaxEls, caps.food);
+  setAllText(foodEls, window.formatNumberShort(state.food));
+  setAllText(foodMaxEls, window.formatNumberShort(caps.food));
   toggleAllClass(resFoodItems, "res-full", Math.floor(state.food) >= caps.food);
 
-  setAllText(metalEls, Math.floor(state.metal));
-  setAllText(metalMaxEls, caps.metal);
+  setAllText(metalEls, window.formatNumberShort(state.metal));
+  setAllText(metalMaxEls, window.formatNumberShort(caps.metal));
   toggleAllClass(resMetalItems, "res-full", Math.floor(state.metal) >= caps.metal);
 
-  setAllText(energyEls, Math.floor(state.energy));
-  setAllText(energyMaxEls, caps.energy);
+  setAllText(energyEls, window.formatNumberShort(state.energy));
+  setAllText(energyMaxEls, window.formatNumberShort(caps.energy));
   toggleAllClass(resEnergyItems, "res-full", Math.floor(state.energy) >= caps.energy);
   
   // Calculate dynamic net rates based on active population assignments
@@ -1209,38 +1210,38 @@ function updateUI() {
   const passiveGen = (stats.farmGen + populationFoodGen) * diffMult;
   const netFoodRate = passiveGen - totalFoodCost;
   const sign = netFoodRate >= 0 ? "+" : "";
-  setAllText(foodRateEls, `${sign}${netFoodRate.toFixed(1)}/秒`);
+  setAllText(foodRateEls, `${sign}${window.formatNumberShort(netFoodRate)}/秒`);
   toggleAllClass(foodRateEls, "alert-text", netFoodRate < 0);
 
   // Update automated Metal rates
   const netMetalRate = stats.smelterGen * diffMult;
-  setAllText(metalRateEls, `+${netMetalRate.toFixed(1)}/秒`);
+  setAllText(metalRateEls, `+${window.formatNumberShort(netMetalRate)}/秒`);
 
   // Update automated Energy rates
   const netEnergyRate = stats.powerGen * diffMult;
-  setAllText(energyRateEls, `+${netEnergyRate.toFixed(1)}/秒`);
+  setAllText(energyRateEls, `+${window.formatNumberShort(netEnergyRate)}/秒`);
   
   // Money display with dynamic scaling from banks (Config driven)
   const moneyCap = gameConfig.economy.baseMoneyCap + stats.bankMoneyCap;
-  setAllText(moneyEls, Math.floor(state.money));
-  setAllText(moneyMaxEls, moneyCap >= 1000 ? (moneyCap >= 10000 ? (moneyCap/1000) + 'k' : moneyCap) : moneyCap);
+  setAllText(moneyEls, window.formatNumberShort(state.money));
+  setAllText(moneyMaxEls, window.formatNumberShort(moneyCap));
   toggleAllClass(resMoneyItems, "res-full", Math.floor(state.money) >= moneyCap);
 
   // Knowledge display
-  setAllText(knowledgeEls, Math.floor(state.knowledge));
+  setAllText(knowledgeEls, window.formatNumberShort(state.knowledge));
 
   // Money rate: bank passive + merchants active
   const netMoneyRate = stats.bankGen + populationMoneyGen;
-  setAllText(moneyRateEls, `+${netMoneyRate.toFixed(1)}/秒`);
+  setAllText(moneyRateEls, `+${window.formatNumberShort(netMoneyRate)}/秒`);
 
   // Knowledge rate: school passive + scholars active + autoStudy active (scaled by difficulty)
   const netKnowledgeRate = ((stats.schoolGen + stats.autoStudyGen) * diffMult) + populationKnowledgeGen;
-  setAllText(knowledgeRateEls, `+${netKnowledgeRate.toFixed(1)}/秒`);
+  setAllText(knowledgeRateEls, `+${window.formatNumberShort(netKnowledgeRate)}/秒`);
 
   // Mithril display and rate computation
-  setAllText(mithrilEls, Math.floor(state.mithril || 0));
+  setAllText(mithrilEls, window.formatNumberShort(state.mithril || 0));
   const netMithrilRate = (stats.autoMithrilGen * diffMult) + populationMithrilGen;
-  setAllText(mithrilRateEls, `+${netMithrilRate.toFixed(2)}/秒`);
+  setAllText(mithrilRateEls, `+${window.formatNumberShort(netMithrilRate)}/秒`);
 
   const currentPop = state.population.length;
   workerEl.textContent = currentPop;
@@ -1868,6 +1869,29 @@ document.querySelectorAll(".rpg-sub-tab").forEach(tabBtn => {
   });
 });
 
+// Global short number formatting helper (K for thousands, M for millions, B for billions)
+window.formatNumberShort = function(num, decimals = 1) {
+  if (num === undefined || num === null || isNaN(num)) return "0";
+  const isNegative = num < 0;
+  const abs = Math.abs(num);
+  let result = "";
+  
+  if (abs < 1000) {
+    result = abs % 1 === 0 ? abs.toFixed(0) : abs.toFixed(decimals);
+  } else if (abs < 1000000) {
+    result = (abs / 1000).toFixed(decimals) + "K";
+  } else if (abs < 1000000000) {
+    result = (abs / 1000000).toFixed(decimals) + "M";
+  } else if (abs < 1000000000000) {
+    result = (abs / 1000000000).toFixed(decimals) + "B";
+  } else {
+    result = (abs / 1000000000000).toFixed(decimals) + "T";
+  }
+  
+  // Regex to eliminate trailing ".0" but keep letter suffix (e.g. "12.0K" -> "12K")
+  return (isNegative ? "-" : "") + result.replace(/\.0([KMBT]?)$/, "$1");
+};
+
 // Calculate needed EXP for next level based on planned gaps
 window.getReqExp = function(lvl) {
   const expGaps = [0, 100, 205, 300, 419, 563, 728, 916, 1122, 1347];
@@ -1974,17 +1998,11 @@ function renderPopulationRoster() {
       const remainingExp = reqExp - p.exp;
       const neededKnowledge = remainingExp * 1000;
       
-      const formatCompact = (num) => {
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-        if (num >= 1000) return (num / 1000).toFixed(0) + "K";
-        return num;
-      };
-
       let btnText = "";
       let btnDisabled = false;
 
       if (state.knowledge >= neededKnowledge) {
-        btnText = `📚 知識升級 (-${formatCompact(neededKnowledge)})`;
+        btnText = `📚 知識升級 (-${window.formatNumberShort(neededKnowledge)})`;
       } else {
         const canGain = Math.floor(state.knowledge / 1000);
         if (canGain > 0) {
