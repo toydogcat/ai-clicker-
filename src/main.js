@@ -2194,8 +2194,8 @@ function renderTempleRoster() {
     if (needsExam) {
       actionHTML += `
         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.3); padding: 0.6rem; border-radius: 6px;">
-          <span style="font-size: 0.75rem; color: #93c5fd; font-weight:bold;">🎓 微積分極限考驗 (等級上限突破)：</span>
-          <button class="roster-action-btn btn-exam" style="width: 100%; padding: 0.45rem !important; font-size: 0.85rem !important; font-weight:bold;" onclick="openExamModal('${p.id}')">📖 進入考場挑戰</button>
+          <span style="font-size: 0.75rem; color: #93c5fd; font-weight:bold;">👑 神之晉升殿試 (突破至 Lv.10)：</span>
+          <button class="roster-action-btn btn-exam" style="width: 100%; padding: 0.45rem !important; font-size: 0.85rem !important; font-weight:bold;" onclick="openExamModal('${p.id}', 'mathLevel10')">📖 進入考場挑戰</button>
         </div>
       `;
     }
@@ -2232,15 +2232,9 @@ window.templePromoteResident = function(id) {
   }
   const p = state.population.find(r => r.id === id);
   if (p) {
-    p.jobClass = select.value;
-    p.level = 5;
-    p.exp = 0;
-    p.assignment = 'idle'; 
-    
     if (select) select.blur();
-    
-    showToast(`🎉 恭喜！${p.name} 於神殿成功轉職為 ${gameConfig.heroes[p.jobClass].name}！已重置為 Lv.5 從新覺醒出發！`, "success");
-    updateUI();
+    // Open Qualification Exam Modal instead of instant promoting!
+    window.openExamModal(id, 'mathPromote', select.value);
   }
 };
 
@@ -2424,29 +2418,191 @@ window.changeResidentAssignment = function(id, newAssignment) {
 
 
 
-let currentExamResidentId = null;
-
-window.openExamModal = function(id) {
-  currentExamResidentId = id;
-  const modal = document.getElementById('examModal');
-  if (modal) modal.style.display = 'flex';
+// Dynamic Exam Pool System for "Educational Gamification"
+const EXAM_BANKS = {
+  mathPromote: [ // Lv.5 Job Change (Easy/Medium Math)
+    { q: "試問複數單位平方 $i^2$ 的值是多少？", opts: ["1", "-1", "0", "$i$"], ans: "-1" },
+    { q: "代數求解：$2x + 7 = 15$，請問 $x = $？", opts: ["3", "4", "5", "8"], ans: "4" },
+    { q: "對數計算：$\\log_{10}(1000)$ 等於？", opts: ["1", "2", "3", "4"], ans: "3" },
+    { q: "直角三角形兩股長度為 3 與 4，其斜邊長度為？", opts: ["4", "5", "6", "7"], ans: "5" },
+    { q: "平面直角座標系中，點 $(3, 4)$ 到原點的距離為？", opts: ["3", "4", "5", "7"], ans: "5" },
+    { q: "若一個圓的半徑為 $r$，其面積公式為？", opts: ["$2\\pi r$", "$\\pi r^2$", "$\\frac{4}{3}\\pi r^3$", "$\\pi r$"], ans: "$\\pi r^2$" }
+  ],
+  mathLevel10: [ // Lv.9 -> Lv.10 (Hard Math / Calculus)
+    { q: "求自然對數的導數：$\\frac{d}{dx} (\\ln x) = $？", opts: ["$\\frac{1}{x}$", "$e^x$", "$x$", "$\\frac{1}{x^2}$"], ans: "$\\frac{1}{x}$" },
+    { q: "計算定積分：$\\int_0^1 3x^2 dx = $？", opts: ["0.5", "1", "2", "3"], ans: "1" },
+    { q: "三角函數恆等式：$\\sin^2 \\theta + \\cos^2 \\theta = $？", opts: ["0", "1", "2", "不存在"], ans: "1" },
+    { q: "求極限值：$\\lim_{x \\to \\infty} \\frac{2x^2 + x}{x^2 - 1} = $？", opts: ["0", "1", "2", "$\\infty$"], ans: "2" },
+    { q: "求導數：$\\frac{d}{dx} (e^{2x}) = $？", opts: ["$e^{2x}$", "$2e^{2x}$", "$\\frac{1}{2}e^{2x}$", "$2x e^{2x-1}$"], ans: "$2e^{2x}$" }
+  ],
+  englishShop: [ // Dynamic Extra Shop Refresh Exam (English Practice)
+    { q: "下列英文單字何者是「形容詞 (Adjective)」？", opts: ["Beauty", "Beautiful", "Beautify", "Beautifully"], ans: "Beautiful" },
+    { q: "介係詞辨析：\"He is interested ____ music.\"", opts: ["in", "on", "at", "with"], ans: "in" },
+    { q: "英文單字填空：\"I need to ______ my homework.\"", opts: ["make", "do", "take", "have"], ans: "do" },
+    { q: "單字 \"Abundant\" 的最接近同義詞是？", opts: ["Scarce", "Rare", "Plentiful", "Hidden"], ans: "Plentiful" },
+    { q: "慣用語 \"A piece of cake\" 的含意是？", opts: ["一塊蛋糕", "奢侈享受", "非常簡單的事", "麻煩的開端"], ans: "非常簡單的事" },
+    { q: "英文單字 \"Generous\" (慷慨的) 其反義詞是？", opts: ["Kind", "Helpful", "Stingy", "Rich"], ans: "Stingy" },
+    { q: "動詞 \"write\" 的過去分詞 (Past Participle) 為何？", opts: ["wrote", "written", "writing", "writes"], ans: "written" },
+    { q: "單字 \"Incredible\" (不可思議的) 的同義詞是：", opts: ["Ordinary", "Boring", "Amazing", "Simple"], ans: "Amazing" },
+    { q: "慣用語 \"Break a leg\" 在口語中的含意是？", opts: ["祝你好運！", "折斷大腿", "遭遇不幸", "快點跑開"], ans: "祝你好運！" },
+    { q: "中翻英：「冒險」最對應的英文單字是？", opts: ["Advance", "Adventure", "Adversity", "Advice"], ans: "Adventure" }
+  ],
+  scienceHunt: [ // Dynamic High Level Hunt Interrupt (Science Trivia)
+    { q: "下列關於「光合作用」的敘述，何者正確？", opts: ["放出大量一氧化碳", "主要利用葉綠素將二氧化碳與水轉化為糖與氧", "主要在夜間進行", "這是動物獲取熱量的唯一途徑"], ans: "主要利用葉綠素將二氧化碳與水轉化為糖與氧" },
+    { q: "太陽系中，哪一顆行星因表面覆蓋大量氧化鐵而顯現紅色，被稱為「紅色星球」？", opts: ["水星", "金星", "火星", "土星"], ans: "火星" },
+    { q: "在標準一大氣壓下，純水的「沸點」為攝氏幾度？", opts: ["0度", "50度", "100度", "200度"], ans: "100度" },
+    { q: "人體血液中，主要負責輸送氧氣的「紅血球成分」是什麼？", opts: ["白血球", "血小板", "血紅素", "淋巴液"], ans: "血紅素" },
+    { q: "牛頓第二運動定律中，力與質量、加速度的關係式為何？", opts: ["$E = mc^2$", "$F = ma$", "$V = IR$", "$P = IV$"], ans: "$F = ma$" },
+    { q: "物質若不經過液態，由固體直接轉變為氣體的物理現象稱為？", opts: ["汽化", "昇華", "凝固", "熔化"], ans: "昇華" },
+    { q: "下列哪一項是目前科學界公認生物體的基本結構與功能單位？", opts: ["分子", "原子", "細胞", "器官"], ans: "細胞" },
+    { q: "地球的大氣層中，所佔體積比例「最高」的氣體是？", opts: ["氧氣", "二氧化碳", "氫氣", "氮氣"], ans: "氮氣" },
+    { q: "「酸雨」的主要形成原因，是因為空氣中含有過多的何種污染物？", opts: ["二氧化碳", "硫氧化物與氮氧化物", "惰性氣體", "水蒸氣"], ans: "硫氧化物與氮氧化物" },
+    { q: "在力學計算中，一個物體在地球表面受到的重力加速度 $g$ 大約是多少？", opts: ["$9.8 \\text{ m/s}^2$", "$1.6 \\text{ m/s}^2$", "$12.5 \\text{ m/s}^2$", "$3.6 \\text{ m/s}^2$"], ans: "$9.8 \\text{ m/s}^2$" }
+  ]
 };
 
-window.submitExam = function(answer) {
+let currentExamContext = null;
+
+// Fisher-Yates algorithm to shuffle options and prevent position recall
+function shuffleOptions(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+window.openExamModal = function(residentId, examType, targetJobClass = null) {
+  let p = null;
+  if (residentId) {
+    p = state.population.find(r => r.id === residentId);
+    if (!p) return;
+  }
+  
+  const pool = EXAM_BANKS[examType];
+  if (!pool || pool.length === 0) return;
+  
+  // Pull question & shuffle options
+  const questionObj = pool[Math.floor(Math.random() * pool.length)];
+  const shuffledOpts = shuffleOptions(questionObj.opts);
+  
+  // Store into localized context
+  currentExamContext = {
+    id: residentId,
+    type: examType,
+    targetJob: targetJobClass,
+    shuffledOpts: shuffledOpts,
+    correctAnswerText: questionObj.ans
+  };
+  
+  const titleEl = document.getElementById('examTitle');
+  const descEl = document.getElementById('examDesc');
+  const questionEl = document.getElementById('examQuestion');
+  const optionsListEl = document.getElementById('examOptionsList');
   const modal = document.getElementById('examModal');
-  if (answer === 1) {
-    const p = state.population.find(r => r.id === currentExamResidentId);
-    if (p && p.level === 9) {
+  
+  // Dynamic Title configuration
+  if (examType === 'mathPromote') {
+    titleEl.innerHTML = `🎓【${p.name}】職業資格考試`;
+    const targetName = gameConfig.heroes[targetJobClass]?.name || "";
+    descEl.innerText = `※ 晉升為「${targetName}」的資格考核。需解出此數學題！`;
+  } else if (examType === 'mathLevel10') {
+    titleEl.innerHTML = `👑【${p.name}】神之晉升殿試`;
+    descEl.innerText = `※ 突破至 Lv.10 極限上限之測驗。需解出此數學題！`;
+  } else if (examType === 'englishShop') {
+    titleEl.innerHTML = `🛍️【神秘商店】英文學力挑戰`;
+    descEl.innerText = `※ 每日常規刷新上限 (10次) 已滿！答對此題英文即可免費進貨！`;
+  } else if (examType === 'scienceHunt') {
+    titleEl.innerHTML = `🌿【自然學堂】自動討伐安全考核`;
+    descEl.innerText = `※ 本次高階副本掛機已滿 10 次！請解答自然問題解開安全鎖，繼續出征打寶！`;
+  }
+  
+  // Render question and build option rows
+  questionEl.innerHTML = questionObj.q;
+  optionsListEl.innerHTML = shuffledOpts.map((opt, index) => {
+    return `<button class="build-btn" style="padding: 0.8rem; text-align: center; justify-content: center; background: #334155; border-radius: 6px; font-size: 1rem;" onclick="window.submitExam(${index})">${opt}</button>`;
+  }).join('');
+  
+  if (modal) modal.style.display = 'flex';
+  
+  // Trigger KaTeX Auto-Renderer for beautiful LaTeX formulas!
+  if (typeof renderMathInElement === 'function') {
+    setTimeout(() => {
+      renderMathInElement(modal, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }, 20);
+  }
+};
+
+window.submitExam = function(selectedIndex) {
+  const modal = document.getElementById('examModal');
+  if (!currentExamContext) return;
+  
+  let p = null;
+  if (currentExamContext.id) {
+    p = state.population.find(r => r.id === currentExamContext.id);
+    if (!p) {
+      if (modal) modal.style.display = 'none';
+      currentExamContext = null;
+      return;
+    }
+  }
+  
+  const selectedAnswerText = currentExamContext.shuffledOpts[selectedIndex];
+  const isCorrect = selectedAnswerText === currentExamContext.correctAnswerText;
+  
+  if (isCorrect) {
+    if (currentExamContext.type === 'mathPromote') {
+      // Apply Dynamic Class promotion!
+      p.jobClass = currentExamContext.targetJob;
+      p.level = 5;
+      p.exp = 0;
+      p.assignment = 'idle';
+      showToast(`🎉 恭喜！${p.name} 通過考核，順利轉職為 ${gameConfig.heroes[p.jobClass].name}！`, "success");
+    } else if (currentExamContext.type === 'mathLevel10') {
+      // Apply Dynamic Cap Break!
       p.level = 10;
       p.exp = 0;
-      showToast(`🎓 恭喜！${p.name} 答對了微積分，突破界限升至 Lv.10！解鎖終極大招！`, "success");
-      updateUI();
+      showToast(`🎓 恭喜！${p.name} 成功突破神聖殿試，晉升至 Lv.10 極限層次！`, "success");
+    } else if (currentExamContext.type === 'englishShop') {
+      // Trigger free shop refresh
+      rollSecretShop(false);
+      renderSecretShop();
+      if (!state.secretShop.refreshCount) state.secretShop.refreshCount = 0;
+      state.secretShop.refreshCount++;
+      showToast(`🎉 英文正確！獲得了一次免費的神秘商店刷新機會！`, "success");
+    } else if (currentExamContext.type === 'scienceHunt') {
+      // Unlock the AFK gating
+      state.huntGateCount = 0;
+      showToast(`🎉 解答正確！成功突破大自然安全鎖，出征隊伍恢復掛機戰鬥！`, "success");
+      
+      // Auto-resume spawn if still active on hunt
+      if (combatState.active && combatState.target === "hunt") {
+        spawnEnemy();
+        logBattle(`➡ 自然神殿護罩散去，出征隊伍再度遭遇下一波對手！`, "log-item-heal");
+      }
     }
+    updateUI();
   } else {
-    showToast("❌ 答錯了！請回去重新準備微積分考試。", "error");
+    if (currentExamContext.type === 'mathPromote') {
+      showToast(`❌ 答錯了！數學運算失誤，${p.name} 的轉職申請被拒絕了！`, "error");
+    } else if (currentExamContext.type === 'mathLevel10') {
+      showToast(`❌ 答錯了！${p.name} 無法參透數理奧秘，極限突破失敗！`, "error");
+    } else if (currentExamContext.type === 'englishShop') {
+      showToast(`❌ 答錯了！單字拼讀有誤，無法獲得額外刷新次數，請重試！`, "error");
+    } else if (currentExamContext.type === 'scienceHunt') {
+      showToast(`❌ 答錯了！知識儲備不足，無法解除大自然考核鎖，請重新作答解鎖戰鬥！`, "error");
+    }
   }
+  
   if (modal) modal.style.display = 'none';
-  currentExamResidentId = null;
+  currentExamContext = null;
 };
 
 // Check eligible job classes based on docs/fight_rule.md guidelines
@@ -2692,6 +2848,17 @@ document.querySelectorAll(".buy-eq-btn").forEach(btn => {
 });
 
 // --- Secret Shop Management ---
+function checkAndResetShopRefresh() {
+  const today = new Date().toLocaleDateString();
+  if (!state.secretShop) {
+    state.secretShop = { items: [], lastLevel: 1, refreshCount: 0, lastRefreshDate: today };
+  }
+  if (state.secretShop.lastRefreshDate !== today) {
+    state.secretShop.lastRefreshDate = today;
+    state.secretShop.refreshCount = 0;
+  }
+}
+
 function getSecretRefreshCost(level) {
   return Math.max(5, level * 2);
 }
@@ -2708,6 +2875,7 @@ function getSecretShopMithrilCost(level, rarity) {
 }
 
 function rollSecretShop(isInit = false) {
+  checkAndResetShopRefresh();
   const level = secretShopLevelSelect ? parseInt(secretShopLevelSelect.value) : 1;
   state.secretShop.lastLevel = level;
   const items = [];
@@ -2815,7 +2983,16 @@ window.renderSecretShop = function() {
   
   const curLevel = secretShopLevelSelect ? parseInt(secretShopLevelSelect.value) : 1;
   const refreshCost = getSecretRefreshCost(curLevel);
-  if (secretRefreshCostText) secretRefreshCostText.textContent = `💠 ${refreshCost}`;
+  
+  checkAndResetShopRefresh();
+  const dailyUsed = state.secretShop.refreshCount || 0;
+  if (secretRefreshCostText) {
+    if (dailyUsed >= 10) {
+      secretRefreshCostText.textContent = "📝 英文挑戰 (獲得額外免費刷新)";
+    } else {
+      secretRefreshCostText.textContent = `🔁 刷新貨架 (💠 ${refreshCost} / 剩 ${10 - dailyUsed}次)`;
+    }
+  }
   
   // If items list is empty, auto-roll one!
   if (!state.secretShop.items || state.secretShop.items.length === 0) {
@@ -2902,6 +3079,15 @@ window.renderSecretShop = function() {
 // Refresh button handler
 if (btnRefreshSecretShop) {
   btnRefreshSecretShop.addEventListener("click", () => {
+    checkAndResetShopRefresh();
+    const dailyUsed = state.secretShop.refreshCount || 0;
+    
+    if (dailyUsed >= 10) {
+      // Daily 10 limit hit: Redirect to English scholar exam for FREE refreshes!
+      window.openExamModal(null, 'englishShop', null);
+      return;
+    }
+    
     const level = parseInt(secretShopLevelSelect.value);
     const cost = getSecretRefreshCost(level);
     const currentMithril = state.mithril || 0;
@@ -2912,6 +3098,9 @@ if (btnRefreshSecretShop) {
     }
     
     state.mithril = currentMithril - cost;
+    if (!state.secretShop.refreshCount) state.secretShop.refreshCount = 0;
+    state.secretShop.refreshCount++;
+    
     rollSecretShop(false);
     renderSecretShop();
     updateUI();
@@ -2923,7 +3112,16 @@ if (secretShopLevelSelect) {
   secretShopLevelSelect.addEventListener("change", () => {
     const level = parseInt(secretShopLevelSelect.value);
     const cost = getSecretRefreshCost(level);
-    if (secretRefreshCostText) secretRefreshCostText.textContent = `💠 ${cost}`;
+    
+    checkAndResetShopRefresh();
+    const dailyUsed = state.secretShop.refreshCount || 0;
+    if (secretRefreshCostText) {
+      if (dailyUsed >= 10) {
+        secretRefreshCostText.textContent = "📝 英文挑戰 (獲得額外免費刷新)";
+      } else {
+        secretRefreshCostText.textContent = `🔁 刷新貨架 (💠 ${cost} / 剩 ${10 - dailyUsed}次)`;
+      }
+    }
   });
 }
 
@@ -3619,7 +3817,23 @@ function updateAiModeUI() {
 }
 
 function startQuest(type) {
-  if (combatState.active) return;
+  // Interrupt check for gated high-level hunts
+  if (combatState.active) {
+    if (type === 'hunt' && state.huntGateCount >= 10) {
+      window.openExamModal(null, 'scienceHunt', null);
+      showToast("📖 請先答對自然科安全考核測驗以恢復掛機！", "warning");
+      return;
+    }
+    return;
+  }
+  
+  const huntLvlEl = document.getElementById("targetHuntLevel");
+  const selectedHuntLevel = huntLvlEl ? parseInt(huntLvlEl.value) : 1;
+  if (type === 'hunt' && selectedHuntLevel >= 7 && state.huntGateCount >= 10) {
+    window.openExamModal(null, 'scienceHunt', null);
+    showToast("📖 請先答對自然科安全考核測驗！", "warning");
+    return;
+  }
   
   const combatParty = state.population.filter(p => p.assignment === 'combat');
   
@@ -3630,10 +3844,7 @@ function startQuest(type) {
   
   combatState.active = true;
   combatState.target = type;
-  
-  // Read user selected hunt level
-  const huntLvlEl = document.getElementById("targetHuntLevel");
-  combatState.huntLevel = huntLvlEl ? parseInt(huntLvlEl.value) : 1;
+  combatState.huntLevel = selectedHuntLevel;
 
   combatState.party = combatParty.map(p => p.id);
   
@@ -4465,6 +4676,20 @@ function checkBattleResolution() {
     
     // Auto next hunt if not boss
     if (combatState.target === "hunt" && combatState.active) {
+      const curLvl = combatState.huntLevel || 1;
+      if (curLvl >= 7) {
+        if (!state.huntGateCount) state.huntGateCount = 0;
+        state.huntGateCount++;
+        
+        if (state.huntGateCount >= 10) {
+          logBattle(`⚠️ 【自然學堂】高階副本討伐已達 10 次，觸發學術保護鎖，請完成自然問題以恢復自動掛機！`, "log-item-atb");
+          setTimeout(() => {
+            window.openExamModal(null, 'scienceHunt', null);
+          }, 1000);
+          return; // Force STOP spawning the next wave until solved!
+        }
+      }
+      
       setTimeout(() => {
         if (combatState.active) {
           spawnEnemy();
