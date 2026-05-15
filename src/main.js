@@ -1433,8 +1433,15 @@ function updateUI() {
     const btnQuestBoss = document.getElementById("btnQuestBoss");
     if (btnQuestBoss) {
       const bLvl = state.bossLevel || 1;
-      const bossNames = ["【貪】", "【貪 嗔】", "【貪 嗔 癡】"];
-      const bName = bossNames[Math.min(3, bLvl) - 1] || bossNames[0];
+      const bossNames = [
+        "【貪】", 
+        "【貪 嗔】", 
+        "【貪 嗔 癡】", 
+        "【地獄 6柱】", 
+        "【深淵 4癡】", 
+        "【滅絕 6癡】"
+      ];
+      const bName = bossNames[Math.min(6, bLvl) - 1] || bossNames[bossNames.length - 1];
       btnQuestBoss.textContent = `💀 挑戰巨獸 Lv.${bLvl} ${bName}`;
     }
 
@@ -3708,17 +3715,28 @@ function spawnEnemy() {
       });
     }
   } else {
-    // Spawn multiple Bosses sequentially matching current state.bossLevel (1 to 3)
+    // Spawn Boss groups mapped sequentially by state.bossLevel (1 to 6)
     const bLevel = state.bossLevel || 1;
-    const roster = [
-      { key: "greed", id: "enemy-boss-greed" },
-      { key: "anger", id: "enemy-boss-anger" },
-      { key: "ignorance", id: "enemy-boss-ignorance" }
-    ];
+    let bossKeys = [];
     
-    const count = Math.min(3, bLevel);
-    for (let i = 0; i < count; i++) {
-      const bType = roster[i].key;
+    if (bLevel === 1) {
+      bossKeys = ["greed"];
+    } else if (bLevel === 2) {
+      bossKeys = ["greed", "anger"];
+    } else if (bLevel === 3) {
+      bossKeys = ["greed", "anger", "ignorance"];
+    } else if (bLevel === 4) {
+      // 2 greed, 2 anger, 2 ignorance
+      bossKeys = ["greed", "greed", "anger", "anger", "ignorance", "ignorance"];
+    } else if (bLevel === 5) {
+      // 4 ignorance
+      bossKeys = ["ignorance", "ignorance", "ignorance", "ignorance"];
+    } else {
+      // Lv.6+: 6 ignorance
+      bossKeys = ["ignorance", "ignorance", "ignorance", "ignorance", "ignorance", "ignorance"];
+    }
+    
+    bossKeys.forEach((bType, i) => {
       const bossCfg = gameConfig.combat.bosses[bType];
       if (bossCfg) {
         const finalBoss = JSON.parse(JSON.stringify(bossCfg));
@@ -3730,14 +3748,14 @@ function spawnEnemy() {
         
         combatState.enemies.push({
           ...finalBoss,
-          id: roster[i].id,
+          id: `enemy-boss-${bType}-${i}`,
           atb: 0,
           isBoss: true,
-          isFrontRow: true, // Bosses always Front Row for simpler visual stacking (max 3)
-          isRanged: true // Bosses are huge range sweeping units
+          isFrontRow: i < 3, // Stack first 3 in Front Row, remaining 3 in Back Row
+          isRanged: true
         });
       }
-    }
+    });
   }
   
   // Render Enemies to physical side columns
@@ -4347,11 +4365,11 @@ function checkBattleResolution() {
       
       // Sequential Level Unlock: If current boss level is defeated, advance it!
       const prevLevel = state.bossLevel || 1;
-      if (state.bossLevel < 3) {
+      if (state.bossLevel < 6) {
         state.bossLevel++;
         showToast(`🏆 討伐成就解鎖！下一階段挑戰已擴增至 Lv.${state.bossLevel}！`, "success");
       } else {
-        showToast("🏆 你已成功擊破終極試煉所有巨獸！城鎮的英雄們載歌載舞！", "success");
+        showToast("🏆 你已成功擊破終極試煉【Lv.6 滅絕境界】！城鎮的英雄們載歌載舞！", "success");
       }
       
       // Flag matching boss keys as defeated based on previous level
