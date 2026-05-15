@@ -2952,18 +2952,26 @@ window.renderInventory = function() {
     
     el.title = title;
     
-    // Handle Equip selection
+    // Handle Equip selection / Double-click to sell debounce
+    let clickTimer = null;
     el.addEventListener("click", () => {
-      window.openEquipModal(index);
+      clickTimer = setTimeout(() => {
+        window.openEquipModal(index);
+      }, 220); // 220ms window for potential double click
     });
 
     // Handle sell
     el.addEventListener("dblclick", (e) => {
       e.stopPropagation();
-      const sellVal = Math.ceil(gameConfig.eqSpecs.price[item.level] * 0.3);
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+      const basePrice = gameConfig.eqSpecs.price[item.level] || 100;
+      const sellVal = Math.ceil(basePrice * 0.3);
       state.inventory.splice(index, 1);
       state.money += sellVal;
-      showToast(`💰 賣出裝備獲得 ${sellVal}`, "info");
+      showToast(`💰 賣出裝備獲得 ${window.formatNumberShort(sellVal)}`, "info");
       renderInventory();
       updateUI();
     });
@@ -4265,7 +4273,7 @@ function checkBattleResolution() {
     else if (roll < 0.55) rKey = "magic";
     
     if (rKey) {
-      const lvl = Math.min(7, Math.ceil(totalExp / 20));
+      const lvl = Math.min(10, Math.ceil(totalExp / 20));
       
       // Check Auto-Sell settings
       if (state.autoSell && state.autoSell[rKey]) {
