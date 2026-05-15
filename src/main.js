@@ -1968,6 +1968,43 @@ function renderPopulationRoster() {
       </button>
     `;
 
+    let knowledgeBtnHtml = "";
+    if (p.jobClass === "novice" && p.level < 10) {
+      const reqExp = window.getReqExp(p.level);
+      const remainingExp = reqExp - p.exp;
+      const neededKnowledge = remainingExp * 1000;
+      
+      const formatCompact = (num) => {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+        if (num >= 1000) return (num / 1000).toFixed(0) + "K";
+        return num;
+      };
+
+      let btnText = "";
+      let btnDisabled = false;
+
+      if (state.knowledge >= neededKnowledge) {
+        btnText = `📚 知識升級 (-${formatCompact(neededKnowledge)})`;
+      } else {
+        const canGain = Math.floor(state.knowledge / 1000);
+        if (canGain > 0) {
+          btnText = `📚 知識灌注 (+${canGain} EXP)`;
+        } else {
+          btnText = `📚 知識不足 (需 1K)`;
+          btnDisabled = true;
+        }
+      }
+
+      knowledgeBtnHtml = `
+        <button class="roster-action-btn btn-study" 
+          onclick="infuseKnowledge('${p.id}')" 
+          ${btnDisabled ? "disabled" : ""} 
+          title="消耗大腦知識點數，直接灌頂流浪者！(1000 知識 = 1 EXP)">
+          ${btnText}
+        </button>
+      `;
+    }
+
     const hpBarHtml = `
       <div>
         <div class="hp-bar-wrapper">
@@ -2017,7 +2054,9 @@ function renderPopulationRoster() {
             </span>
             <span style="background: rgba(239,68,68,0.15); color:#ef4444; font-weight:bold; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); display: inline-flex; align-items: center; gap: 4px;">🏥 療養中(+5/s)</span>
           </div>
-          ${exileBtnHtml}
+          <div class="roster-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+            ${exileBtnHtml}
+          </div>
         </div>
         <div class="roster-body-box" style="border-color: rgba(239,68,68,0.15) !important;">
           ${hpBarHtml}
@@ -2053,7 +2092,10 @@ function renderPopulationRoster() {
             <span class="roster-name">${p.name} <span style="font-size:0.75rem; opacity:0.75;">${genderSym}${faithSym}</span> (Lv.${p.level})</span>
             ${jobBadge}
           </div>
-          ${exileBtnHtml}
+          <div class="roster-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+            ${knowledgeBtnHtml}
+            ${exileBtnHtml}
+          </div>
         </div>
         <div class="roster-body-box">
           ${hpBarHtml}
@@ -2187,6 +2229,52 @@ window.exileResident = function(id) {
     showToast(`🥾 ${p.name} 已被流放出城...`, "warning");
     updateUI();
   }
+};
+
+window.infuseKnowledge = function(id) {
+  const p = state.population.find(r => r.id === id);
+  if (!p) return;
+  
+  if (p.jobClass !== "novice") {
+    showToast("❌ 只有未轉職的流浪者可以接受知識灌頂！", "error");
+    return;
+  }
+  
+  if (p.level >= 10) {
+    showToast("❌ 角色等級已達極限上限！", "error");
+    return;
+  }
+
+  const req = window.getReqExp(p.level);
+  const remainingExp = req - p.exp;
+  const requiredKnowledge = remainingExp * 1000;
+  
+  if (state.knowledge < 1000) {
+    showToast("❌ 城鎮累積知識不足，至少需要 1000 知識來轉化 1 EXP！", "error");
+    return;
+  }
+
+  // Max out or consume all available knowledge to gain proportional EXP
+  const spendLimit = Math.min(state.knowledge, requiredKnowledge);
+  const actualSpend = Math.floor(spendLimit / 1000) * 1000;
+  
+  if (actualSpend <= 0) return;
+  
+  const expGained = actualSpend / 1000;
+  
+  state.knowledge -= actualSpend;
+  p.exp += expGained;
+  
+  showToast(`📚 消耗了 ${actualSpend} 知識，注入 ${p.name} 的大腦，獲得了 ${expGained} EXP！`, "success");
+  
+  // Check for Level Up
+  if (p.exp >= req) {
+    p.exp -= req;
+    p.level += 1;
+    showToast(`✨🆙 ${p.name} 的心靈開竅，等級提升至 Lv.${p.level}！`, "info");
+  }
+  
+  updateUI();
 };
 
 window.reviveHero = function(id) {
