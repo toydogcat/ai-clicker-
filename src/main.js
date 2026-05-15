@@ -4185,6 +4185,30 @@ function heroExecuteAttack(pid) {
 }
 
 function enemyExecuteAttack(enemy) {
+  // Helper to safely deal damage to a specific hero, trigger flash, and handle focused redirection
+  const dealDmgToHero = (h, amount) => {
+    h.hp = Math.max(0, h.hp - amount);
+    
+    // Flash animation
+    const pEl = document.getElementById(`prof-${h.id}`);
+    pEl?.classList.add("attack-anim");
+    setTimeout(() => pEl?.classList.remove("attack-anim"), 150);
+
+    // Redirect targeting assistance focus if target died
+    if (h.id === combatState.focusedHeroId && h.hp <= 0) {
+      const combatParty = state.population.filter(p => combatState.party.includes(p.id));
+      const alive = combatParty.filter(p => p.hp > 0);
+      const remainingAlive = alive.filter(p => p.id !== h.id);
+      if (remainingAlive.length > 0) {
+        combatState.focusedHeroId = remainingAlive[0].id;
+        logBattle(`📣【戰場廣播】對焦英雄【${h.name}】不幸倒地！詠唱輔助轉移至【${remainingAlive[0].name}】！`, "log-item-atb");
+        updateHeroSheets();
+      } else {
+        combatState.focusedHeroId = null;
+      }
+    }
+  };
+
   // Select smart target using range and Focus Fire AI
   const candidates = getValidTargets('enemy', enemy.isRanged);
   const target = pickBestTarget(candidates);
@@ -4192,37 +4216,53 @@ function enemyExecuteAttack(enemy) {
   
   const eff = calcEffStats(target);
   
-  // Evade?
-  const evasionChance = Math.max(0, eff.evasion - ((enemy.hit||1.0) - 1.0)); // Enemies don't have hit stat yet, assume 1.0
+  // Boss Unique Skill Check (40% chance to execute signature skill)
+  if (enemy.isBoss && Math.random() < 0.4) {
+    if (enemy.id.includes("greed")) {
+      const dmg = Math.max(1, Math.floor((enemy.atk * 2.0) - eff.def));
+      dealDmgToHero(target, dmg);
+      // Self heal 100% of damage
+      enemy.hp = Math.min(enemy.maxHp, enemy.hp + dmg);
+      logBattle(`👹【黃金暴食】${enemy.name} 吞噬 ${target.name} 造成 <b class="log-item-dmg">${dmg}</b> 粉碎傷害，並將生命轉化為巨獸體力 <span style="color:#10b981; font-weight:bold;">+${dmg} HP</span>！`, "log-item-dmg");
+      checkBattleResolution();
+      return;
+    } 
+    else if (enemy.id.includes("anger")) {
+      const aliveHeroes = state.population.filter(p => combatState.party.includes(p.id) && p.hp > 0);
+      logBattle(`🔥【地獄業火】${enemy.name} 仰天怒吼，引導熔岩洪流向我方全軍全域傾瀉！`, "log-item-dmg");
+      aliveHeroes.forEach(h => {
+        const hEff = calcEffStats(h);
+        const mDmg = Math.max(1, Math.floor((enemy.matk * 1.2) - hEff.mdef));
+        dealDmgToHero(h, mDmg);
+        logBattle(`☄️ ${h.name} 遭受炙熱炎柱灼燒，受到 <b class="log-item-dmg">${mDmg}</b> 魔法傷害。`);
+      });
+      checkBattleResolution();
+      return;
+    } 
+    else if (enemy.id.includes("ignorance")) {
+      const mDmg = Math.max(1, Math.floor((enemy.matk * 1.5) - eff.mdef));
+      dealDmgToHero(target, mDmg);
+      // ATB reduction mechanics
+      const drainVal = 40;
+      target.atb = Math.max(0, (target.atb || 0) - drainVal);
+      logBattle(`🦑【愚痴風暴】${enemy.name} 激起心智迷惘，${target.name} 遭受 <b class="log-item-dmg">${mDmg}</b> 精神衝擊，且時間序 (ATB) 被吸取 <span style="color:#f43f5e; font-weight:bold;">-${drainVal}%</span>！`, "log-item-dmg");
+      checkBattleResolution();
+      return;
+    }
+  }
+
+  // Standard attack - Evasion check
+  const evasionChance = Math.max(0, eff.evasion - ((enemy.hit||1.0) - 1.0));
   if (Math.random() < evasionChance) {
     logBattle(`👾 ${enemy.name} 攻擊 ${target.name}，被驚險地 <span style="color:#9ca3af;">Miss</span> 閃避了！`);
     return;
   }
 
+  // Standard attack - Execution
   const dmg = Math.max(1, enemy.atk - eff.def);
-  target.hp = Math.max(0, target.hp - dmg);
+  dealDmgToHero(target, dmg);
   
-  // If the user-focused hero died, automatically shift control to the next alive hero
-  if (target.id === combatState.focusedHeroId && target.hp <= 0) {
-    const combatParty = state.population.filter(p => combatState.party.includes(p.id));
-    const alive = combatParty.filter(p => p.hp > 0);
-    const remainingAlive = alive.filter(p => p.id !== target.id);
-    if (remainingAlive.length > 0) {
-      combatState.focusedHeroId = remainingAlive[0].id;
-      logBattle(`📣【戰場廣播】對焦英雄【${target.name}】不幸倒地！詠唱輔助轉移至【${remainingAlive[0].name}】！`, "log-item-atb");
-      updateHeroSheets();
-    } else {
-      combatState.focusedHeroId = null;
-    }
-  }
-  
-  logBattle(`👾 ${enemy.name} 發動攻擊，${target.name} 受到 <b class="log-item-dmg">${dmg}</b> 傷害。`);
-
-  // Flash animation
-  const pEl = document.getElementById(`prof-${target.id}`);
-  pEl?.classList.add("attack-anim");
-  setTimeout(() => pEl?.classList.remove("attack-anim"), 150);
-
+  logBattle(`👾 ${enemy.name} 發動物理打擊，${target.name} 受到 <b class="log-item-dmg">${dmg}</b> 傷害。`);
   checkBattleResolution();
 }
 
