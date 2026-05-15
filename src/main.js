@@ -3218,6 +3218,32 @@ function updateHeroSheets() {
     card.id = `prof-${p.id}`;
     
     const eff = calcEffStats(p);
+    const baseEff = calcEffStats({ ...p, eq: null });
+    
+    // Helper to split rendering: Base Value (White) + Equipment Bonus (Emerald Green)
+    const formatStatDiff = (key, isPct = false, fixed = 0) => {
+      const total = eff[key] || 0;
+      const base = baseEff[key] || 0;
+      if (isPct) {
+        const baseVal = Math.round(base * 100);
+        const totalVal = Math.round(total * 100);
+        const diff = totalVal - baseVal;
+        if (diff > 0) {
+          return `${baseVal}% <span style="color: #34d399; font-size: 0.62rem; font-weight: bold;">(+${diff}%)</span>`;
+        }
+        return `${totalVal}%`;
+      } else {
+        const baseVal = Number(base.toFixed(fixed));
+        const totalVal = Number(total.toFixed(fixed));
+        const diff = Number((totalVal - baseVal).toFixed(fixed));
+        if (diff > 0) {
+          const diffStr = fixed > 0 ? diff.toFixed(fixed) : diff;
+          return `${baseVal} <span style="color: #34d399; font-size: 0.62rem; font-weight: bold;">(+${diffStr})</span>`;
+        }
+        return fixed > 0 ? totalVal.toFixed(fixed) : totalVal;
+      }
+    };
+
     const genderSym = p.gender === 'female' ? '♀️' : '♂️';
     const faithSym = p.faith ? '✨' : '🪐';
     
@@ -3359,18 +3385,18 @@ function updateHeroSheets() {
       if (state.tech.appraisalTech) {
         html += `
           <div class="prof-stats" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.25rem;">
-            <span>⚔️ 物攻: <span style="float:right">${eff.atk}</span></span>
-            <span>🛡️ 物防: <span style="float:right">${eff.def}</span></span>
-            <span>🪄 魔攻: <span style="float:right">${eff.matk}</span></span>
-            <span>🔮 魔防: <span style="float:right">${eff.mdef}</span></span>
-            <span>⚡ 速度: <span style="float:right">${eff.spd.toFixed(1)}</span></span>
-            <span>🎯 命中: <span style="float:right">${(eff.hit * 100).toFixed(0)}%</span></span>
-            <span>💨 閃避: <span style="float:right">${(eff.evasion * 100).toFixed(0)}%</span></span>
-            <span>💥 暴擊: <span style="float:right">${(eff.critRate * 100).toFixed(0)}%</span></span>
-            <span>🍀 幸運: <span style="float:right">${eff.lucky}</span></span>
-            ${eff.pdr > 0 ? `<span style="color:#10b981;">🛡️ 物理免傷: <span style="float:right">${(eff.pdr * 100).toFixed(0)}%</span></span>` : ''}
-            ${eff.mdr > 0 ? `<span style="color:#a855f7;">🔮 魔法免傷: <span style="float:right">${(eff.mdr * 100).toFixed(0)}%</span></span>` : ''}
-            ${eff.udr > 0 ? `<span style="color:#fbbf24; font-weight:bold;">🔰 全能免傷: <span style="float:right">${(eff.udr * 100).toFixed(0)}%</span></span>` : ''}
+            <span>⚔️ 物攻: <span style="float:right">${formatStatDiff('atk')}</span></span>
+            <span>🛡️ 物防: <span style="float:right">${formatStatDiff('def')}</span></span>
+            <span>🪄 魔攻: <span style="float:right">${formatStatDiff('matk')}</span></span>
+            <span>🔮 魔防: <span style="float:right">${formatStatDiff('mdef')}</span></span>
+            <span>⚡ 速度: <span style="float:right">${formatStatDiff('spd', false, 1)}</span></span>
+            <span>🎯 命中: <span style="float:right">${formatStatDiff('hit', true)}</span></span>
+            <span>💨 閃避: <span style="float:right">${formatStatDiff('evasion', true)}</span></span>
+            <span>💥 暴擊: <span style="float:right">${formatStatDiff('critRate', true)}</span></span>
+            <span>🍀 幸運: <span style="float:right">${formatStatDiff('lucky')}</span></span>
+            ${eff.pdr > 0 ? `<span style="color:#10b981;">🛡️ 物理免傷: <span style="float:right">${formatStatDiff('pdr', true)}</span></span>` : ''}
+            ${eff.mdr > 0 ? `<span style="color:#a855f7;">🔮 魔法免傷: <span style="float:right">${formatStatDiff('mdr', true)}</span></span>` : ''}
+            ${eff.udr > 0 ? `<span style="color:#fbbf24; font-weight:bold;">🔰 全能免傷: <span style="float:right">${formatStatDiff('udr', true)}</span></span>` : ''}
           </div>
           ${(() => {
             if (p.jobClass === "novice") {
