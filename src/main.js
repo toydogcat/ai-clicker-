@@ -4268,8 +4268,8 @@ function enemyExecuteAttack(enemy) {
   
   const eff = calcEffStats(target);
   
-  // Boss Unique Skill Check (40% chance to execute signature skill)
-  if (enemy.isBoss && Math.random() < 0.4) {
+  // Boss Unique Skill Check (60% chance to execute signature skill for high-octane endgame)
+  if (enemy.isBoss && Math.random() < 0.6) {
     if (enemy.id.includes("greed")) {
       const dmg = Math.max(1, Math.floor((enemy.atk * 2.0) - eff.def));
       dealDmgToHero(target, dmg);

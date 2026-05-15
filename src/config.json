@@ -230,19 +230,19 @@
       "greed": {
         "name": "👹 貪之巨獸 (終極)",
         "avatar": "👹",
-        "hp": 250000, "maxHp": 250000, "atk": 2200, "def": 800, "matk": 40, "mdef": 600, "spd": 1.3,
+        "hp": 5000000, "maxHp": 5000000, "atk": 9000, "def": 4500, "matk": 1000, "mdef": 4000, "spd": 1.3,
         "rewardExp": 2500, "rewardMoney": 50000
       },
       "anger": {
         "name": "🔥 嗔之巨獸 (終極)",
         "avatar": "🔥",
-        "hp": 200000, "maxHp": 200000, "atk": 2800, "def": 600, "matk": 2500, "mdef": 600, "spd": 1.8,
+        "hp": 4500000, "maxHp": 4500000, "atk": 10000, "def": 3500, "matk": 8500, "mdef": 3500, "spd": 2.0,
         "rewardExp": 2500, "rewardMoney": 40000
       },
       "ignorance": {
         "name": "🦑 癡之巨獸 (終極)",
         "avatar": "🦑",
-        "hp": 450000, "maxHp": 450000, "atk": 1800, "def": 1500, "matk": 1800, "mdef": 1500, "spd": 1.0,
+        "hp": 10000000, "maxHp": 10000000, "atk": 6000, "def": 8000, "matk": 6000, "mdef": 8000, "spd": 1.2,
         "rewardExp": 2500, "rewardMoney": 40000
       }
     }
