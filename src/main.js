@@ -2529,18 +2529,27 @@ window.calcEffStats = function(person) {
   // Stat scaling based on level
   const g = baseConfig.growth;
   const levelsGained = person.level - 1;
+  
+  // Introduce exponential scaling curve to balance natural growth against 1.5^x equipment scaling.
+  // Mild 1.3 factor results in ~10.6x magnifier at Lv.10, preserving late-game class identities.
+  const scaleCurve = Math.pow(1.3, levelsGained);
+  
   if (g) {
-    eff.maxHp = Math.floor(eff.maxHp + levelsGained * (g.hp || 0));
-    eff.maxMp = Math.floor(eff.maxMp + levelsGained * (g.mp || 0));
-    eff.atk = Math.floor(eff.atk + levelsGained * (g.atk || 0));
-    eff.def = Math.floor(eff.def + levelsGained * (g.def || 0));
-    eff.matk = Math.floor(eff.matk + levelsGained * (g.matk || 0));
-    eff.mdef = Math.floor(eff.mdef + levelsGained * (g.mdef || 0));
+    eff.maxHp = Math.floor(eff.maxHp + levelsGained * (g.hp || 0) * scaleCurve);
+    eff.maxMp = Math.floor(eff.maxMp + levelsGained * (g.mp || 0) * scaleCurve);
+    eff.atk = Math.floor(eff.atk + levelsGained * (g.atk || 0) * scaleCurve);
+    eff.def = Math.floor(eff.def + levelsGained * (g.def || 0) * scaleCurve);
+    eff.matk = Math.floor(eff.matk + levelsGained * (g.matk || 0) * scaleCurve);
+    eff.mdef = Math.floor(eff.mdef + levelsGained * (g.mdef || 0) * scaleCurve);
+    
+    // Percentages and Speed stay linear to avoid breaking game caps
     eff.spd = +(eff.spd + levelsGained * (g.spd || 0)).toFixed(2);
     eff.hit = +(eff.hit + levelsGained * (g.hit || 0)).toFixed(2);
     eff.evasion = +(eff.evasion + levelsGained * (g.evasion || 0)).toFixed(2);
     eff.critRate = +(eff.critRate + levelsGained * (g.critRate || 0)).toFixed(2);
-    eff.lucky = eff.lucky + levelsGained * (g.lucky || 0);
+    
+    // Luck gets a moderate compound boost
+    eff.lucky = Math.floor(eff.lucky + levelsGained * (g.lucky || 0) * (1 + levelsGained * 0.08));
   } else {
     const lvlMult = 1 + levelsGained * 0.2;
     eff.maxHp = Math.floor(eff.maxHp * lvlMult);
