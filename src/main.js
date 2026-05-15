@@ -2560,7 +2560,12 @@ window.calcEffStats = function(person) {
       if (!item) return;
     // main stat
     if (item.mainStat && item.mainStatVal) {
-      if (eff[item.mainStat] !== undefined) eff[item.mainStat] += item.mainStatVal;
+      if (eff[item.mainStat] !== undefined) {
+        eff[item.mainStat] += item.mainStatVal;
+        // CRITICAL FIX: If it boosts hp/mp, MUST mirror to maxHp/maxMp to increase the actual stat caps!
+        if (item.mainStat === "hp") eff.maxHp += item.mainStatVal;
+        if (item.mainStat === "mp") eff.maxMp += item.mainStatVal;
+      }
     }
     // extra stats
     if (item.extras) {
@@ -2573,6 +2578,9 @@ window.calcEffStats = function(person) {
             eff[stat] += val / 100; // e.g. +50 critDmg -> +0.5x
           } else {
             eff[stat] += val;
+            // CRITICAL FIX: Also mirror extra hp/mp stats onto actual cap variables!
+            if (stat === "hp") eff.maxHp += val;
+            if (stat === "mp") eff.maxMp += val;
           }
         }
       });
@@ -3710,7 +3718,7 @@ function spawnEnemy() {
         maxHp: finalHp,
         atk: Math.floor(mobCfg.base.atk * scale * diffCfg.enemyAtk),
         def: Math.floor(mobCfg.base.def * scale),
-        matk: Math.floor(mobCfg.base.matk * scale),
+        matk: Math.floor(mobCfg.base.matk * scale * diffCfg.enemyAtk),
         mdef: Math.floor(mobCfg.base.mdef * scale),
         spd: mobCfg.base.spd + (avgLvl * mobCfg.scaling.spdPerLvl),
         atb: 0,
@@ -3750,6 +3758,7 @@ function spawnEnemy() {
         finalBoss.hp = Math.floor(finalBoss.hp * diffCfg.enemyHp);
         finalBoss.maxHp = Math.floor(finalBoss.maxHp * diffCfg.enemyHp);
         finalBoss.atk = Math.floor(finalBoss.atk * diffCfg.enemyAtk);
+        finalBoss.matk = Math.floor((finalBoss.matk || 0) * diffCfg.enemyAtk);
         if (finalBoss.rewardExp) finalBoss.rewardExp = Math.floor(finalBoss.rewardExp * diffCfg.expMoneyMod);
         if (finalBoss.rewardMoney) finalBoss.rewardMoney = Math.floor(finalBoss.rewardMoney * diffCfg.expMoneyMod);
         
