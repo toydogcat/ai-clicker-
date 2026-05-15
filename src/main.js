@@ -2399,8 +2399,8 @@ window.changeResidentAssignment = function(id, newAssignment) {
     if (newAssignment === 'combat') {
       const combatants = state.population.filter(r => r.assignment === 'combat');
 
-      if (combatants.length >= 4 && p.assignment !== 'combat') {
-        showToast("出征隊伍已滿 (上限4人)！", "error");
+      if (combatants.length >= 6 && p.assignment !== 'combat') {
+        showToast("出征隊伍已滿 (上限6人)！", "error");
         updateUI();
         return;
       }
@@ -3471,7 +3471,7 @@ function updateHeroSheets() {
 }
 
 function isRangedHero(jobClass) {
-  const ranged = ['archer', 'gunner', 'mage', 'wizard', 'priest', 'taoist'];
+  const ranged = ['archer', 'gunner', 'mage', 'wizard', 'taoist'];
   return ranged.includes(jobClass);
 }
 
@@ -3900,19 +3900,19 @@ function tryCastClassSkill(p, eff) {
   // Skill Dictionary
   const skillMap = {
     novice: { name: "初階斬擊", cost: 5, desc: "造成 1.2 倍物理傷害" },
-    warrior: { name: "勇者重斬", cost: 15, desc: "擊出 1.8 倍物理傷害" },
-    barbarian: { name: "狂暴旋風", cost: 12, desc: "橫掃所有可觸及敵人 1.2 倍物理傷害" },
-    shieldWarrior: { name: "盾牌猛擊", cost: 15, desc: "造成物攻 + 1.0x防禦的粉碎打擊" },
+    warrior: { name: "聖劍裁決", cost: 20, desc: "前後排全體覆蓋 1.8 倍物理傷害！" },
+    barbarian: { name: "毀滅大風車", cost: 25, desc: "瘋狂橫掃前後排全體 2.5 倍物理傷害！" },
+    shieldWarrior: { name: "盾牌猛擊", cost: 15, desc: "物攻+防禦1.5倍碎盾傷害，擊退前排 30% ATB" },
     rogue: { name: "致命背刺", cost: 20, desc: "2.5 倍必中物理暴擊" },
-    archer: { name: "連環雙矢", cost: 15, desc: "隨機速射 2 名敵人，每箭 1.0 倍物攻 (遠程)" },
+    archer: { name: "穿透矢雨風暴", cost: 20, desc: "穿透敵陣，發射最多 6 次覆蓋全體每擊 1.2 倍物攻" },
     gunner: { name: "狙擊爆頭", cost: 20, desc: "精準轟擊最虛弱目標 2.2 倍物理傷害 (遠程)" },
     fighter: { name: "百裂神拳", cost: 20, desc: "狂暴重擊單體目標 3 次，每次 0.6 倍物攻" },
     mage: { name: "爆裂火球", cost: 25, desc: "轟擊最虛弱敵人 2.0 倍魔法傷害 (遠程)" },
     wizard: { name: "連鎖雷爆", cost: 35, desc: "轟擊所有可觸及敵人 1.2 倍魔法傷害 (遠程)" },
-    priest: { name: "神聖治癒", cost: 30, desc: "救治最慘隊友，回復 2.0x魔攻 + 20%最大HP" },
-    paladin: { name: "十字裁決", cost: 25, desc: "造成 1.5x物攻 + 1.0x魔攻混和傷害，並治療自己 20% HP" },
-    taoist: { name: "符咒燃爆", cost: 30, desc: "引爆 2.5 倍魔攻傷害 (遠程)" },
-    monk: { name: "禪定一掌", cost: 25, desc: "2.0 倍物理傷害，無視敵方 50% 防禦" }
+    priest: { name: "神聖奇蹟", cost: 40, desc: "【全體救贖】回復全體 3x魔攻+20%HP，全體 ATB 充能 100%！" },
+    paladin: { name: "神績降臨", cost: 35, desc: "【天罰聖療】全體物魔混合 2x 傷害 + 吸取 30% ATB，我方全體 20% 大補！" },
+    taoist: { name: "萬劍歸宗", cost: 40, desc: "【降魔】全體 3.5x魔攻轟炸，對巨獸追加額外 10%最大HP 真實傷害！" },
+    monk: { name: "萬佛朝宗", cost: 35, desc: "【破法】單體 4x 物攻 (100%無視防禦)，並清空目標 100% ATB 行動條！" }
   };
 
   const skill = skillMap[job] || skillMap.novice;
@@ -3965,30 +3965,40 @@ function tryCastClassSkill(p, eff) {
       break;
     }
     case 'warrior': {
-      let raw = Math.max(1, (eff.atk * 1.8) - target.def);
-      let final = calcBossAdjustments(raw, target);
-      logBattle(`🗡️ ${p.name} 蓄力施展 ${logHeader}，斬裂 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 傷害！`);
-      target.hp -= Math.floor(final);
-      flashEnemy(target.id);
+      logBattle(`🗡️ ${p.name} 高舉聖劍，揮下 ${logHeader} 斬切戰場！`);
+      validCandidates.forEach(c => {
+        let raw = Math.max(1, (eff.atk * 1.8) - c.def);
+        let final = calcBossAdjustments(raw, c);
+        logBattle(`  💥 對 ${c.name} 造成 <span class="log-item-dmg">${Math.floor(final)}</span> 全體聖裁傷害。`);
+        c.hp -= Math.floor(final);
+        flashEnemy(c.id);
+      });
       break;
     }
     case 'barbarian': {
-      logBattle(`🪓 ${p.name} 咆哮著旋轉武器，施展 ${logHeader} 橫掃全場！`);
+      logBattle(`🪓 ${p.name} 咆哮如雷化身鋼鐵風暴，瘋狂旋舞 ${logHeader}！`);
       validCandidates.forEach(c => {
-        let raw = Math.max(1, (eff.atk * 1.2) - c.def);
+        let raw = Math.max(1, (eff.atk * 2.5) - c.def);
         let final = calcBossAdjustments(raw, c);
-        logBattle(`  ➡️ ${c.name} 受到 <span class="log-item-dmg">${Math.floor(final)}</span> 順劈傷害。`);
+        logBattle(`  🌀 狂暴氣旋對 ${c.name} 造成高達 <span class="log-item-dmg">${Math.floor(final)}</span> 絞碎傷害！`);
         c.hp -= Math.floor(final);
         flashEnemy(c.id);
       });
       break;
     }
     case 'shieldWarrior': {
-      let raw = Math.max(1, (eff.atk + eff.def) - target.def);
+      let raw = Math.max(1, (eff.atk * 1.5 + eff.def * 1.5) - target.def);
       let final = calcBossAdjustments(raw, target);
-      logBattle(`🛡️ ${p.name} 頂起重盾施展 ${logHeader}，痛擊 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 碎骨傷害。`);
+      logBattle(`🛡️ ${p.name} 頂起山岳重盾，施展 ${logHeader} 痛擊 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 碎骨衝擊！`);
       target.hp -= Math.floor(final);
       flashEnemy(target.id);
+      
+      // Retaliation Shockwave: Reduce ATB of ALL front row enemies by 30%
+      const frontEnemies = combatState.enemies.filter(e => e.isFrontRow && e.hp > 0);
+      frontEnemies.forEach(fe => {
+        fe.atb = Math.max(0, (fe.atb || 0) - 30);
+      });
+      logBattle(`  💥 重盾震撼大地，將敵方前排全體行動條擊退 30%！`, "log-item-buff");
       break;
     }
     case 'rogue': {
@@ -4001,16 +4011,17 @@ function tryCastClassSkill(p, eff) {
       break;
     }
     case 'archer': {
-      logBattle(`🏹 ${p.name} 拉開滿弓施展 ${logHeader} 連續狙殺！`);
-      for(let i = 0; i < 2; i++) {
+      logBattle(`🏹 ${p.name} 拉開滿月巨弓射向高空，降下毀滅性 ${logHeader}！`);
+      const maxArrows = Math.min(6, validCandidates.length * 2); // Ensure high density coverage
+      for(let i = 0; i < maxArrows; i++) {
         if (validCandidates.length === 0) break;
         const rnd = validCandidates[Math.floor(Math.random() * validCandidates.length)];
-        let raw = Math.max(1, eff.atk - rnd.def);
+        let raw = Math.max(1, (eff.atk * 1.2) - rnd.def);
         let final = calcBossAdjustments(raw, rnd);
-        logBattle(`  🎯 第 ${i+1} 矢正中 ${rnd.name}，造成 <span class="log-item-dmg">${Math.floor(final)}</span> 傷害。`);
+        logBattle(`  🎯 穿透箭矢直插 ${rnd.name}，造成 <span class="log-item-dmg">${Math.floor(final)}</span> 傷害。`);
         rnd.hp -= Math.floor(final);
         flashEnemy(rnd.id);
-        // In case target dies, remove it from candidate pool instantly for second arrow
+        // In case target dies, remove it from candidate pool instantly
         if(rnd.hp <= 0) {
            const idx = validCandidates.findIndex(c => c.id === rnd.id);
            if(idx > -1) validCandidates.splice(idx, 1);
@@ -4065,48 +4076,71 @@ function tryCastClassSkill(p, eff) {
       break;
     }
     case 'priest': {
-      const weakest = getLowestAlly();
-      const wEff = calcEffStats(weakest);
-      const healAmt = Math.floor(eff.matk * 2.0 + wEff.maxHp * 0.20);
-      weakest.hp = Math.min(wEff.maxHp, weakest.hp + healAmt);
-      logBattle(`⛪ ${p.name} 祈禱聖母降臨 ${logHeader}，治癒了 【${weakest.name}】，恢復了 <b style="color:#22c55e;">+${healAmt}</b> HP！`);
-      
-      const card = document.getElementById(`prof-${weakest.id}`);
-      if(card) {
-        card.style.boxShadow = "0 0 15px #22c55e";
-        setTimeout(() => card.style.boxShadow = "", 300);
-      }
+      logBattle(`⛪ ${p.name} 雙手合十施展 ${logHeader}，耀眼聖光普照全軍！`);
+      const aliveHeroes = state.population.filter(h => combatState.party.includes(h.id) && h.hp > 0);
+      aliveHeroes.forEach(h => {
+        const hEff = calcEffStats(h);
+        const healAmt = Math.floor(eff.matk * 3.0 + hEff.maxHp * 0.20);
+        h.hp = Math.min(hEff.maxHp, h.hp + healAmt);
+        h.atb = 100; // Instant 100% ATB fill for absolute annihilation!
+        
+        const card = document.getElementById(`prof-${h.id}`);
+        if (card) {
+          card.style.boxShadow = "0 0 15px #eab308";
+          setTimeout(() => card.style.boxShadow = "", 400);
+        }
+      });
+      logBattle(`  ✨ 全體隊友血量大補，且行動條 (ATB) 瞬間灌滿 100% 爆發！`, "log-item-buff");
       break;
     }
     case 'paladin': {
-      // Hybrid logic: Mixed Atk + Matk vs def
-      let raw = Math.max(1, (eff.atk * 1.5 + eff.matk * 1.0) - target.def);
-      let final = calcBossAdjustments(raw, target);
-      logBattle(`✨ ${p.name} 揮舞戰錘降下 ${logHeader}，粉碎 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 混和傷害！`);
-      target.hp -= Math.floor(final);
-      flashEnemy(target.id);
+      logBattle(`✨ ${p.name} 躍向半空重擊地面施展 ${logHeader}，聖光光雨落滿全場！`);
+      validCandidates.forEach(c => {
+        let raw = Math.max(1, (eff.atk * 2.0 + eff.matk * 2.0) - c.def);
+        let final = calcBossAdjustments(raw, c);
+        logBattle(`  🔱 對 ${c.name} 造成 <span class="log-item-dmg">${Math.floor(final)}</span> 混合天罰，擊退其 30% ATB！`);
+        c.hp -= Math.floor(final);
+        c.atb = Math.max(0, (c.atb || 0) - 30); // Strong universal stun
+        flashEnemy(c.id);
+      });
       
-      // Heal self
-      const heal = Math.floor(eff.maxHp * 0.20);
-      p.hp = Math.min(eff.maxHp, p.hp + heal);
-      logBattle(`  ❤️ 聖騎士獲得信仰反饋，為自己治療 <b style="color:#22c55e;">+${heal}</b> HP。`);
+      // Heal All Allies 20% Max HP
+      const aliveHeroes = state.population.filter(h => combatState.party.includes(h.id) && h.hp > 0);
+      aliveHeroes.forEach(h => {
+        const hEff = calcEffStats(h);
+        const healAmt = Math.floor(hEff.maxHp * 0.20);
+        h.hp = Math.min(hEff.maxHp, h.hp + healAmt);
+      });
+      logBattle(`  ❤️ 聖光回饋：我方全體隊友獲得 <b style="color:#22c55e;">+20% Max HP</b> 生命回復！`, "log-item-buff");
       break;
     }
     case 'taoist': {
-      // Magic vs Mdef
-      let raw = Math.max(1, (eff.matk * 2.5) - target.mdef);
-      let final = calcBossAdjustments(raw, target);
-      logBattle(`☯️ ${p.name} 手拈黃符射出 ${logHeader}，符火在 ${target.name} 身上引爆，造成 <b style="color:#eab308;" class="log-item-dmg">${Math.floor(final)}</b> 魔法天罰！`);
-      target.hp -= Math.floor(final);
-      flashEnemy(target.id);
+      logBattle(`☯️ ${p.name} 祭起萬千黃符飛劍，引導 ${logHeader} 轟炸全體！`);
+      validCandidates.forEach(c => {
+        let raw = Math.max(1, (eff.matk * 3.5) - c.mdef);
+        let final = calcBossAdjustments(raw, c);
+        
+        let bonusStr = "";
+        if (c.isBoss) {
+          const bonus = Math.floor(c.maxHp * 0.10); // Gigantic 10% Max HP true damage
+          final += bonus;
+          bonusStr = ` (內含 <b style="color:#f43f5e;">+${bonus}</b> 巨獸真傷！)`;
+        }
+        
+        logBattle(`  ⚔️ 飛劍穿透 ${c.name} 造成 <span style="color:#eab308;" class="log-item-dmg">${Math.floor(final)}</span> 魔法傷害！${bonusStr}`);
+        c.hp -= Math.floor(final);
+        flashEnemy(c.id);
+      });
       break;
     }
     case 'monk': {
-      // Piercing logic: enemy Def is halved
-      let raw = Math.max(1, (eff.atk * 2.0) - (target.def * 0.5));
+      // Fully bypass defense completely (Def = 0), and hard-reset target ATB!
+      let raw = Math.max(1, eff.atk * 4.0); 
       let final = calcBossAdjustments(raw, target);
-      logBattle(`🧘 ${p.name} 氣聚丹田打出 ${logHeader}，穿透 ${target.name} 的護甲，造成 <b class="log-item-dmg">${Math.floor(final)}</b> 破防重創！`);
+      logBattle(`🧘 ${p.name} 雙目暴睜一掌施展 ${logHeader}，對 ${target.name} 造成 <b class="log-item-dmg">${Math.floor(final)}</b> 無防備重創！`);
       target.hp -= Math.floor(final);
+      target.atb = 0; // CRITICAL FULL ATB RESET
+      logBattle(`  ✋ 萬佛朝宗：${target.name} 的行動進度條 (ATB) 遭強制歸零凍結！`, "log-item-dmg");
       flashEnemy(target.id);
       break;
     }
