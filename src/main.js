@@ -3156,8 +3156,15 @@ function assignCombatRows(combatParty) {
 
 // Render Hero sheets (updates stats & paperdoll display)
 function updateHeroSheets() {
-  // Sort population descending by level globally so all displays align
-  state.population.sort((a, b) => b.level - a.level);
+  // Priority sorting: 1st prioritize active Combat assignment, 2nd descending by level
+  state.population.sort((a, b) => {
+    const aCombat = a.assignment === 'combat' ? 1 : 0;
+    const bCombat = b.assignment === 'combat' ? 1 : 0;
+    if (aCombat !== bCombat) {
+      return bCombat - aCombat;
+    }
+    return b.level - a.level;
+  });
 
   const guildRoster = document.getElementById("guildRoster");
   if (!guildRoster) return;
