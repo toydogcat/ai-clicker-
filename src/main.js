@@ -4885,16 +4885,29 @@ btnUpgradeBuilding?.addEventListener("click", upgradeBuilding);
 btnDemolishBuilding?.addEventListener("click", demolishBuilding);
 
 // Close Modal triggers for City slot details
-closeCityDetailBtn?.addEventListener("click", () => {
+const closeCityDetail = (e) => {
+  if (e) {
+    e.stopPropagation();
+    if (e.type === 'touchstart') e.preventDefault();
+  }
   selectedSlotIdx = null;
   updateUI();
-});
-citySlotDetailOverlay?.addEventListener("click", (e) => {
+};
+
+closeCityDetailBtn?.addEventListener("click", closeCityDetail);
+closeCityDetailBtn?.addEventListener("touchstart", closeCityDetail, { passive: false });
+const closeOverlay = (e) => {
   if (e.target === citySlotDetailOverlay) {
+    if (e) {
+      e.stopPropagation();
+      if (e.type === 'touchstart') e.preventDefault();
+    }
     selectedSlotIdx = null;
     updateUI();
   }
-});
+};
+citySlotDetailOverlay?.addEventListener("click", closeOverlay);
+citySlotDetailOverlay?.addEventListener("touchstart", closeOverlay, { passive: false });
 
 document.querySelectorAll(".opt-build-btn").forEach(btn => {
   btn.addEventListener("click", () => {
