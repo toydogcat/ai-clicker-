@@ -4891,6 +4891,7 @@ const closeCityDetail = (e) => {
     if (e.type === 'touchstart') e.preventDefault();
   }
   selectedSlotIdx = null;
+  window.setDirty('cityGrid');
   updateUI();
 };
 
@@ -4903,6 +4904,7 @@ const closeOverlay = (e) => {
       if (e.type === 'touchstart') e.preventDefault();
     }
     selectedSlotIdx = null;
+    window.setDirty('cityGrid');
     updateUI();
   }
 };
