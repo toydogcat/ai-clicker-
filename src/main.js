@@ -2660,7 +2660,7 @@ window.submitExam = function(selectedIndex) {
       // Apply Dynamic Class promotion with Villager Level inheritance!
       p.promotedLevel = p.level; // Record their level when they transitioned!
       p.jobClass = currentExamContext.targetJob;
-      p.level = 5;
+      p.level = 1;
       p.exp = 0;
       p.assignment = 'idle';
       showToast(`🎉 恭喜！${p.name} 通過考核，順利轉職為 ${gameConfig.heroes[p.jobClass].name}！`, "success");
@@ -2814,11 +2814,11 @@ window.calcEffStats = function(person) {
       nLucky = Math.floor(noviceLevels * (ng.lucky || 0) * (1 + noviceLevels * 0.08));
     }
     
-    // 2. Accumulate Job Class Growth (from Lv.5 to current level)
+    // 2. Accumulate Job Class Growth (from Lv.1 to current level)
     let jHp = 0, jMp = 0, jAtk = 0, jDef = 0, jMatk = 0, jMdef = 0;
     let jSpd = 0, jHit = 0, jEvasion = 0, jCrit = 0, jLucky = 0;
     
-    const jobLevels = Math.max(0, person.level - 5);
+    const jobLevels = Math.max(0, person.level - 1);
     const jobScaleCurve = Math.pow(1.3, person.level - 1);
     
     if (g && jobLevels > 0) {
