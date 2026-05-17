@@ -1981,7 +1981,7 @@ window.formatNumberShort = function(num, decimals = 1) {
 
 // Calculate needed EXP for next level based on planned gaps
 window.getReqExp = function(lvl) {
-  const expGaps = [0, 100, 205, 300, 419, 563, 728, 916, 1122, 1347];
+  const expGaps = [0, 180, 380, 600, 900, 1350, 1900, 2600, 3500, 4600];
   return expGaps[lvl] || 999999;
 };
 
@@ -2408,10 +2408,17 @@ window.infuseKnowledge = function(id) {
   showToast(`📚 消耗了 ${actualSpend} 知識，注入 ${p.name} 的大腦，獲得了 ${expGained} EXP！`, "success");
   
   // Check for Level Up
-  if (p.exp >= req) {
-    p.exp -= req;
-    p.level += 1;
-    showToast(`✨🆙 ${p.name} 的心靈開竅，等級提升至 Lv.${p.level}！`, "info");
+  let currentReq = req;
+  while (p.level < 10 && p.exp >= currentReq) {
+    if (p.level === 9) {
+      p.exp = currentReq;
+      break;
+    } else {
+      p.exp -= currentReq;
+      p.level += 1;
+      showToast(`✨🆙 ${p.name} 的心靈開竅，等級提升至 Lv.${p.level}！`, "info");
+      currentReq = window.getReqExp(p.level);
+    }
   }
   
   window.setDirty('popRoster');
@@ -2650,7 +2657,8 @@ window.submitExam = function(selectedIndex) {
   
   if (isCorrect) {
     if (currentExamContext.type === 'mathPromote') {
-      // Apply Dynamic Class promotion!
+      // Apply Dynamic Class promotion with Villager Level inheritance!
+      p.promotedLevel = p.level; // Record their level when they transitioned!
       p.jobClass = currentExamContext.targetJob;
       p.level = 5;
       p.exp = 0;
@@ -2777,42 +2785,100 @@ window.calcEffStats = function(person) {
     pdr: 0, mdr: 0, udr: 0
   };
   
-  // Stat scaling based on level
+  // Stat scaling based on level & job transition inheritance
   const g = baseConfig.growth;
-  const levelsGained = person.level - 1;
+  const isPromoted = person.jobClass !== "novice";
   
-  // Introduce exponential scaling curve to balance natural growth against 1.5^x equipment scaling.
-  // Mild 1.3 factor results in ~10.6x magnifier at Lv.10, preserving late-game class identities.
-  const scaleCurve = Math.pow(1.3, levelsGained);
-  
-  if (g) {
-    eff.maxHp = Math.floor(eff.maxHp + levelsGained * (g.hp || 0) * scaleCurve);
-    eff.maxMp = Math.floor(eff.maxMp + levelsGained * (g.mp || 0) * scaleCurve);
-    eff.atk = Math.floor(eff.atk + levelsGained * (g.atk || 0) * scaleCurve);
-    eff.def = Math.floor(eff.def + levelsGained * (g.def || 0) * scaleCurve);
-    eff.matk = Math.floor(eff.matk + levelsGained * (g.matk || 0) * scaleCurve);
-    eff.mdef = Math.floor(eff.mdef + levelsGained * (g.mdef || 0) * scaleCurve);
+  if (isPromoted) {
+    const noviceConfig = gameConfig.heroes["novice"];
+    const ng = noviceConfig ? noviceConfig.growth : null;
+    const promotedLevel = person.promotedLevel || 5;
+    const noviceLevels = promotedLevel - 1;
+    const noviceScaleCurve = Math.pow(1.3, noviceLevels);
     
-    // Percentages and Speed stay linear to avoid breaking game caps
-    eff.spd = +(eff.spd + levelsGained * (g.spd || 0)).toFixed(2);
-    eff.hit = +(eff.hit + levelsGained * (g.hit || 0)).toFixed(2);
-    eff.evasion = +(eff.evasion + levelsGained * (g.evasion || 0)).toFixed(2);
-    eff.critRate = +(eff.critRate + levelsGained * (g.critRate || 0)).toFixed(2);
+    // 1. Accumulate Novice (Villager) Growth
+    let nHp = 0, nMp = 0, nAtk = 0, nDef = 0, nMatk = 0, nMdef = 0;
+    let nSpd = 0, nHit = 0, nEvasion = 0, nCrit = 0, nLucky = 0;
     
-    // Luck gets a moderate compound boost
-    eff.lucky = Math.floor(eff.lucky + levelsGained * (g.lucky || 0) * (1 + levelsGained * 0.08));
+    if (ng) {
+      nHp = Math.floor(noviceLevels * (ng.hp || 0) * noviceScaleCurve);
+      nMp = Math.floor(noviceLevels * (ng.mp || 0) * noviceScaleCurve);
+      nAtk = Math.floor(noviceLevels * (ng.atk || 0) * noviceScaleCurve);
+      nDef = Math.floor(noviceLevels * (ng.def || 0) * noviceScaleCurve);
+      nMatk = Math.floor(noviceLevels * (ng.matk || 0) * noviceScaleCurve);
+      nMdef = Math.floor(noviceLevels * (ng.mdef || 0) * noviceScaleCurve);
+      nSpd = noviceLevels * (ng.spd || 0);
+      nHit = noviceLevels * (ng.hit || 0);
+      nEvasion = noviceLevels * (ng.evasion || 0);
+      nCrit = noviceLevels * (ng.critRate || 0);
+      nLucky = Math.floor(noviceLevels * (ng.lucky || 0) * (1 + noviceLevels * 0.08));
+    }
+    
+    // 2. Accumulate Job Class Growth (from Lv.5 to current level)
+    let jHp = 0, jMp = 0, jAtk = 0, jDef = 0, jMatk = 0, jMdef = 0;
+    let jSpd = 0, jHit = 0, jEvasion = 0, jCrit = 0, jLucky = 0;
+    
+    const jobLevels = Math.max(0, person.level - 5);
+    const jobScaleCurve = Math.pow(1.3, person.level - 1);
+    
+    if (g && jobLevels > 0) {
+      jHp = Math.floor(jobLevels * (g.hp || 0) * jobScaleCurve);
+      jMp = Math.floor(jobLevels * (g.mp || 0) * jobScaleCurve);
+      jAtk = Math.floor(jobLevels * (g.atk || 0) * jobScaleCurve);
+      jDef = Math.floor(jobLevels * (g.def || 0) * jobScaleCurve);
+      jMatk = Math.floor(jobLevels * (g.matk || 0) * jobScaleCurve);
+      jMdef = Math.floor(jobLevels * (g.mdef || 0) * jobScaleCurve);
+      jSpd = jobLevels * (g.spd || 0);
+      jHit = jobLevels * (g.hit || 0);
+      jEvasion = jobLevels * (g.evasion || 0);
+      jCrit = jobLevels * (g.critRate || 0);
+      jLucky = Math.floor(jobLevels * (g.lucky || 0) * (1 + jobLevels * 0.08));
+    }
+    
+    // 3. Apply combined growth to stats
+    eff.maxHp = eff.maxHp + nHp + jHp;
+    eff.maxMp = eff.maxMp + nMp + jMp;
+    eff.atk = eff.atk + nAtk + jAtk;
+    eff.def = eff.def + nDef + jDef;
+    eff.matk = eff.matk + nMatk + jMatk;
+    eff.mdef = eff.mdef + nMdef + jMdef;
+    eff.spd = +(eff.spd + nSpd + jSpd).toFixed(2);
+    eff.hit = +(eff.hit + nHit + jHit).toFixed(2);
+    eff.evasion = +(eff.evasion + nEvasion + jEvasion).toFixed(2);
+    eff.critRate = +(eff.critRate + nCrit + jCrit).toFixed(2);
+    eff.lucky = eff.lucky + nLucky + jLucky;
+    
   } else {
-    const lvlMult = 1 + levelsGained * 0.2;
-    eff.maxHp = Math.floor(eff.maxHp * lvlMult);
-    eff.maxMp = Math.floor(eff.maxMp * lvlMult);
-    eff.atk = Math.floor(eff.atk * lvlMult);
-    eff.def = Math.floor(eff.def * lvlMult);
-    eff.matk = Math.floor(eff.matk * lvlMult);
-    eff.mdef = Math.floor(eff.mdef * lvlMult);
-    eff.spd = +(eff.spd * (1 + levelsGained * 0.05)).toFixed(2);
-    eff.hit = +(eff.hit * (1 + levelsGained * 0.05)).toFixed(2);
-    eff.evasion = +(eff.evasion * (1 + levelsGained * 0.05)).toFixed(2);
-    eff.lucky = eff.lucky + levelsGained * 2;
+    // Standard Novice or unpromoted character growth
+    const levelsGained = person.level - 1;
+    const scaleCurve = Math.pow(1.3, levelsGained);
+    
+    if (g) {
+      eff.maxHp = Math.floor(eff.maxHp + levelsGained * (g.hp || 0) * scaleCurve);
+      eff.maxMp = Math.floor(eff.maxMp + levelsGained * (g.mp || 0) * scaleCurve);
+      eff.atk = Math.floor(eff.atk + levelsGained * (g.atk || 0) * scaleCurve);
+      eff.def = Math.floor(eff.def + levelsGained * (g.def || 0) * scaleCurve);
+      eff.matk = Math.floor(eff.matk + levelsGained * (g.matk || 0) * scaleCurve);
+      eff.mdef = Math.floor(eff.mdef + levelsGained * (g.mdef || 0) * scaleCurve);
+      
+      eff.spd = +(eff.spd + levelsGained * (g.spd || 0)).toFixed(2);
+      eff.hit = +(eff.hit + levelsGained * (g.hit || 0)).toFixed(2);
+      eff.evasion = +(eff.evasion + levelsGained * (g.evasion || 0)).toFixed(2);
+      eff.critRate = +(eff.critRate + levelsGained * (g.critRate || 0)).toFixed(2);
+      eff.lucky = Math.floor(eff.lucky + levelsGained * (g.lucky || 0) * (1 + levelsGained * 0.08));
+    } else {
+      const lvlMult = 1 + levelsGained * 0.2;
+      eff.maxHp = Math.floor(eff.maxHp * lvlMult);
+      eff.maxMp = Math.floor(eff.maxMp * lvlMult);
+      eff.atk = Math.floor(eff.atk * lvlMult);
+      eff.def = Math.floor(eff.def * lvlMult);
+      eff.matk = Math.floor(eff.matk * lvlMult);
+      eff.mdef = Math.floor(eff.mdef * lvlMult);
+      eff.spd = +(eff.spd * (1 + levelsGained * 0.05)).toFixed(2);
+      eff.hit = +(eff.hit * (1 + levelsGained * 0.05)).toFixed(2);
+      eff.evasion = +(eff.evasion * (1 + levelsGained * 0.05)).toFixed(2);
+      eff.lucky = eff.lucky + levelsGained * 2;
+    }
   }
 
   // Add equipment
@@ -4750,15 +4816,17 @@ function checkBattleResolution() {
       p.exp += totalExp;
       
       // Level up logic
-      const req = window.getReqExp(p.level);
-      if (p.level < 10 && p.exp >= req) {
+      let req = window.getReqExp(p.level);
+      while (p.level < 10 && p.exp >= req) {
         if (p.level === 9) {
           // Cannot level up to 10 without calculus exam
           p.exp = req; 
+          break;
         } else {
           p.exp -= req; // keep leftover spillover exp
           p.level += 1;
           logBattle(`✨🆙 ${p.name} 等級提升至 Lv.${p.level}！`, "log-item-drop");
+          req = window.getReqExp(p.level); // Update req for new level!
         }
       }
     });
