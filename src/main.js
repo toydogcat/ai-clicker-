@@ -2152,7 +2152,7 @@ function renderPopulationRoster() {
         <div class="roster-header">
           <div class="roster-name-block">
             <span class="roster-name" style="color: #94a3b8; text-decoration: line-through; opacity: 0.7;">
-              ${p.name} <span style="font-size:0.75rem; font-style:normal;">${genderSym}${faithSym}</span> (Lv.${p.level})
+              ${getHeroIcon(p.jobClass)} ${p.name} <span style="font-size:0.75rem; font-style:normal;">${genderSym}${faithSym}</span> (Lv.${p.level})
             </span>
             <span style="background: rgba(239,68,68,0.15); color:#ef4444; font-weight:bold; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); display: inline-flex; align-items: center; gap: 4px;">🏥 療養中(+5/s)</span>
           </div>
@@ -2191,7 +2191,7 @@ function renderPopulationRoster() {
       row.innerHTML = `
         <div class="roster-header">
           <div class="roster-name-block">
-            <span class="roster-name">${p.name} <span style="font-size:0.75rem; opacity:0.75;">${genderSym}${faithSym}</span> (Lv.${p.level})</span>
+            <span class="roster-name">${getHeroIcon(p.jobClass)} ${p.name} <span style="font-size:0.75rem; opacity:0.75;">${genderSym}${faithSym}</span> (Lv.${p.level})</span>
             ${jobBadge}
           </div>
           <div class="roster-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
@@ -3195,6 +3195,30 @@ function getHeroIcon(k) {
   return icons[k] || '👤';
 }
 
+function getMobAvatar(name, level, defaultAvatar) {
+  if (level >= 8) {
+    const tier3 = {
+      "史萊姆": "🧊",
+      "憤怒蘑菇": "🥀",
+      "飛天萌蝠": "🐉",
+      "嘟嘟鳥": "🦚",
+      "迷你野狼": "🦁"
+    };
+    return tier3[name] || defaultAvatar;
+  } else if (level >= 5) {
+    const tier2 = {
+      "史萊姆": "🌊",
+      "憤怒蘑菇": "🍁",
+      "飛天萌蝠": "🦅",
+      "嘟嘟鳥": "🦆",
+      "迷你野狼": "🦊"
+    };
+    return tier2[name] || defaultAvatar;
+  }
+  return defaultAvatar;
+}
+
+
 function getSlotIcon(s, level = 1) {
   const tier1 = { rhand:'🗡️', lhand:'🛡️', helm:'🪖', body:'🥋', pants:'👖', shoes:'👞' };
   const tier2 = { rhand:'⚔️', lhand:'🪞', helm:'🥽', body:'🧥', pants:'🩳', shoes:'🥾' };
@@ -3757,7 +3781,7 @@ function updateHeroSheets() {
         p.hp = Math.min(p.hp, effStats.maxHp);
         p.mp = Math.min(p.mp, effStats.maxMp);
 
-        const rangeTag = isRangedHero(p.jobClass) ? '🏹' : '🛡️';
+        const rangeTag = getHeroIcon(p.jobClass);
         const rowTag = p.isFrontRow ? '前排' : '後排';
 
         unit.innerHTML = `
@@ -4036,7 +4060,7 @@ function spawnEnemy() {
       combatState.enemies.push({
         id: eId,
         name: `Lv.${avgLvl} ${mobData.name}`,
-        avatar: mobData.avatar,
+        avatar: getMobAvatar(mobData.name, avgLvl, mobData.avatar),
         hp: finalHp,
         maxHp: finalHp,
         atk: Math.floor(mobCfg.base.atk * scale * diffCfg.enemyAtk),
