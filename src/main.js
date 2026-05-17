@@ -20,7 +20,7 @@ const DEFAULT_STATE = {
   difficulty: 'normal', // easy, normal, hard, nightmare
   cityLayout: {
     maxSlots: 6,
-    slots: Array.from({ length: 24 }, () => ({ type: null, level: 1 }))
+    slots: Array.from({ length: 36 }, () => ({ type: null, level: 1 }))
   },
   population: [], // Array of individual resident objects
   bossInvasions: {
@@ -674,7 +674,7 @@ function applySaveData(rawString) {
         const count = saved.buildings[legacyKey] || 0;
         const newType = slotMapping[legacyKey];
         for (let i = 0; i < count; i++) {
-          if (slotIndex < 24) {
+          if (slotIndex < 36) {
             state.cityLayout.slots[slotIndex] = { type: newType, level: 1 };
             slotIndex++;
           }
@@ -682,7 +682,14 @@ function applySaveData(rawString) {
       }
       
       if (slotIndex > state.cityLayout.maxSlots) {
-        state.cityLayout.maxSlots = Math.min(24, Math.max(6, Math.ceil(slotIndex / 3) * 3));
+        state.cityLayout.maxSlots = Math.min(36, Math.max(6, Math.ceil(slotIndex / 3) * 3));
+      }
+    }
+
+    // Ensure state.cityLayout.slots array is always at least 36 items for backward compatibility
+    if (state.cityLayout && Array.isArray(state.cityLayout.slots)) {
+      while (state.cityLayout.slots.length < 36) {
+        state.cityLayout.slots.push({ type: null, level: 1 });
       }
     }
 
@@ -1041,7 +1048,7 @@ function demolishBuilding() {
 }
 
 function expandCityLand() {
-  if (state.cityLayout.maxSlots >= 24) {
+  if (state.cityLayout.maxSlots >= 36) {
     showToast("❌ 已達最大土地擴張極限！", "error");
     return;
   }
@@ -1054,7 +1061,7 @@ function expandCityLand() {
 
   deductResources(cost);
   state.cityLayout.maxSlots += 3; 
-  if (state.cityLayout.maxSlots > 24) state.cityLayout.maxSlots = 24;
+  if (state.cityLayout.maxSlots > 36) state.cityLayout.maxSlots = 36;
 
   showToast(`🚜 成功開闢了新建地！當前可用：${state.cityLayout.maxSlots} 格`, "info");
   
@@ -1307,7 +1314,7 @@ function updateUI(forceAll = false) {
 
   // Render dynamic expand cost and handle button enable/disable
   if (expandCityCostEl && btnExpandCity) {
-    if (state.cityLayout.maxSlots >= 24) {
+    if (state.cityLayout.maxSlots >= 36) {
       expandCityCostEl.textContent = "已達最大領土";
       btnExpandCity.disabled = true;
     } else {
@@ -2045,6 +2052,39 @@ if (btnHireResident) {
   btnHireResident.addEventListener("click", hireResident);
 }
 
+function getSortedPopulation() {
+  return [...state.population].sort((a, b) => {
+    const effA = calcEffStats(a);
+    const effB = calcEffStats(b);
+    const maxHpA = effA?.maxHp || 100;
+    const maxHpB = effB?.maxHp || 100;
+    const currentHpA = a.hp !== undefined ? a.hp : maxHpA;
+    const currentHpB = b.hp !== undefined ? b.hp : maxHpB;
+    
+    // 1. Injured first (currentHp < maxHp)
+    const isInjuredA = currentHpA < maxHpA;
+    const isInjuredB = currentHpB < maxHpB;
+    if (isInjuredA !== isInjuredB) {
+      return isInjuredA ? -1 : 1;
+    }
+    
+    // 2. Job Class (transitioned first: jobClass !== "novice")
+    const isTransA = a.jobClass !== "novice";
+    const isTransB = b.jobClass !== "novice";
+    if (isTransA !== isTransB) {
+      return isTransA ? -1 : 1;
+    }
+    
+    // 3. Level (highest first)
+    if (b.level !== a.level) {
+      return b.level - a.level;
+    }
+    
+    // 4. Stable sort by ID
+    return a.id.localeCompare(b.id);
+  });
+}
+
 function renderPopulationRoster() {
   if (!populationRoster) return;
 
@@ -2061,7 +2101,7 @@ function renderPopulationRoster() {
     return;
   }
   
-  state.population.forEach((p, index) => {
+  getSortedPopulation().forEach(p => {
     const genderSym = p.gender === 'female' ? '♀️' : '♂️';
     const faithSym = p.faith ? '✨' : '🪐';
     
@@ -2227,7 +2267,7 @@ function renderTempleRoster() {
 
   templeRoster.innerHTML = "";
 
-  const eligibleHeroes = state.population.filter(p => 
+  const eligibleHeroes = getSortedPopulation().filter(p => 
     (p.level >= 5 && p.jobClass === "novice") || 
     (p.level === 9 && p.exp >= window.getReqExp(9))
   );
@@ -3497,7 +3537,7 @@ function updateHeroSheets() {
   const partyGroup = document.getElementById("partyGroup");
   if (partyGroup) partyGroup.innerHTML = "";
 
-  state.population.forEach(p => {
+  getSortedPopulation().forEach(p => {
     // 1. Render in Guild
     const card = document.createElement("div");
     card.className = "hero-profile-card";

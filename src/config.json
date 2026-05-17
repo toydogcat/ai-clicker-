@@ -220,7 +220,7 @@
         "hp": 80, "atk": 8, "def": 4, "matk": 2, "mdef": 2, "spd": 0.8
       },
       "scaling": {
-        "levelMult": 1.4,
+        "levelMult": 1.5,
         "duoMult": 1.8,
         "spdPerLvl": 0.05,
         "rewardExpBase": 20,
