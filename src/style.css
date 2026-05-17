@@ -42,6 +42,24 @@ body {
   padding-bottom: 95px; /* Give padding for navigation bar at bottom */
 }
 
+/* Premium Cross-Fading Background Layers */
+.bg-fade-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+  pointer-events: none;
+  filter: saturate(1.1) brightness(0.85);
+}
+
+.bg-fade-layer.active {
+  opacity: 0.18; /* Subtle blend that maintains high contrast and readability */
+}
+
 /* Ambient Background Glows */
 .ambient-glow {
   position: fixed;

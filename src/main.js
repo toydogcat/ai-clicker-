@@ -5296,6 +5296,41 @@ btnTechSecretLv7?.addEventListener("click", () => {
 });
 
 
+// Dynamic Ambient Background Shifter
+const BACKGROUNDS = {
+  'tab-gather': 'images/bg_gather.webp',
+  'tab-settlement': 'images/bg_city.webp',
+  'tab-combat': 'images/bg_combat.webp',
+  'tab-hero': 'images/bg_heroes.webp',
+  'tab-temple': 'images/bg_temple.webp'
+};
+
+let currentBgLayer = 1;
+
+function updateAmbientBackground(tabId) {
+  const relativePath = BACKGROUNDS[tabId];
+  if (!relativePath) return;
+
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const imageUrl = `${baseUrl}${relativePath}`;
+
+  const layer1 = document.getElementById("bg-fade-1");
+  const layer2 = document.getElementById("bg-fade-2");
+  if (!layer1 || !layer2) return;
+
+  if (currentBgLayer === 1) {
+    layer2.style.backgroundImage = `url('${imageUrl}')`;
+    layer2.classList.add("active");
+    layer1.classList.remove("active");
+    currentBgLayer = 2;
+  } else {
+    layer1.style.backgroundImage = `url('${imageUrl}')`;
+    layer1.classList.add("active");
+    layer2.classList.remove("active");
+    currentBgLayer = 1;
+  }
+}
+
 // Hook Up Responsive Tab Click Handlers
 navItems.forEach(btn => {
   btn.addEventListener("click", () => {
@@ -5313,6 +5348,9 @@ navItems.forEach(btn => {
         col.classList.remove("active");
       }
     });
+
+    // Switch background smoothly
+    updateAmbientBackground(target);
   });
 });
 
@@ -5934,5 +5972,8 @@ window.addEventListener("DOMContentLoaded", () => {
   updateLevelSelectors();
   initSkillGrid();
   initMediaPipe();
+  
+  // Set initial ambient background
+  updateAmbientBackground("tab-gather");
 });
 
