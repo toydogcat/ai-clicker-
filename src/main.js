@@ -5296,6 +5296,43 @@ btnTechSecretLv7?.addEventListener("click", () => {
 });
 
 
+// Background Music (BGM) Manager
+let bgmAudio = null;
+let bgmEnabled = false;
+
+function initBGM() {
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  bgmAudio = new Audio(`${baseUrl}audio/Where_the_Canopy_Breaks.mp3`);
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.35; // Harmonious background volume
+
+  const btnBgm = document.getElementById("btn-bgm");
+  const bgmIcon = document.getElementById("bgm-icon");
+  const bgmText = document.getElementById("bgm-text");
+
+  if (!btnBgm) return;
+
+  btnBgm.addEventListener("click", () => {
+    bgmEnabled = !bgmEnabled;
+    if (bgmEnabled) {
+      bgmAudio.play().then(() => {
+        bgmIcon.textContent = "🔊";
+        bgmText.textContent = "音樂";
+        btnBgm.classList.add("bgm-active");
+      }).catch(err => {
+        console.warn("Autoplay block / playback failed:", err);
+        bgmEnabled = false;
+        showToast("🔊 請隨意點擊一下畫面再開啟音樂！", "info");
+      });
+    } else {
+      bgmAudio.pause();
+      bgmIcon.textContent = "🔇";
+      bgmText.textContent = "音樂";
+      btnBgm.classList.remove("bgm-active");
+    }
+  });
+}
+
 // Dynamic Ambient Background Shifter
 const BACKGROUNDS = {
   'tab-gather': 'images/bg_gather.webp',
@@ -5975,5 +6012,8 @@ window.addEventListener("DOMContentLoaded", () => {
   
   // Set initial ambient background
   updateAmbientBackground("tab-gather");
+
+  // Initialize background music
+  initBGM();
 });
 
