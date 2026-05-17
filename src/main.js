@@ -520,6 +520,36 @@ const tabColumns = document.querySelectorAll(".tab-column");
 // ==========================================
 
 const SAVE_KEY = "ai_clicker_save_v1";
+const SCRAMBLE_KEY = "LunaAIClickerSecretKey2026";
+
+function serializeSaveData(saveData) {
+  const jsonStr = JSON.stringify(saveData);
+  let XORed = "";
+  for (let i = 0; i < jsonStr.length; i++) {
+    const charCode = jsonStr.charCodeAt(i) ^ SCRAMBLE_KEY.charCodeAt(i % SCRAMBLE_KEY.length);
+    XORed += String.fromCharCode(charCode);
+  }
+  return btoa(unescape(encodeURIComponent(XORed)));
+}
+
+function deserializeSaveData(rawString) {
+  const trimmed = rawString.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return JSON.parse(rawString);
+  }
+  try {
+    const XORed = decodeURIComponent(escape(atob(trimmed)));
+    let jsonStr = "";
+    for (let i = 0; i < XORed.length; i++) {
+      const charCode = XORed.charCodeAt(i) ^ SCRAMBLE_KEY.charCodeAt(i % SCRAMBLE_KEY.length);
+      jsonStr += String.fromCharCode(charCode);
+    }
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    throw new Error("存檔解密失敗，檔案格式不正確或金鑰不相符！");
+  }
+}
+
 const toastEl = document.getElementById("toastNotification");
 let toastTimer = null;
 
@@ -539,7 +569,8 @@ function saveGame(silent = false) {
       timestamp: Date.now(),
       state: JSON.parse(JSON.stringify(state)) // deep clone
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+    const encrypted = serializeSaveData(saveData);
+    localStorage.setItem(SAVE_KEY, encrypted);
     if (silent !== true) {
       showToast("💾 進度已存入瀏覽器快取！", "success");
     }
@@ -555,11 +586,12 @@ function exportGame() {
       timestamp: Date.now(),
       state: JSON.parse(JSON.stringify(state))
     };
-    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
+    const encrypted = serializeSaveData(saveData);
+    const blob = new Blob([encrypted], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ai_clicker_save_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `ai_clicker_save_${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     showToast("📤 備份檔案下載中...", "success");
@@ -602,7 +634,7 @@ function deepHydrate(target, source) {
 
 function applySaveData(rawString) {
   try {
-    const saveData = JSON.parse(rawString);
+    const saveData = deserializeSaveData(rawString);
     const saved = saveData.state;
 
     if (!saved) {
